@@ -317,12 +317,25 @@ def register_busstop_callbacks(app):
                 )
             )
 
-        # Return all bus stop items and markers
-        return bus_stop_items, markers
+        # Return all bus stop items and markers with H4 title
+        output = [
+            html.H4(
+                "Top 5 Nearest Bus Stops",
+                style={
+                    "textAlign": "center",
+                    "marginBottom": "0.625rem",
+                    "color": "#fff",
+                    "fontWeight": "700",
+                    "fontSize": "0.875rem"
+                }
+            ),
+            *bus_stop_items
+        ]
+        return output, markers
 
     # Callback for nearby transport page
     @app.callback(
-        [Output('nearby-transport-bus-stop-content', 'children'),
+        [Output('nearby-transport-bus-stop-column', 'children'),
          Output('nearby-bus-stop-markers', 'children')],
         Input('nearby-transport-search', 'value')
     )
@@ -337,16 +350,28 @@ def register_busstop_callbacks(app):
             HTML Div containing nearest bus stops within 500m
         """
         if not search_value:
-            return html.P(
-                "Select a location to view nearest bus stops",
-                style={
-                    "textAlign": "center",
-                    "color": "#999",
-                    "fontSize": "12px",
-                    "fontStyle": "italic",
-                    "padding": "15px"
-                }
-            ), []
+            return [
+                html.H4(
+                    "Top 5 Nearest Bus Stops",
+                    style={
+                        "textAlign": "center",
+                        "marginBottom": "0.625rem",
+                        "color": "#fff",
+                        "fontWeight": "700",
+                        "fontSize": "0.875rem"
+                    }
+                ),
+                html.P(
+                    "Select a location to view nearest bus stops",
+                    style={
+                        "textAlign": "center",
+                        "color": "#999",
+                        "fontSize": "0.75rem",
+                        "fontStyle": "italic",
+                        "padding": "0.9375rem"
+                    }
+                )
+            ], []
 
         try:
             # Parse the search value to get coordinates
@@ -354,15 +379,27 @@ def register_busstop_callbacks(app):
             lat = float(parts[0])
             lon = float(parts[1])
         except (ValueError, IndexError, TypeError):
-            return html.P(
-                "Invalid location coordinates",
-                style={
-                    "textAlign": "center",
-                    "color": "#ff6b6b",
-                    "fontSize": "12px",
-                    "padding": "15px"
-                }
-            ), []
+            return [
+                html.H4(
+                    "Top 5 Nearest Bus Stops",
+                    style={
+                        "textAlign": "center",
+                        "marginBottom": "0.625rem",
+                        "color": "#fff",
+                        "fontWeight": "700",
+                        "fontSize": "0.875rem"
+                    }
+                ),
+                html.P(
+                    "Invalid location coordinates",
+                    style={
+                        "textAlign": "center",
+                        "color": "#ff6b6b",
+                        "fontSize": "0.75rem",
+                        "padding": "0.9375rem"
+                    }
+                )
+            ], []
 
         # Fetch nearby bus stops within 500m
         bus_stops = fetch_nearby_bus_stops(lat, lon, radius_m=500)
@@ -371,16 +408,28 @@ def register_busstop_callbacks(app):
         bus_stops = bus_stops[:5]
 
         if not bus_stops:
-            return html.P(
-                "No bus stops found within 500m",
-                style={
-                    "textAlign": "center",
-                    "color": "#999",
-                    "fontSize": "12px",
-                    "fontStyle": "italic",
-                    "padding": "15px"
-                }
-            ), []
+            return [
+                html.H4(
+                    "Top 5 Nearest Bus Stops",
+                    style={
+                        "textAlign": "center",
+                        "marginBottom": "0.625rem",
+                        "color": "#fff",
+                        "fontWeight": "700",
+                        "fontSize": "0.875rem"
+                    }
+                ),
+                html.P(
+                    "No bus stops found within 500m",
+                    style={
+                        "textAlign": "center",
+                        "color": "#999",
+                        "fontSize": "0.75rem",
+                        "fontStyle": "italic",
+                        "padding": "0.9375rem"
+                    }
+                )
+            ], []
 
         # Create markers for map
         markers = create_bus_stop_markers(bus_stops)
@@ -461,6 +510,19 @@ def register_busstop_callbacks(app):
                 )
             )
 
-        # Return all bus stop items and markers
-        return bus_stop_items, markers
+        # Return all bus stop items and markers with H4 title
+        output = [
+            html.H4(
+                "Top 5 Nearest Bus Stops",
+                style={
+                    "textAlign": "center",
+                    "marginBottom": "0.625rem",
+                    "color": "#fff",
+                    "fontWeight": "700",
+                    "fontSize": "0.875rem"
+                }
+            ),
+            *bus_stop_items
+        ]
+        return output, markers
 

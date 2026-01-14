@@ -2881,121 +2881,6 @@ def format_erp_count_display(gantry_data):
     )
 
 
-def save_bicycle_parking_to_csv(data, filepath="data/BicycleParking.csv"):
-    """
-    Save bicycle parking data to CSV file.
-    
-    Args:
-        data: Dictionary containing bicycle parking response from LTA API
-        filepath: Path to save the CSV file (default: data/BicycleParking.csv)
-    """
-    if not data or 'value' not in data:
-        print("No bicycle parking data to save")
-        return
-    
-    parking_locations = data.get('value', [])
-    if not parking_locations:
-        print("No bicycle parking locations to save")
-        return
-    
-    try:
-        # Create DataFrame from the data
-        df = pd.DataFrame(parking_locations)
-        
-        # Ensure all expected columns exist (add with default values if missing)
-        expected_columns = ['Latitude', 'Longitude', 'Description', 'RackType', 'RackCount', 'ShelterIndicator']
-        for col in expected_columns:
-            if col not in df.columns:
-                df[col] = 'N/A'
-        
-        # Select and reorder columns for CSV
-        columns_to_save = ['Latitude', 'Longitude', 'Description', 'RackType', 'RackCount', 'ShelterIndicator']
-        # Include any additional columns that might exist
-        for col in df.columns:
-            if col not in columns_to_save:
-                columns_to_save.append(col)
-        
-        df_to_save = df[columns_to_save]
-        
-        # Save to CSV
-        df_to_save.to_csv(filepath, index=False)
-        print(f"Saved {len(df_to_save)} bicycle parking locations to {filepath}")
-    except Exception as e:
-        print(f"Error saving bicycle parking data to CSV: {e}")
-        import traceback
-        traceback.print_exc()
-
-
-def fetch_bicycle_parking_data():
-    """
-    Fetch bicycle parking data from LTA DataMall API.
-    Uses default map center coordinates and dist=50 to get all bicycle parking lots.
-    Uses in-memory cache since bicycle parking locations are static infrastructure.
-    
-    Returns:
-        Dictionary containing bicycle parking data or None if error
-    """
-    global _road_infra_cache
-    
-    # Monthly cache bucket (YYYYMM) - bicycle parking updates monthly
-    current_bucket = datetime.now().year * 100 + datetime.now().month
-
-    # Return cached data if available and still within the same month
-    if (
-        _road_infra_cache['bicycle_parking'] is not None
-        and _road_infra_cache.get('bicycle_parking_bucket') == current_bucket
-    ):
-        return _road_infra_cache['bicycle_parking']
-    
-    import requests
-    
-    api_key = os.getenv("LTA_API_KEY")
-    
-    if not api_key:
-        print("Warning: LTA_API_KEY not found in environment variables")
-        return None
-    
-    # Use default map center coordinates
-    lat, lon = SG_MAP_CENTER
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "AccountKey": api_key,
-        "Content-Type": "application/json"
-    }
-    
-    # Try fetching without distance parameter first to get all bicycle parking lots
-    # If that doesn't work, fall back to a large distance value
-    params = {
-        "Lat": lat,
-        "Long": lon,
-        "Dist": 999
-
-    }
-    
-    try:
-        response = requests.get(BICYCLE_PARKING_URL, headers=headers, params=params, timeout=60)
-        
-        # If successful, check if we got all results
-        if 200 <= response.status_code < 300:
-            data = response.json()
-            parking_count = len(data.get('value', []))
-            print(f"Fetched {parking_count} bicycle parking locations with {params}")
-            
-            if data:
-                _road_infra_cache['bicycle_parking'] = data
-                _road_infra_cache['bicycle_parking_bucket'] = current_bucket
-                print(f"Bicycle parking data cached in memory: {parking_count} locations")
-                
-                # Save to CSV file
-                save_bicycle_parking_to_csv(data)
-            return data
-        print(f"Bicycle parking API request failed: status={response.status_code}")
-    except (requests.exceptions.RequestException, ValueError) as error:
-        print(f"Error fetching bicycle parking data: {error}")
-    return None
-
-
 def fetch_nearby_taxi_stands(lat: float, lon: float, radius_m: int = 300) -> list:
     """
     Fetch nearby taxi stands data from LTA DataMall API within specified radius.
@@ -3060,6 +2945,12 @@ def fetch_nearby_taxi_stands(lat: float, lon: float, radius_m: int = 300) -> lis
     return processed_results
 
 
+def _get_label_letter(index):
+    """Get label letter (A, B, C, D, E) for index."""
+    labels = ['A', 'B', 'C', 'D', 'E']
+    return labels[index] if index < len(labels) else str(index + 1)
+
+
 def create_nearby_taxi_stands_markers(nearby_taxi_stands: list) -> list:
     """
     Create map markers for nearby taxi stands from processed list.
@@ -3074,7 +2965,7 @@ def create_nearby_taxi_stands_markers(nearby_taxi_stands: list) -> list:
         return []
 
     markers = []
-    for stand in nearby_taxi_stands:
+    for idx, stand in enumerate(nearby_taxi_stands):
         try:
             lat = float(stand.get('latitude', 0))
             lon = float(stand.get('longitude', 0))
@@ -3089,6 +2980,9 @@ def create_nearby_taxi_stands_markers(nearby_taxi_stands: list) -> list:
             distance_m = float(stand.get('distance_m', 0))
             distance_str = f"{int(distance_m)}m" if distance_m < 1000 else f"{distance_m/1000:.2f}km"
 
+            # Get label letter (A, B, C, D, E)
+            label = _get_label_letter(idx)
+
             tooltip_text = (
                 f"• Taxi Stand: {taxi_code} ({name})\n"
                 f"• Distance: {distance_str}\n"
@@ -3097,21 +2991,20 @@ def create_nearby_taxi_stands_markers(nearby_taxi_stands: list) -> list:
                 f"• BFA: {bfa}"
             )
 
-            # Create text box label for taxi stand (similar to carpark)
-            # Use taxi_code as the label, or a shortened name if code is N/A
-            label_text = taxi_code if taxi_code != 'N/A' else (name[:8] if len(name) > 8 else name)
-            
+            # Create marker HTML with taxi icon and label badge (similar to bus stops)
             marker_html = (
-                f'<div style="position:relative;display:flex;flex-direction:column;'
-                f'align-items:center;">'
-                f'<div style="background:#FFA500;color:#fff;padding:0.25rem 0.5rem;'
-                f'border-radius:0.25rem;border:0.125rem solid #fff;'
-                f'box-shadow:0 0.125rem 0.5rem rgba(255,165,0,0.6);'
-                f'font-size:0.6875rem;font-weight:bold;white-space:nowrap;">'
-                f'{label_text}</div>'
-                f'<div style="width:0;height:0;border-left:0.5rem solid transparent;'
-                f'border-right:0.5rem solid transparent;border-top:0.5rem solid #FFA500;'
-                f'margin-top:-0.125rem;"></div>'
+                f'<div style="width:32px;height:32px;background:#FFA500;'
+                f'border-radius:50%;border:3px solid #fff;'
+                f'box-shadow:0 2px 8px rgba(255,165,0,0.6);'
+                f'cursor:pointer;display:flex;align-items:center;'
+                f'justify-content:center;font-size:14px;color:#fff;'
+                f'font-weight:bold;position:relative;">'
+                f'<span style="font-size:16px;">🚕</span>'
+                f'<div style="position:absolute;top:-8px;right:-8px;'
+                f'background:#FF5722;color:#fff;width:20px;height:20px;'
+                f'border-radius:50%;border:2px solid #fff;'
+                f'display:flex;align-items:center;justify-content:center;'
+                f'font-size:12px;font-weight:bold;">{label}</div>'
                 f'</div>'
             )
             
@@ -3134,446 +3027,6 @@ def create_nearby_taxi_stands_markers(nearby_taxi_stands: list) -> list:
             continue
 
     return markers
-
-
-def fetch_bicycle_parking_from_api(lat: float, lon: float, dist_m: int = 300) -> list:
-    """
-    Fetch bicycle parking data directly from LTA DataMall API for a specific location.
-    
-    Args:
-        lat: Latitude in degrees
-        lon: Longitude in degrees
-        dist_m: Search radius in meters (default: 300)
-    
-    Returns:
-        List of bicycle parking dictionaries with distance information
-    """
-    import requests
-    
-    api_key = os.getenv("LTA_API_KEY")
-    if not api_key:
-        print("Warning: LTA_API_KEY not found")
-        return []
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "AccountKey": api_key,
-        "Content-Type": "application/json"
-    }
-    
-    # Convert meters to km (API expects distance in km, rounded to 1 decimal)
-    dist_km = round(dist_m / 1000, 1)
-    
-    params = {
-        "Lat": lat,
-        "Long": lon,
-        "Dist": dist_km
-    }
-    
-    try:
-        response = requests.get(BICYCLE_PARKING_URL, headers=headers, params=params, timeout=30)
-        if 200 <= response.status_code < 300:
-            data = response.json()
-            parking_locations = data.get('value', [])
-            
-            # Process and calculate distances
-            processed_results = []
-            for loc in parking_locations:
-                try:
-                    parking_lat = float(loc.get('Latitude', 0))
-                    parking_lon = float(loc.get('Longitude', 0))
-                    distance_m = _haversine_distance_m(lat, lon, parking_lat, parking_lon)
-                    
-                    processed_results.append({
-                        'description': loc.get('Description', 'N/A'),
-                        'rack_type': loc.get('RackType', 'N/A'),
-                        'rack_count': loc.get('RackCount', 'N/A'),
-                        'shelter_indicator': loc.get('ShelterIndicator', 'N'),
-                        'latitude': parking_lat,
-                        'longitude': parking_lon,
-                        'distance_m': distance_m,
-                    })
-                except (ValueError, TypeError, KeyError):
-                    continue
-            
-            # Sort by distance
-            processed_results.sort(key=lambda x: x['distance_m'])
-            return processed_results
-    except Exception as e:
-        print(f"Error fetching bicycle parking from API: {e}")
-        return []
-
-
-def fetch_nearby_bicycle_parking(lat: float, lon: float, radius_m: int = 500) -> list:
-    """
-    Fetch nearby bicycle parking data within specified radius.
-    Uses cached bicycle parking data and filters by distance to avoid API calls.
-    
-    Args:
-        lat: Latitude in degrees
-        lon: Longitude in degrees
-        radius_m: Search radius in meters (default: 500)
-    
-    Returns:
-        List of bicycle parking dictionaries with distance information, sorted by distance
-    """
-    # First ensure we have the full dataset cached
-    full_data = fetch_bicycle_parking_data()
-    
-    if not full_data or 'value' not in full_data:
-        return []
-    
-    parking_locations = full_data.get('value', [])
-    processed_results = []
-    
-    for i,loc in enumerate(parking_locations):
-        #print(str(i) +":"+ str(loc))
-        try:
-            parking_lat = float(loc.get('Latitude', 0))
-            parking_lon = float(loc.get('Longitude', 0))
-            
-            # Calculate distance using haversine formula
-            distance_m = _haversine_distance_m(lat, lon, parking_lat, parking_lon)
-            
-            # Only include parking within the specified radius
-            if distance_m <= radius_m:
-                processed_results.append({
-                    'description': loc.get('Description', 'N/A'),
-                    'rack_type': loc.get('RackType', 'N/A'),
-                    'rack_count': loc.get('RackCount', 'N/A'),
-                    'shelter_indicator': loc.get('ShelterIndicator', 'N'),
-                    'latitude': parking_lat,
-                    'longitude': parking_lon,
-                    'distance_m': distance_m,
-                    'raw_data': loc
-                })
-        except (ValueError, TypeError, KeyError) as e:
-            print(f"Error processing bicycle parking data: {e}")
-            continue
-    
-    # Sort by distance (closest first)
-    processed_results.sort(key=lambda x: x['distance_m'])
-    
-    return processed_results
-
-
-def create_bicycle_parking_markers(bicycle_data):
-    """
-    Create map markers for bicycle parking locations.
-    
-    Args:
-        bicycle_data: Dictionary containing bicycle parking response from LTA API
-    
-    Returns:
-        List of dl.Marker components with bicycle rack icons
-    """
-    markers = []
-    
-    if not bicycle_data or 'value' not in bicycle_data:
-        return markers
-    
-    parking_locations = bicycle_data.get('value', [])
-    
-    for loc in parking_locations:
-        try:
-            latitude = float(loc.get('Latitude', 0))
-            longitude = float(loc.get('Longitude', 0))
-            description = loc.get('Description', 'N/A')
-            rack_type = loc.get('RackType', 'N/A')
-            rack_count = loc.get('RackCount', 'N/A')
-            shelter_indicator = loc.get('ShelterIndicator', 'N')
-            
-            if latitude == 0 or longitude == 0:
-                continue
-            
-            # Determine sheltered/unsheltered status
-            shelter_status = 'sheltered' if shelter_indicator == 'Y' else 'unsheltered'
-            
-            # Create tooltip with formatted information - each field on separate line
-            tooltip_html = (
-                f"{description} ({shelter_status})\n"
-                f"RackType: {rack_type}\n"
-                f"RackCount: {rack_count}"
-            )
-            
-            # Create bicycle rack icon SVG - different icons for sheltered vs unsheltered
-            if shelter_indicator == 'Y':
-                # Sheltered: bicycle rack with roof/shelter
-                bicycle_rack_svg = (
-                    '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
-                    '<rect x="2" y="2" width="20" height="20" rx="2" fill="#9C27B0" opacity="0.2" stroke="#9C27B0" stroke-width="1.5"/>'
-                    '<path d="M 3 3 L 3 19 M 7 3 L 7 19 M 11 3 L 11 19 M 15 3 L 15 19 M 19 3 L 19 19" '
-                    'stroke="#9C27B0" stroke-width="2.5" stroke-linecap="round"/>'
-                    '<path d="M 4 19 L 20 19" stroke="#9C27B0" stroke-width="2.5" stroke-linecap="round"/>'
-                    '<path d="M 2 3 Q 12 1 22 3" stroke="#9C27B0" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
-                    '<path d="M 2 2 L 22 2" stroke="#9C27B0" stroke-width="2.5" stroke-linecap="round"/>'
-                    '</svg>'
-                )
-            else:
-                # Unsheltered: simple bicycle rack without roof
-                bicycle_rack_svg = (
-                    '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
-                    '<rect x="2" y="2" width="20" height="20" rx="2" fill="#9C27B0" opacity="0.2" stroke="#9C27B0" stroke-width="1.5"/>'
-                    '<path d="M 6 4 L 6 20 M 10 4 L 10 20 M 14 4 L 14 20 M 18 4 L 18 20" '
-                    'stroke="#9C27B0" stroke-width="2.5" stroke-linecap="round"/>'
-                    '<path d="M 4 20 L 20 20" stroke="#9C27B0" stroke-width="2.5" stroke-linecap="round"/>'
-                    '</svg>'
-                )
-            bicycle_rack_svg_base64 = base64.b64encode(bicycle_rack_svg.encode()).decode()
-            
-            bicycle_rack_icon = {
-                "iconUrl": f"data:image/svg+xml;base64,{bicycle_rack_svg_base64}",
-                "iconSize": [24, 24],
-                "iconAnchor": [12, 24],
-                "popupAnchor": [0, -24],
-            }
-            
-            # Create marker with bicycle rack icon
-            markers.append(
-                dl.Marker(
-                    position=[latitude, longitude],
-                    icon=bicycle_rack_icon,
-                    children=[
-                        dl.Tooltip(html.Pre(tooltip_html, style={"margin": "0", "fontFamily": "inherit"})),
-                    ]
-                )
-            )
-        except (ValueError, TypeError, KeyError):
-            continue
-    
-    return markers
-
-
-def create_nearby_bicycle_parking_markers(bicycle_parking_list):
-    """
-    Create map markers for nearby bicycle parking locations from processed list.
-    
-    Args:
-        bicycle_parking_list: List of processed bicycle parking dictionaries
-    
-    Returns:
-        List of dl.Marker components with bicycle rack icons
-    """
-    markers = []
-    
-    if not bicycle_parking_list:
-        return markers
-    
-    for parking in bicycle_parking_list:
-        try:
-            latitude = parking.get('latitude', 0)
-            longitude = parking.get('longitude', 0)
-            description = parking.get('description', 'N/A')
-            rack_type = parking.get('rack_type', 'N/A')
-            rack_count = parking.get('rack_count', 'N/A')
-            shelter_indicator = parking.get('shelter_indicator', 'N')
-            
-            if latitude == 0 or longitude == 0:
-                continue
-            
-            # Determine sheltered/unsheltered status
-            shelter_status = 'sheltered' if shelter_indicator == 'Y' else 'unsheltered'
-            
-            # Create tooltip with formatted information - each field on separate line
-            tooltip_html = (
-                f"{description} ({shelter_status})\n"
-                f"RackType: {rack_type}\n"
-                f"RackCount: {rack_count}"
-            )
-            
-            # Create bicycle rack icon SVG - different icons for sheltered vs unsheltered
-            if shelter_indicator == 'Y':
-                # Sheltered: bicycle rack with roof/shelter
-                bicycle_rack_svg = (
-                    '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
-                    '<rect x="2" y="2" width="20" height="20" rx="2" fill="#9C27B0" opacity="0.2" stroke="#9C27B0" stroke-width="1.5"/>'
-                    '<path d="M 3 3 L 3 19 M 7 3 L 7 19 M 11 3 L 11 19 M 15 3 L 15 19 M 19 3 L 19 19" '
-                    'stroke="#9C27B0" stroke-width="2.5" stroke-linecap="round"/>'
-                    '<path d="M 4 19 L 20 19" stroke="#9C27B0" stroke-width="2.5" stroke-linecap="round"/>'
-                    '<path d="M 2 3 Q 12 1 22 3" stroke="#9C27B0" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
-                    '<path d="M 2 2 L 22 2" stroke="#9C27B0" stroke-width="2.5" stroke-linecap="round"/>'
-                    '</svg>'
-                )
-            else:
-                # Unsheltered: simple bicycle rack without roof
-                bicycle_rack_svg = (
-                    '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
-                    '<rect x="2" y="2" width="20" height="20" rx="2" fill="#9C27B0" opacity="0.2" stroke="#9C27B0" stroke-width="1.5"/>'
-                    '<path d="M 6 4 L 6 20 M 10 4 L 10 20 M 14 4 L 14 20 M 18 4 L 18 20" '
-                    'stroke="#9C27B0" stroke-width="2.5" stroke-linecap="round"/>'
-                    '<path d="M 4 20 L 20 20" stroke="#9C27B0" stroke-width="2.5" stroke-linecap="round"/>'
-                    '</svg>'
-                )
-            bicycle_rack_svg_base64 = base64.b64encode(bicycle_rack_svg.encode()).decode()
-            
-            bicycle_rack_icon = {
-                "iconUrl": f"data:image/svg+xml;base64,{bicycle_rack_svg_base64}",
-                "iconSize": [24, 24],
-                "iconAnchor": [12, 24],
-                "popupAnchor": [0, -24],
-            }
-            
-            # Create marker with bicycle rack icon
-            markers.append(
-                dl.Marker(
-                    position=[latitude, longitude],
-                    icon=bicycle_rack_icon,
-                    children=[
-                        dl.Tooltip(html.Pre(tooltip_html, style={"margin": "0", "fontFamily": "inherit"})),
-                    ]
-                )
-            )
-        except (ValueError, TypeError, KeyError):
-            continue
-    
-    return markers
-
-
-def format_bicycle_parking_display(bicycle_data):
-    """
-    Format the bicycle parking count display.
-    
-    Args:
-        bicycle_data: Dictionary containing bicycle parking response from LTA API
-    
-    Returns:
-        HTML Div with bicycle parking information
-    """
-    if not bicycle_data or 'value' not in bicycle_data:
-        return html.Div(
-            [
-                html.P(
-                    "Error loading bicycle parking data",
-                    style={
-                        "color": "#ff6b6b",
-                        "textAlign": "center",
-                        "fontSize": "0.75rem",
-                    }
-                )
-            ]
-        )
-
-    parking_locations = bicycle_data.get('value', [])
-    total_locations = len(parking_locations)
-    
-    # Calculate total rack count
-    total_racks = sum(int(loc.get('RackCount', 0)) for loc in parking_locations if loc.get('RackCount'))
-    
-    # Count sheltered vs unsheltered
-    sheltered_count = sum(1 for loc in parking_locations if loc.get('ShelterIndicator') == 'Y')
-    unsheltered_count = total_locations - sheltered_count
-    
-    # Count by rack type
-    rack_types = {}
-    for loc in parking_locations:
-        rack_type = loc.get('RackType', 'Unknown')
-        rack_types[rack_type] = rack_types.get(rack_type, 0) + 1
-
-    return html.Div(
-        [
-            html.Div(
-                [
-                    html.Span(
-                        "🚴",
-                        style={"fontSize": "2rem", "marginRight": "0.625rem", "lineHeight": "1"}
-                    ),
-                    html.Span(
-                        f"{total_locations}",
-                        style={
-                            "fontSize": "2.5rem",
-                            "fontWeight": "bold",
-                            "color": "#4CAF50",
-                            "lineHeight": "1",
-                        }
-                    ),
-                ],
-                style={
-                    "display": "flex",
-                    "alignItems": "center",
-                    "justifyContent": "center",
-                    "marginBottom": "0.625rem",
-                    "flexWrap": "wrap",
-                }
-            ),
-            html.P(
-                "Bicycle Parking Locations",
-                style={
-                    "color": "#fff",
-                    "textAlign": "center",
-                    "fontSize": "0.875rem",
-                    "fontWeight": "600",
-                    "margin": "0 0 0.625rem 0",
-                }
-            ),
-            html.Div(
-                [
-                    html.Div(
-                        [
-                            html.Span(
-                                f"Total Racks: {total_racks:,}",
-                                style={
-                                    "color": "#4CAF50",
-                                    "fontSize": "0.8125rem",
-                                    "fontWeight": "600",
-                                }
-                            ),
-                        ],
-                        style={
-                            "marginBottom": "0.5rem",
-                            "textAlign": "center",
-                        }
-                    ),
-                    html.Div(
-                        [
-                            html.Span(
-                                f"Sheltered: {sheltered_count}",
-                                style={
-                                    "color": "#fff",
-                                    "fontSize": "0.75rem",
-                                    "marginRight": "0.75rem",
-                                }
-                            ),
-                            html.Span(
-                                f"Unsheltered: {unsheltered_count}",
-                                style={
-                                    "color": "#fff",
-                                    "fontSize": "0.75rem",
-                                }
-                            ),
-                        ],
-                        style={
-                            "textAlign": "center",
-                            "marginBottom": "0.5rem",
-                        }
-                    ),
-                ],
-                style={
-                    "padding": "0.5rem",
-                    "backgroundColor": "#3a4a5a",
-                    "borderRadius": "0.25rem",
-                    "marginBottom": "0.625rem",
-                }
-            ),
-            html.P(
-                f"Data within 50km radius of Singapore center",
-                style={
-                    "color": "#888",
-                    "textAlign": "center",
-                    "fontSize": "0.6875rem",
-                    "fontStyle": "italic",
-                    "margin": "0",
-                }
-            ),
-        ],
-        style={
-            "padding": "0.9375rem",
-            "backgroundColor": "#2c3e50",
-            "borderRadius": "0.5rem",
-            "width": "100%",
-            "boxSizing": "border-box",
-            "overflow": "hidden",
-        }
-    )
 
 
 def register_transport_callbacks(app):
@@ -4038,7 +3491,7 @@ def register_transport_callbacks(app):
 
     # Callback for nearby transport page - taxi stands (within 300m)
     @app.callback(
-        [Output('nearby-transport-taxi-stand-content', 'children'),
+        [Output('nearby-transport-taxi-stand-column', 'children'),
          Output('nearby-taxi-stand-markers', 'children')],
         [Input('nearby-transport-map', 'viewport'),
          Input('nearby-transport-location-store', 'data')]
@@ -4057,8 +3510,73 @@ def register_transport_callbacks(app):
             center_lat, center_lon = center[0], center[1]
         else:
             if not location_data:
-                return html.P(
-                    "Select a location to view nearest taxi stands",
+                return [
+                    html.H4(
+                        "Nearby 300m Taxi Stands",
+                        style={
+                            "textAlign": "center",
+                            "marginBottom": "0.625rem",
+                            "color": "#fff",
+                            "fontWeight": "700",
+                            "fontSize": "0.875rem"
+                        }
+                    ),
+                    html.P(
+                        "Select a location to view nearest taxi stands",
+                        style={
+                            "textAlign": "center",
+                            "padding": "0.9375rem",
+                            "color": "#999",
+                            "fontSize": "0.75rem",
+                            "fontStyle": "italic"
+                        }
+                    )
+                ], []
+
+            try:
+                center_lat = float(location_data.get('lat'))
+                center_lon = float(location_data.get('lon'))
+            except (ValueError, TypeError, KeyError, AttributeError):
+                return [
+                    html.H4(
+                        "Nearby 300m Taxi Stands",
+                        style={
+                            "textAlign": "center",
+                            "marginBottom": "0.625rem",
+                            "color": "#fff",
+                            "fontWeight": "700",
+                            "fontSize": "0.875rem"
+                        }
+                    ),
+                    html.Div(
+                        "Invalid coordinates",
+                        style={
+                            "padding": "0.625rem",
+                            "color": "#ff6b6b",
+                            "fontSize": "0.75rem",
+                            "textAlign": "center"
+                        }
+                    )
+                ], []
+
+        print(f"Searching for taxi stands near ({center_lat}, {center_lon}) within 300m (viewport-driven)")
+        nearby_stands = fetch_nearby_taxi_stands(center_lat, center_lon, radius_m=300)
+        print(f"Found {len(nearby_stands)} taxi stands within 300m")
+
+        if not nearby_stands:
+            return [
+                html.H4(
+                    "Nearby 300m Taxi Stands",
+                    style={
+                        "textAlign": "center",
+                        "marginBottom": "0.625rem",
+                        "color": "#fff",
+                        "fontWeight": "700",
+                        "fontSize": "0.875rem"
+                    }
+                ),
+                html.P(
+                    "No taxi stands found within 300m",
                     style={
                         "textAlign": "center",
                         "padding": "0.9375rem",
@@ -4066,37 +3584,8 @@ def register_transport_callbacks(app):
                         "fontSize": "0.75rem",
                         "fontStyle": "italic"
                     }
-                ), []
-
-            try:
-                center_lat = float(location_data.get('lat'))
-                center_lon = float(location_data.get('lon'))
-            except (ValueError, TypeError, KeyError, AttributeError):
-                return html.Div(
-                    "Invalid coordinates",
-                    style={
-                        "padding": "0.625rem",
-                        "color": "#ff6b6b",
-                        "fontSize": "0.75rem",
-                        "textAlign": "center"
-                    }
-                ), []
-
-        print(f"Searching for taxi stands near ({center_lat}, {center_lon}) within 300m (viewport-driven)")
-        nearby_stands = fetch_nearby_taxi_stands(center_lat, center_lon, radius_m=300)
-        print(f"Found {len(nearby_stands)} taxi stands within 300m")
-
-        if not nearby_stands:
-            return html.P(
-                "No taxi stands found within 300m",
-                style={
-                    "textAlign": "center",
-                    "padding": "0.9375rem",
-                    "color": "#999",
-                    "fontSize": "0.75rem",
-                    "fontStyle": "italic"
-                }
-            ), []
+                )
+            ], []
 
         markers = create_nearby_taxi_stands_markers(nearby_stands)
 
@@ -4154,11 +3643,25 @@ def register_transport_callbacks(app):
                 )
             )
 
-        return stand_items, markers
+        # Return stand items with H4 title
+        output = [
+            html.H4(
+                "Nearby 300m Taxi Stands",
+                style={
+                    "textAlign": "center",
+                    "marginBottom": "0.625rem",
+                    "color": "#fff",
+                    "fontWeight": "700",
+                    "fontSize": "0.875rem"
+                }
+            ),
+            *stand_items
+        ]
+        return output, markers
 
     # Callback for nearby transport page - bicycle parking
     @app.callback(
-        [Output('nearby-transport-bicycle-content', 'children'),
+        [Output('nearby-transport-bicycle-column', 'children'),
          Output('nearby-bicycle-markers', 'children')],
         [Input('nearby-transport-map', 'viewport'),
          Input('nearby-transport-location-store', 'data')]
@@ -4169,11 +3672,14 @@ def register_transport_callbacks(app):
         Shows bicycle parking within 300m of the selected location.
         
         Args:
+            viewport: Viewport information from map
             location_data: Dictionary containing {'lat': float, 'lon': float} of selected location
         
         Returns:
             HTML Div containing bicycle parking information and markers
         """
+        from callbacks.bicycle_parking_helper import fetch_bicycle_parking_from_api, create_nearby_bicycle_parking_markers
+        
         # Prefer viewport center (so panning/zooming updates nearby results)
         center = None
         if isinstance(viewport, dict):
@@ -4183,8 +3689,73 @@ def register_transport_callbacks(app):
             center_lat, center_lon = center[0], center[1]
         else:
             if not location_data:
-                return html.P(
-                    "Select a location to view nearest bicycle parking",
+                return [
+                    html.H4(
+                        "Nearby 300m Bicycle Parking",
+                        style={
+                            "textAlign": "center",
+                            "marginBottom": "0.625rem",
+                            "color": "#fff",
+                            "fontWeight": "700",
+                            "fontSize": "0.875rem"
+                        }
+                    ),
+                    html.P(
+                        "Select a location to view nearest bicycle parking",
+                        style={
+                            "textAlign": "center",
+                            "padding": "0.9375rem",
+                            "color": "#999",
+                            "fontSize": "0.75rem",
+                            "fontStyle": "italic"
+                        }
+                    )
+                ], []
+
+            # Fallback to stored lat/lon (e.g., from search)
+            try:
+                center_lat = float(location_data.get('lat'))
+                center_lon = float(location_data.get('lon'))
+            except (ValueError, TypeError, KeyError, AttributeError):
+                return [
+                    html.H4(
+                        "Nearby 300m Bicycle Parking",
+                        style={
+                            "textAlign": "center",
+                            "marginBottom": "0.625rem",
+                            "color": "#fff",
+                            "fontWeight": "700",
+                            "fontSize": "0.875rem"
+                        }
+                    ),
+                    html.Div(
+                        "Invalid coordinates",
+                        style={
+                            "padding": "0.625rem",
+                            "color": "#ff6b6b",
+                            "fontSize": "0.75rem",
+                            "textAlign": "center"
+                        }
+                    )
+                ], []
+
+        # Fetch bicycle parking from API within 300m
+        nearby_parking = fetch_bicycle_parking_from_api(center_lat, center_lon, dist_m=300, haversine_func=_haversine_distance_m)
+
+        if not nearby_parking:
+            return [
+                html.H4(
+                    "Nearby 300m Bicycle Parking",
+                    style={
+                        "textAlign": "center",
+                        "marginBottom": "0.625rem",
+                        "color": "#fff",
+                        "fontWeight": "700",
+                        "fontSize": "0.875rem"
+                    }
+                ),
+                html.P(
+                    "No bicycle parking found within 300m",
                     style={
                         "textAlign": "center",
                         "padding": "0.9375rem",
@@ -4192,37 +3763,8 @@ def register_transport_callbacks(app):
                         "fontSize": "0.75rem",
                         "fontStyle": "italic"
                     }
-                ), []
-
-            # Fallback to stored lat/lon (e.g., from search)
-            try:
-                center_lat = float(location_data.get('lat'))
-                center_lon = float(location_data.get('lon'))
-            except (ValueError, TypeError, KeyError, AttributeError):
-                return html.Div(
-                    "Invalid coordinates",
-                    style={
-                        "padding": "0.625rem",
-                        "color": "#ff6b6b",
-                        "fontSize": "0.75rem",
-                        "textAlign": "center"
-                    }
-                ), []
-
-        # Fetch bicycle parking from API within 300m
-        nearby_parking = fetch_bicycle_parking_from_api(center_lat, center_lon, dist_m=300)
-
-        if not nearby_parking:
-            return html.P(
-                "No bicycle parking found within 300m",
-                style={
-                    "textAlign": "center",
-                    "padding": "0.9375rem",
-                    "color": "#999",
-                    "fontSize": "0.75rem",
-                    "fontStyle": "italic"
-                }
-            ), []
+                )
+            ], []
 
         # Create markers for map
         markers = create_nearby_bicycle_parking_markers(nearby_parking)
@@ -4260,7 +3802,7 @@ def register_transport_callbacks(app):
                             style={
                                 "fontSize": "0.75rem",
                                 "color": "#ccc",
-                                "marginBottom": "2px"
+                                "marginBottom": "0.125rem"
                             }
                         ),
                         html.Div(
@@ -4268,7 +3810,7 @@ def register_transport_callbacks(app):
                             style={
                                 "fontSize": "0.75rem",
                                 "color": "#ccc",
-                                "marginBottom": "4px"
+                                "marginBottom": "0.25rem"
                             }
                         ),
                         html.Div(
@@ -4290,12 +3832,25 @@ def register_transport_callbacks(app):
                 )
             )
 
-        # Return all parking items and markers
-        return parking_items, markers
+        # Return parking items with H4 title
+        output = [
+            html.H4(
+                "Nearby 300m Bicycle Parking",
+                style={
+                    "textAlign": "center",
+                    "marginBottom": "0.625rem",
+                    "color": "#fff",
+                    "fontWeight": "700",
+                    "fontSize": "0.875rem"
+                }
+            ),
+            *parking_items
+        ]
+        return output, markers
 
     # Callback for nearby transport page - EV charging points
     @app.callback(
-        [Output('nearby-transport-ev-charging-content', 'children'),
+        [Output('nearby-transport-ev-charging-column', 'children'),
          Output('nearby-ev-charging-markers', 'children')],
         Input('nearby-transport-location-store', 'data')
     )
@@ -4311,45 +3866,81 @@ def register_transport_callbacks(app):
             HTML Div containing EV charging points information and markers
         """
         if not location_data:
-            return html.P(
-                "Select a location to view nearby EV charging points",
-                style={
-                    "textAlign": "center",
-                    "padding": "0.9375rem",
-                    "color": "#999",
-                    "fontSize": "0.75rem",
-                    "fontStyle": "italic"
-                }
-            ), []
+            return [
+                html.H4(
+                    "Nearby EV Charging Points",
+                    style={
+                        "textAlign": "center",
+                        "marginBottom": "0.625rem",
+                        "color": "#fff",
+                        "fontWeight": "700",
+                        "fontSize": "0.875rem"
+                    }
+                ),
+                html.P(
+                    "Select a location to view nearby EV charging points",
+                    style={
+                        "textAlign": "center",
+                        "padding": "0.9375rem",
+                        "color": "#999",
+                        "fontSize": "0.75rem",
+                        "fontStyle": "italic"
+                    }
+                )
+            ], []
 
         try:
             center_lat = float(location_data.get('lat'))
             center_lon = float(location_data.get('lon'))
         except (ValueError, TypeError, KeyError):
-            return html.Div(
-                "Invalid coordinates",
-                style={
-                    "padding": "0.625rem",
-                    "color": "#ff6b6b",
-                    "fontSize": "0.75rem",
-                    "textAlign": "center"
-                }
-            ), []
+            return [
+                html.H4(
+                    "Nearby EV Charging Points",
+                    style={
+                        "textAlign": "center",
+                        "marginBottom": "0.625rem",
+                        "color": "#fff",
+                        "fontWeight": "700",
+                        "fontSize": "0.875rem"
+                    }
+                ),
+                html.Div(
+                    "Invalid coordinates",
+                    style={
+                        "padding": "0.625rem",
+                        "color": "#ff6b6b",
+                        "fontSize": "0.75rem",
+                        "textAlign": "center"
+                    }
+                )
+            ], []
 
         # Get postal code from location_data (extracted from search value)
         postal_code = get_postal_code_from_coords(center_lat, center_lon, location_data)
         
         if not postal_code:
-            return html.P(
-                "Unable to determine postal code for selected location",
-                style={
-                    "textAlign": "center",
-                    "padding": "0.9375rem",
-                    "color": "#999",
-                    "fontSize": "0.75rem",
-                    "fontStyle": "italic"
-                }
-            ), []
+            return [
+                html.H4(
+                    "Nearby EV Charging Points",
+                    style={
+                        "textAlign": "center",
+                        "marginBottom": "0.625rem",
+                        "color": "#fff",
+                        "fontWeight": "700",
+                        "fontSize": "0.875rem"
+                    }
+                ),
+                html.P(
+                    "Unable to determine postal code for selected location",
+                    style={
+                        "textAlign": "center",
+                        "padding": "0.9375rem",
+                        "color": "#999",
+                        "fontSize": "0.75rem",
+                        "fontStyle": "italic"
+                    }
+                )
+            ], []
 
         # Fetch EV charging points using postal code
         print(f"Fetching EV charging points for postal code: {postal_code}")
@@ -4357,44 +3948,80 @@ def register_transport_callbacks(app):
         
         # Ensure ev_data is a dictionary
         if not ev_data or not isinstance(ev_data, dict) or 'value' not in ev_data:
-            return html.P(
-                "No EV charging points found for this postal code",
-                style={
-                    "textAlign": "center",
-                    "padding": "0.9375rem",
-                    "color": "#999",
-                    "fontSize": "0.75rem",
-                    "fontStyle": "italic"
-                }
-            ), []
+            return [
+                html.H4(
+                    "Nearby EV Charging Points",
+                    style={
+                        "textAlign": "center",
+                        "marginBottom": "0.625rem",
+                        "color": "#fff",
+                        "fontWeight": "700",
+                        "fontSize": "0.875rem"
+                    }
+                ),
+                html.P(
+                    "No EV charging points found for this postal code",
+                    style={
+                        "textAlign": "center",
+                        "padding": "0.9375rem",
+                        "color": "#999",
+                        "fontSize": "0.75rem",
+                        "fontStyle": "italic"
+                    }
+                )
+            ], []
 
         value_data = ev_data.get('value', {})
         if not isinstance(value_data, dict):
-            return html.P(
-                "No EV charging points found for this postal code",
-                style={
-                    "textAlign": "center",
-                    "padding": "0.9375rem",
-                    "color": "#999",
-                    "fontSize": "0.75rem",
-                    "fontStyle": "italic"
-                }
-            ), []
+            return [
+                html.H4(
+                    "Nearby EV Charging Points",
+                    style={
+                        "textAlign": "center",
+                        "marginBottom": "0.625rem",
+                        "color": "#fff",
+                        "fontWeight": "700",
+                        "fontSize": "0.875rem"
+                    }
+                ),
+                html.P(
+                    "No EV charging points found for this postal code",
+                    style={
+                        "textAlign": "center",
+                        "padding": "0.9375rem",
+                        "color": "#999",
+                        "fontSize": "0.75rem",
+                        "fontStyle": "italic"
+                    }
+                )
+            ], []
 
         locations = value_data.get('evLocationsData', [])
         
         # Ensure locations is a list
         if not isinstance(locations, list) or not locations:
-            return html.P(
-                "No EV charging points found for this postal code",
-                style={
-                    "textAlign": "center",
-                    "padding": "0.9375rem",
-                    "color": "#999",
-                    "fontSize": "0.75rem",
-                    "fontStyle": "italic"
-                }
-            ), []
+            return [
+                html.H4(
+                    "Nearby EV Charging Points",
+                    style={
+                        "textAlign": "center",
+                        "marginBottom": "0.625rem",
+                        "color": "#fff",
+                        "fontWeight": "700",
+                        "fontSize": "0.875rem"
+                    }
+                ),
+                html.P(
+                    "No EV charging points found for this postal code",
+                    style={
+                        "textAlign": "center",
+                        "padding": "0.9375rem",
+                        "color": "#999",
+                        "fontSize": "0.75rem",
+                        "fontStyle": "italic"
+                    }
+                )
+            ], []
 
         # Create markers for map
         markers = create_ev_charging_markers(ev_data)
@@ -4472,7 +4099,20 @@ def register_transport_callbacks(app):
             )
 
         # Return all charging items and markers
-        return charging_items, markers
+        # Return charging items with H4 title
+        return [
+            html.H4(
+                "Nearby EV Charging Points",
+                style={
+                    "textAlign": "center",
+                    "marginBottom": "0.625rem",
+                    "color": "#fff",
+                    "fontWeight": "700",
+                    "fontSize": "0.875rem"
+                }
+            ),
+            *charging_items
+        ], markers
 
     # VMS (Variable Message Signs) callbacks
     @app.callback(

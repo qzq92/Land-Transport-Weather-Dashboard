@@ -235,12 +235,24 @@ def register_mrt_callbacks(app):
                 )
             )
         
-        # Return all station items
-        return station_items
+        # Return all station items with H4 title
+        return [
+            html.H4(
+                "Nearest MRT (1KM radius) with crowd level",
+                style={
+                    "textAlign": "center",
+                    "marginBottom": "0.625rem",
+                    "color": "#fff",
+                    "fontWeight": "700",
+                    "fontSize": "0.875rem"
+                }
+            ),
+            *station_items
+        ]
 
     # Callback for nearby transport page
     @app.callback(
-        Output('nearby-transport-mrt-content', 'children'),
+        Output('nearby-transport-mrt-column', 'children'),
         Input('nearby-transport-search', 'value')
     )
     def update_nearby_transport_mrt_content(search_value):
@@ -254,16 +266,28 @@ def register_mrt_callbacks(app):
             HTML Div containing nearest MRT/LRT stations within 1000m
         """
         if not search_value:
-            return html.P(
-                "Select a location to view nearest MRT stations",
-                style={
-                    "textAlign": "center",
-                    "color": "#999",
-                    "fontSize": "12px",
-                    "fontStyle": "italic",
-                    "padding": "15px"
-                }
-            )
+            return [
+                html.H4(
+                    "Nearest MRT (1KM radius) with crowd level",
+                    style={
+                        "textAlign": "center",
+                        "marginBottom": "0.625rem",
+                        "color": "#fff",
+                        "fontWeight": "700",
+                        "fontSize": "0.875rem"
+                    }
+                ),
+                html.P(
+                    "Select a location to view nearest MRT stations",
+                    style={
+                        "textAlign": "center",
+                        "color": "#999",
+                        "fontSize": "0.75rem",
+                        "fontStyle": "italic",
+                        "padding": "0.9375rem"
+                    }
+                )
+            ]
         
         try:
             # Parse the search value to get coordinates
@@ -271,30 +295,54 @@ def register_mrt_callbacks(app):
             lat = float(parts[0])
             lon = float(parts[1])
         except (ValueError, IndexError, TypeError):
-            return html.P(
-                "Invalid location coordinates",
-                style={
-                    "textAlign": "center",
-                    "color": "#ff6b6b",
-                    "fontSize": "12px",
-                    "padding": "15px"
-                }
-            )
+            return [
+                html.H4(
+                    "Nearest MRT (1KM radius) with crowd level",
+                    style={
+                        "textAlign": "center",
+                        "marginBottom": "0.625rem",
+                        "color": "#fff",
+                        "fontWeight": "700",
+                        "fontSize": "0.875rem"
+                    }
+                ),
+                html.P(
+                    "Invalid location coordinates",
+                    style={
+                        "textAlign": "center",
+                        "color": "#ff6b6b",
+                        "fontSize": "0.75rem",
+                        "padding": "0.9375rem"
+                    }
+                )
+            ]
         
         # Fetch nearby MRT stations within 1000m
         stations = fetch_nearby_mrt_stations(lat, lon, radius_m=1000)
         
         if not stations:
-            return html.P(
-                "No MRT/LRT stations found within specified radius",
-                style={
-                    "textAlign": "center",
-                    "color": "#999",
-                    "fontSize": "12px",
-                    "fontStyle": "italic",
-                    "padding": "15px"
-                }
-            )
+            return [
+                html.H4(
+                    "Nearest MRT (1KM radius) with crowd level",
+                    style={
+                        "textAlign": "center",
+                        "marginBottom": "0.625rem",
+                        "color": "#fff",
+                        "fontWeight": "700",
+                        "fontSize": "0.875rem"
+                    }
+                ),
+                html.P(
+                    "No MRT/LRT stations found within specified radius",
+                    style={
+                        "textAlign": "center",
+                        "color": "#999",
+                        "fontSize": "0.75rem",
+                        "fontStyle": "italic",
+                        "padding": "0.9375rem"
+                    }
+                )
+            ]
         
         # Fetch crowd data for all stations
         crowd_data = fetch_all_station_crowd_data()
@@ -387,6 +435,18 @@ def register_mrt_callbacks(app):
                 )
             )
         
-        # Return all station items
-        return station_items
+        # Return all station items with H4 title
+        return [
+            html.H4(
+                "Nearest MRT (1KM radius) with crowd level",
+                style={
+                    "textAlign": "center",
+                    "marginBottom": "0.625rem",
+                    "color": "#fff",
+                    "fontWeight": "700",
+                    "fontSize": "0.875rem"
+                }
+            ),
+            *station_items
+        ]
 
