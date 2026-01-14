@@ -16,7 +16,7 @@ from utils.map_utils import (
 def nearby_transport_page():
     """
     Create the Nearby Transportation and Parking Info page layout.
-    Features: Nearby bus stops, MRT/LRT stations, taxi stands, carparks, and bicycle parking.
+    Features: Nearby bus stops, MRT/LRT stations, taxi stands, carparks, bicycle parking, and EV charging points.
 
     Returns:
         HTML Div containing the Nearby Transportation and Parking Info section
@@ -91,38 +91,20 @@ def nearby_transport_page():
                                             "backgroundColor": "#2c3e50",
                                             "borderRadius": "0.3125rem",
                                             "padding": "0.9375rem",
-                                            "minHeight": "9.375rem"
+                                            "minHeight": "9.375rem",
+                                            "overflowY": "auto",
+                                            "overflowX": "hidden"
                                         },
                                         children=[
-                                            html.H4(
-                                                "Top 5 Nearest HDB Carparks",
+                                            html.P(
+                                                "Select a location to view nearest carparks",
                                                 style={
                                                     "textAlign": "center",
-                                                    "marginBottom": "0.625rem",
-                                                    "color": "#fff",
-                                                    "fontWeight": "700",
-                                                    "fontSize": "0.875rem"
+                                                    "color": "#999",
+                                                    "fontSize": "0.75rem",
+                                                    "fontStyle": "italic",
+                                                    "padding": "0.9375rem"
                                                 }
-                                            ),
-                                            html.Div(
-                                                id="nearby-transport-carpark-content",
-                                                style={
-                                                    "overflowY": "auto",
-                                                    "overflowX": "hidden",
-                                                    "maxHeight": "calc(100% - 2.5rem)"
-                                                },
-                                                children=[
-                                                    html.P(
-                                                        "Select a location to view nearest carparks",
-                                                        style={
-                                                            "textAlign": "center",
-                                                            "color": "#999",
-                                                            "fontSize": "0.75rem",
-                                                            "fontStyle": "italic",
-                                                            "padding": "0.9375rem"
-                                                        }
-                                                    )
-                                                ]
                                             )
                                         ]
                                     ),
@@ -134,38 +116,20 @@ def nearby_transport_page():
                                             "backgroundColor": "#2c3e50",
                                             "borderRadius": "0.3125rem",
                                             "padding": "0.9375rem",
-                                            "minHeight": "9.375rem"
+                                            "minHeight": "9.375rem",
+                                            "overflowY": "auto",
+                                            "overflowX": "hidden"
                                         },
                                         children=[
-                                            html.H4(
-                                                "Top 5 Nearest Bus Stops",
+                                            html.P(
+                                                "Select a location to view nearest bus stops",
                                                 style={
                                                     "textAlign": "center",
-                                                    "marginBottom": "0.625rem",
-                                                    "color": "#fff",
-                                                    "fontWeight": "700",
-                                                    "fontSize": "0.875rem"
+                                                    "color": "#999",
+                                                    "fontSize": "0.75rem",
+                                                    "fontStyle": "italic",
+                                                    "padding": "0.9375rem"
                                                 }
-                                            ),
-                                            html.Div(
-                                                id="nearby-transport-bus-stop-content",
-                                                style={
-                                                    "overflowY": "auto",
-                                                    "overflowX": "hidden",
-                                                    "maxHeight": "calc(100% - 2.5rem)"
-                                                },
-                                                children=[
-                                                    html.P(
-                                                        "Select a location to view nearest bus stops",
-                                                        style={
-                                                            "textAlign": "center",
-                                                            "color": "#999",
-                                                            "fontSize": "0.75rem",
-                                                            "fontStyle": "italic",
-                                                            "padding": "0.9375rem"
-                                                        }
-                                                    )
-                                                ]
                                             )
                                         ]
                                     ),
@@ -177,38 +141,20 @@ def nearby_transport_page():
                                             "backgroundColor": "#2c3e50",
                                             "borderRadius": "0.3125rem",
                                             "padding": "0.9375rem",
-                                            "minHeight": "9.375rem"
+                                            "minHeight": "9.375rem",
+                                            "overflowY": "auto",
+                                            "overflowX": "hidden"
                                         },
                                         children=[
-                                            html.H4(
-                                                "Nearby EV Charging Points",
+                                            html.P(
+                                                "Select a location to view nearby EV charging points",
                                                 style={
                                                     "textAlign": "center",
-                                                    "marginBottom": "0.625rem",
-                                                    "color": "#fff",
-                                                    "fontWeight": "700",
-                                                    "fontSize": "0.875rem"
+                                                    "color": "#999",
+                                                    "fontSize": "0.75rem",
+                                                    "fontStyle": "italic",
+                                                    "padding": "0.9375rem"
                                                 }
-                                            ),
-                                            html.Div(
-                                                id="nearby-transport-ev-charging-content",
-                                                style={
-                                                    "overflowY": "auto",
-                                                    "overflowX": "hidden",
-                                                    "maxHeight": "calc(100% - 2.5rem)"
-                                                },
-                                                children=[
-                                                    html.P(
-                                                        "Select a location to view nearby EV charging points",
-                                                        style={
-                                                            "textAlign": "center",
-                                                            "color": "#999",
-                                                            "fontSize": "0.75rem",
-                                                            "fontStyle": "italic",
-                                                            "padding": "0.9375rem"
-                                                        }
-                                                    )
-                                                ]
                                             )
                                         ]
                                     ),
@@ -220,71 +166,59 @@ def nearby_transport_page():
                                             "backgroundColor": "#2c3e50",
                                             "borderRadius": "0.3125rem",
                                             "padding": "0.9375rem",
-                                            "minHeight": "9.375rem"
+                                            "minHeight": "9.375rem",
+                                            "overflowY": "auto",
+                                            "overflowX": "hidden"
                                         },
                                         children=[
-                                            html.H4(
-                                                "Nearest MRT (1KM radius) with crowd level",
+                                            html.P(
+                                                "Select a location to view nearest MRT stations",
                                                 style={
                                                     "textAlign": "center",
-                                                    "marginBottom": "0.625rem",
-                                                    "color": "#fff",
-                                                    "fontWeight": "700",
-                                                    "fontSize": "0.875rem"
+                                                    "color": "#999",
+                                                    "fontSize": "0.75rem",
+                                                    "fontStyle": "italic",
+                                                    "padding": "0.9375rem"
                                                 }
-                                            ),
-                                            html.Div(
-                                                id="nearby-transport-mrt-content",
-                                                style={
-                                                    "overflowY": "auto",
-                                                    "overflowX": "hidden",
-                                                    "maxHeight": "calc(100% - 2.5rem)"
-                                                },
-                                                children=[
-                                                    html.P(
-                                                        "Select a location to view nearest MRT stations",
-                                                        style={
-                                                            "textAlign": "center",
-                                                            "color": "#999",
-                                                            "fontSize": "0.75rem",
-                                                            "fontStyle": "italic",
-                                                            "padding": "0.9375rem"
-                                                        }
-                                                    )
-                                                ]
                                             )
                                         ]
                                     ),
-                                ]
-                            ),
-                            # Taxi Stands column (outside nearby facilities)
-                            html.Div(
-                                id="nearby-transport-taxi-stand-column",
-                                style={
-                                    "width": "100%",
-                                    "backgroundColor": "#2c3e50",
-                                    "borderRadius": "0.3125rem",
-                                    "padding": "0.9375rem",
-                                    "minHeight": "9.375rem",
-                                    "marginTop": "0.625rem"
-                                },
-                                children=[
-                                    html.H4(
-                                        "Nearby 300m Taxi Stands",
-                                        style={
-                                            "textAlign": "center",
-                                            "marginBottom": "0.625rem",
-                                            "color": "#fff",
-                                            "fontWeight": "700",
-                                            "fontSize": "0.875rem"
-                                        }
-                                    ),
+                                    # Row 5: Bicycle Parking
                                     html.Div(
-                                        id="nearby-transport-taxi-stand-content",
+                                        id="nearby-transport-bicycle-column",
                                         style={
+                                            "width": "100%",
+                                            "backgroundColor": "#2c3e50",
+                                            "borderRadius": "0.3125rem",
+                                            "padding": "0.9375rem",
+                                            "minHeight": "9.375rem",
                                             "overflowY": "auto",
-                                            "overflowX": "hidden",
-                                            "maxHeight": "calc(100% - 2.5rem)"
+                                            "overflowX": "hidden"
+                                        },
+                                        children=[
+                                            html.P(
+                                                "Select a location to view nearby bicycle parking",
+                                                style={
+                                                    "textAlign": "center",
+                                                    "color": "#999",
+                                                    "fontSize": "0.75rem",
+                                                    "fontStyle": "italic",
+                                                    "padding": "0.9375rem"
+                                                }
+                                            )
+                                        ]
+                                    ),
+                                    # Row 6: Taxi Stands
+                                    html.Div(
+                                        id="nearby-transport-taxi-stand-column",
+                                        style={
+                                            "width": "100%",
+                                            "backgroundColor": "#2c3e50",
+                                            "borderRadius": "0.3125rem",
+                                            "padding": "0.9375rem",
+                                            "minHeight": "9.375rem",
+                                            "overflowY": "auto",
+                                            "overflowX": "hidden"
                                         },
                                         children=[
                                             html.P(
@@ -298,51 +232,7 @@ def nearby_transport_page():
                                                 }
                                             )
                                         ]
-                                    )
-                                ]
-                            ),
-                            # Bicycle Parking column (outside nearby facilities)
-                            html.Div(
-                                id="nearby-transport-bicycle-column",
-                                style={
-                                    "width": "100%",
-                                    "backgroundColor": "#2c3e50",
-                                    "borderRadius": "0.3125rem",
-                                    "padding": "0.9375rem",
-                                    "minHeight": "9.375rem",
-                                    "marginTop": "0.625rem"
-                                },
-                                children=[
-                                    html.H4(
-                                        "Nearby 300m Bicycle Parking Spots",
-                                        style={
-                                            "textAlign": "center",
-                                            "marginBottom": "0.625rem",
-                                            "color": "#fff",
-                                            "fontWeight": "700",
-                                            "fontSize": "0.875rem"
-                                        }
                                     ),
-                                    html.Div(
-                                        id="nearby-transport-bicycle-content",
-                                        style={
-                                            "overflowY": "auto",
-                                            "overflowX": "hidden",
-                                            "maxHeight": "calc(100% - 2.5rem)"
-                                        },
-                                        children=[
-                                            html.P(
-                                                "Select a location to view nearest bicycle parking",
-                                                style={
-                                                    "textAlign": "center",
-                                                    "color": "#999",
-                                                    "fontSize": "0.75rem",
-                                                    "fontStyle": "italic",
-                                                    "padding": "0.9375rem"
-                                                }
-                                            )
-                                        ]
-                                    )
                                 ]
                             ),
                         ]
@@ -418,6 +308,249 @@ def nearby_transport_page():
                                         zoomControl=True,
                                         dragging=True,
                                         scrollWheelZoom=True,
+                                    ),
+                                    # Map Legend
+                                    html.Div(
+                                        id="nearby-transport-legend",
+                                        style={
+                                            "position": "absolute",
+                                            "bottom": "0.625rem",
+                                            "right": "0.625rem",
+                                            "backgroundColor": "rgba(26, 42, 58, 0.9)",
+                                            "borderRadius": "0.5rem",
+                                            "padding": "0.625rem",
+                                            "zIndex": "1000",
+                                            "boxShadow": "0 0.125rem 0.5rem rgba(0, 0, 0, 0.3)",
+                                            "minWidth": "12.5rem",
+                                        },
+                                        children=[
+                                            html.Div(
+                                                style={
+                                                    "fontSize": "0.75rem",
+                                                    "fontWeight": "600",
+                                                    "color": "#fff",
+                                                    "marginBottom": "0.5rem",
+                                                    "borderBottom": "0.0625rem solid #4a5a6a",
+                                                    "paddingBottom": "0.25rem",
+                                                },
+                                                children="Map Legend"
+                                            ),
+                                            # Bus Stop
+                                            html.Div(
+                                                style={
+                                                    "display": "flex",
+                                                    "alignItems": "center",
+                                                    "marginBottom": "0.375rem",
+                                                },
+                                                children=[
+                                                    html.Div(
+                                                        style={
+                                                            "width": "1.5rem",
+                                                            "height": "1.5rem",
+                                                            "borderRadius": "50%",
+                                                            "backgroundColor": "#4CAF50",
+                                                            "border": "0.1875rem solid #fff",
+                                                            "display": "flex",
+                                                            "alignItems": "center",
+                                                            "justifyContent": "center",
+                                                            "marginRight": "0.5rem",
+                                                            "fontSize": "0.75rem",
+                                                        },
+                                                        children="🚌"
+                                                    ),
+                                                    html.Div(
+                                                        style={
+                                                            "display": "flex",
+                                                            "alignItems": "center",
+                                                        },
+                                                        children=[
+                                                            html.Span(
+                                                                "A",
+                                                                style={
+                                                                    "display": "inline-block",
+                                                                    "width": "0.75rem",
+                                                                    "height": "0.75rem",
+                                                                    "lineHeight": "0.75rem",
+                                                                    "textAlign": "center",
+                                                                    "backgroundColor": "#FF5722",
+                                                                    "color": "#fff",
+                                                                    "borderRadius": "50%",
+                                                                    "fontSize": "0.5rem",
+                                                                    "fontWeight": "bold",
+                                                                    "marginRight": "0.25rem",
+                                                                }
+                                                            ),
+                                                            html.Span(
+                                                                "Bus Stop",
+                                                                style={
+                                                                    "color": "#fff",
+                                                                    "fontSize": "0.6875rem",
+                                                                }
+                                                            ),
+                                                        ]
+                                                    ),
+                                                ]
+                                            ),
+                                            # Taxi Stand
+                                            html.Div(
+                                                style={
+                                                    "display": "flex",
+                                                    "alignItems": "center",
+                                                    "marginBottom": "0.375rem",
+                                                },
+                                                children=[
+                                                    html.Div(
+                                                        style={
+                                                            "width": "1.5rem",
+                                                            "height": "1.5rem",
+                                                            "borderRadius": "50%",
+                                                            "backgroundColor": "#FFA500",
+                                                            "border": "0.1875rem solid #fff",
+                                                            "display": "flex",
+                                                            "alignItems": "center",
+                                                            "justifyContent": "center",
+                                                            "marginRight": "0.5rem",
+                                                            "fontSize": "0.75rem",
+                                                        },
+                                                        children="🚕"
+                                                    ),
+                                                    html.Div(
+                                                        style={
+                                                            "display": "flex",
+                                                            "alignItems": "center",
+                                                        },
+                                                        children=[
+                                                            html.Span(
+                                                                "A",
+                                                                style={
+                                                                    "display": "inline-block",
+                                                                    "width": "0.75rem",
+                                                                    "height": "0.75rem",
+                                                                    "lineHeight": "0.75rem",
+                                                                    "textAlign": "center",
+                                                                    "backgroundColor": "#FF5722",
+                                                                    "color": "#fff",
+                                                                    "borderRadius": "50%",
+                                                                    "fontSize": "0.5rem",
+                                                                    "fontWeight": "bold",
+                                                                    "marginRight": "0.25rem",
+                                                                }
+                                                            ),
+                                                            html.Span(
+                                                                "Taxi Stand",
+                                                                style={
+                                                                    "color": "#fff",
+                                                                    "fontSize": "0.6875rem",
+                                                                }
+                                                            ),
+                                                        ]
+                                                    ),
+                                                ]
+                                            ),
+                                            # MRT Station
+                                            html.Div(
+                                                style={
+                                                    "display": "flex",
+                                                    "alignItems": "center",
+                                                    "marginBottom": "0.375rem",
+                                                },
+                                                children=[
+                                                    html.Div(
+                                                        style={
+                                                            "width": "0.75rem",
+                                                            "height": "0.75rem",
+                                                            "borderRadius": "50%",
+                                                            "backgroundColor": "#4169E1",
+                                                            "marginRight": "0.5rem",
+                                                        }
+                                                    ),
+                                                    html.Span(
+                                                        "MRT/LRT Station",
+                                                        style={
+                                                            "color": "#fff",
+                                                            "fontSize": "0.6875rem",
+                                                        }
+                                                    ),
+                                                ]
+                                            ),
+                                            # Carpark
+                                            html.Div(
+                                                style={
+                                                    "display": "flex",
+                                                    "alignItems": "center",
+                                                    "marginBottom": "0.375rem",
+                                                },
+                                                children=[
+                                                    html.Div(
+                                                        style={
+                                                            "width": "0.75rem",
+                                                            "height": "0.75rem",
+                                                            "borderRadius": "50%",
+                                                            "backgroundColor": "#60a5fa",
+                                                            "marginRight": "0.5rem",
+                                                        }
+                                                    ),
+                                                    html.Span(
+                                                        "Carpark",
+                                                        style={
+                                                            "color": "#fff",
+                                                            "fontSize": "0.6875rem",
+                                                        }
+                                                    ),
+                                                ]
+                                            ),
+                                            # Bicycle Parking
+                                            html.Div(
+                                                style={
+                                                    "display": "flex",
+                                                    "alignItems": "center",
+                                                    "marginBottom": "0.375rem",
+                                                },
+                                                children=[
+                                                    html.Div(
+                                                        style={
+                                                            "width": "0.75rem",
+                                                            "height": "0.75rem",
+                                                            "borderRadius": "50%",
+                                                            "backgroundColor": "#9C27B0",
+                                                            "marginRight": "0.5rem",
+                                                        }
+                                                    ),
+                                                    html.Span(
+                                                        "Bicycle Parking",
+                                                        style={
+                                                            "color": "#fff",
+                                                            "fontSize": "0.6875rem",
+                                                        }
+                                                    ),
+                                                ]
+                                            ),
+                                            # EV Charging Point
+                                            html.Div(
+                                                style={
+                                                    "display": "flex",
+                                                    "alignItems": "center",
+                                                },
+                                                children=[
+                                                    html.Div(
+                                                        style={
+                                                            "width": "0.75rem",
+                                                            "height": "0.75rem",
+                                                            "borderRadius": "50%",
+                                                            "backgroundColor": "#81C784",
+                                                            "marginRight": "0.5rem",
+                                                        }
+                                                    ),
+                                                    html.Span(
+                                                        "EV Charging Point",
+                                                        style={
+                                                            "color": "#fff",
+                                                            "fontSize": "0.6875rem",
+                                                        }
+                                                    ),
+                                                ]
+                                            ),
+                                        ]
                                     ),
                                 ]
                             ),
