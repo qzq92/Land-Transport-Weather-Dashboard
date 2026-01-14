@@ -839,6 +839,17 @@ def register_carpark_callbacks(app):
                     'color': status_color
                 })
 
+            # Calculate total remaining lots
+            total_lots = sum(avail_info['available'] for avail_info in carpark_data['availability'])
+            
+            # Determine color for total lots based on availability
+            if total_lots > 20:
+                total_lots_color = "#4ade80"
+            elif total_lots > 0:
+                total_lots_color = "#fbbf24"
+            else:
+                total_lots_color = "#ef4444"
+
             # Build availability display for card
             availability_elements = []
             for avail_info in carpark_data['availability']:
@@ -902,6 +913,22 @@ def register_carpark_callbacks(app):
                                     "marginBottom": "0.1875rem",
                                     "display": "flex",
                                     "alignItems": "center"
+                                }
+                            ),
+                            # Remaining lots count
+                            html.Div(
+                                [
+                                    html.Span(
+                                        f"{total_lots} lots remaining",
+                                        style={
+                                            "fontSize": "0.625rem",
+                                            "color": total_lots_color,
+                                            "fontWeight": "600",
+                                        }
+                                    ),
+                                ],
+                                style={
+                                    "marginBottom": "0.1875rem",
                                 }
                             ),
                             # Address
