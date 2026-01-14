@@ -8,12 +8,13 @@ References:
 """
 import re
 import os
+import math
 import base64
 import pandas as pd
 from datetime import datetime
 from typing import Optional, Dict, List, Any, Tuple
 from concurrent.futures import Future
-from dash import Input, Output, State, html, dependencies, callback_context
+from dash import Input, Output, State, html, dependencies, callback_context, no_update, ALL
 import dash_leaflet as dl
 from utils.async_fetcher import fetch_url, fetch_async, fetch_url_2min_cached
 from utils.data_download_helper import fetch_erp_gantry_data
@@ -29,12 +30,16 @@ BICYCLE_PARKING_URL = "https://datamall2.mytransport.sg/ltaodataservice/BicycleP
 VMS_URL = "https://datamall2.mytransport.sg/ltaodataservice/VMS"
 EV_CHARGING_URL = "https://datamall2.mytransport.sg/ltaodataservice/EVChargingPoints"
 BUS_STOPS_URL = "https://datamall2.mytransport.sg/ltaodataservice/BusStops"
+BUS_ROUTES_URL = "https://datamall2.mytransport.sg/ltaodataservice/BusRoutes"
 BUS_ARRIVAL_URL = "https://datamall2.mytransport.sg/ltaodataservice/v3/BusArrival"
 
 # In-memory cache for static road infrastructure data
 # These represent physical infrastructure that rarely changes
 _road_infra_cache: Dict[str, Optional[Any]] = {
     'bus_stops': None,
+    'bus_stops_bucket': None,  # YYYYMM bucket for monthly refresh
+    'bus_routes': None,
+    'bus_routes_bucket': None,  # YYYYMM bucket for monthly refresh
     'vms': None,
     'taxi_stands': None,
     'bicycle_parking': None,
@@ -52,6 +57,9 @@ def clear_road_infra_cache():
     global _road_infra_cache
     _road_infra_cache = {
         'bus_stops': None,
+        'bus_stops_bucket': None,
+        'bus_routes': None,
+        'bus_routes_bucket': None,
         'vms': None,
         'taxi_stands': None,
         'bicycle_parking': None,
@@ -1065,7 +1073,7 @@ def fetch_vms_data_async() -> Optional[Future]:
 def fetch_bus_stops_data() -> Optional[Dict[str, Any]]:
     """
     Fetch all bus stops data from LTA DataMall API with optimized parallel pagination.
-    Uses in-memory cache since bus stops are static infrastructure.
+    Uses in-memory cache with monthly refresh since bus stops are static infrastructure.
     Strategy:
     1. First fetch 5000 records (10 pages) in parallel (skip=0, 500, 1000, ..., 4500)
     2. Check if last page returned full 500 records
@@ -1076,8 +1084,14 @@ def fetch_bus_stops_data() -> Optional[Dict[str, Any]]:
     """
     global _road_infra_cache
     
-    # Return cached data if available
-    if _road_infra_cache['bus_stops'] is not None:
+    # Monthly cache bucket (YYYYMM) - bus stops update monthly
+    current_bucket = datetime.now().year * 100 + datetime.now().month
+    
+    # Return cached data if available and still within the same month
+    if (
+        _road_infra_cache['bus_stops'] is not None
+        and _road_infra_cache.get('bus_stops_bucket') == current_bucket
+    ):
         return _road_infra_cache['bus_stops']
     
     # If not cached, proceed with fetching
@@ -1211,12 +1225,144 @@ def fetch_bus_stops_data() -> Optional[Dict[str, Any]]:
     # Return in the same format as the API response
     result = {'value': all_bus_stops}
     
-    # Cache the result
+    # Cache the result with monthly bucket
     if result:
         _road_infra_cache['bus_stops'] = result
-        print("Bus stops data cached in memory")
+        _road_infra_cache['bus_stops_bucket'] = current_bucket
+        print(f"Bus stops data cached in memory: {len(all_bus_stops)} stops (bucket: {current_bucket})")
     
     return result
+
+
+def fetch_bus_routes_data() -> Optional[Dict[str, Any]]:
+    """
+    Fetch all bus routes data from LTA DataMall API with optimized parallel pagination.
+    Uses in-memory cache with monthly refresh since bus routes are static infrastructure.
+    
+    Returns:
+        Dictionary containing all bus routes data with combined 'value' list, or None if error
+    """
+    global _road_infra_cache
+    
+    # Monthly cache bucket (YYYYMM) - bus routes update monthly
+    current_bucket = datetime.now().year * 100 + datetime.now().month
+    
+    # Return cached data if available and still within the same month
+    if (
+        _road_infra_cache['bus_routes'] is not None
+        and _road_infra_cache.get('bus_routes_bucket') == current_bucket
+    ):
+        return _road_infra_cache['bus_routes']
+    
+    # If not cached, proceed with fetching
+    api_key = os.getenv("LTA_API_KEY")
+    
+    if not api_key:
+        print("Warning: LTA_API_KEY not found in environment variables")
+        return None
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "AccountKey": api_key,
+        "Content-Type": "application/json"
+    }
+    
+    from utils.async_fetcher import _executor, fetch_url
+    from concurrent.futures import as_completed
+    
+    all_bus_routes = []
+    page_size = 500
+    batch_size = 5000
+    max_skip = 40000  # Safety limit
+    
+    current_skip = 0
+    while current_skip < max_skip:
+        print(f"Fetching bus routes batch starting at skip={current_skip}...")
+        skip_values = list(range(current_skip, min(current_skip + batch_size, max_skip), page_size))
+        
+        # Create futures for this batch
+        futures = {
+            _executor.submit(fetch_url, f"{BUS_ROUTES_URL}?$skip={skip}" if skip > 0 else BUS_ROUTES_URL, headers): skip
+            for skip in skip_values
+        }
+        
+        batch_results = {}
+        for future in as_completed(futures):
+            skip = futures[future]
+            try:
+                page_data = future.result()
+                if page_data and 'value' in page_data:
+                    batch_results[skip] = page_data.get('value', [])
+                else:
+                    batch_results[skip] = []
+            except Exception as e:
+                print(f"Error fetching bus routes (skip={skip}): {e}")
+                batch_results[skip] = []
+        
+        # Combine results from this batch in order and check for end of data
+        reached_end = False
+        for skip in sorted(skip_values):
+            data = batch_results.get(skip, [])
+            all_bus_routes.extend(data)
+            if len(data) < page_size:
+                reached_end = True
+                break
+        
+        if reached_end:
+            break
+            
+        current_skip += batch_size
+        
+    print(f"Total bus route segments fetched: {len(all_bus_routes)}")
+    
+    # Return in the same format as the API response
+    result = {'value': all_bus_routes}
+    
+    # Cache the result with monthly bucket
+    if result:
+        _road_infra_cache['bus_routes'] = result
+        _road_infra_cache['bus_routes_bucket'] = current_bucket
+        print(f"Bus routes data cached in memory: {len(all_bus_routes)} segments (bucket: {current_bucket})")
+    
+    return result
+
+
+def fetch_bus_routes_data_async() -> Optional[Future]:
+    """
+    Fetch all bus routes data asynchronously (returns Future).
+    Call .result() to get the data when needed.
+    
+    Returns:
+        Future object that will contain all bus routes data, or None if error
+    """
+    from utils.async_fetcher import _executor
+    
+    # Submit the synchronous function to thread pool
+    return _executor.submit(fetch_bus_routes_data)
+
+
+def get_bus_services_count() -> int:
+    """
+    Get count of unique bus services from bus routes data.
+    
+    Returns:
+        Number of unique bus services
+    """
+    routes_data = fetch_bus_routes_data()
+    
+    if not routes_data or 'value' not in routes_data:
+        return 0
+    
+    routes = routes_data.get('value', [])
+    
+    # Extract unique service numbers
+    service_numbers = set()
+    for route in routes:
+        service_no = route.get('ServiceNo', '')
+        if service_no:
+            service_numbers.add(service_no)
+    
+    return len(service_numbers)
 
 
 def create_bus_stops_markers(bus_stops_data: Optional[Dict[str, Any]]) -> List[dl.DivMarker]:
@@ -1247,13 +1393,8 @@ def create_bus_stops_markers(bus_stops_data: Optional[Dict[str, Any]]) -> List[d
             if latitude == 0 or longitude == 0:
                 continue
             
-            # Create tooltip with basic bus stop information
-            tooltip_text = (
-                f"• Bus Stop Code: {bus_stop_code}\n"
-                f"• Road Name: {road_name}\n"
-                f"• Description: {description}\n\n"
-                f"💡 Click to show bus services and arrival time"
-            )
+            # Create tooltip with generic message
+            tooltip_text = "Click to show more details of this bus stop"
             
             marker_id = f"bus-stop-marker-{bus_stop_code}"
             
@@ -1276,12 +1417,7 @@ def create_bus_stops_markers(bus_stops_data: Optional[Dict[str, Any]]) -> List[d
                         'iconAnchor': [5, 5],
                     },
                     children=[
-                        dl.Tooltip(
-                            html.Pre(
-                                tooltip_text,
-                                style={"margin": "0", "fontFamily": "inherit", "whiteSpace": "pre-wrap"}
-                            )
-                        ),
+                        dl.Tooltip(tooltip_text),
                         html.Button(
                             id={"type": "bus-stop-marker-btn", "index": bus_stop_code},
                             n_clicks=0,
@@ -1305,6 +1441,172 @@ def create_bus_stops_markers(bus_stops_data: Optional[Dict[str, Any]]) -> List[d
             continue
     
     return markers
+
+
+def calculate_bus_stop_viewport_bounds(center_lat: float, center_lon: float, zoom: int) -> Dict[str, float]:
+    """
+    Calculate viewport bounds based on center and zoom level.
+    
+    Args:
+        center_lat: Latitude of viewport center
+        center_lon: Longitude of viewport center
+        zoom: Current zoom level
+    
+    Returns:
+        Dictionary with 'north', 'south', 'east', 'west' bounds
+    """
+    # Approximate viewport size in degrees
+    # At zoom level z, the world is 256 * 2^z pixels wide
+    viewport_width_pixels = 800
+    viewport_height_pixels = 600
+    
+    # Degrees per pixel at this zoom level (at equator)
+    degrees_per_pixel = 360 / (256 * (2 ** zoom))
+    
+    # Calculate lat/lon offsets (rough approximation)
+    lat_offset = (viewport_height_pixels / 2) * degrees_per_pixel
+    lon_offset = (viewport_width_pixels / 2) * degrees_per_pixel / math.cos(math.radians(center_lat))
+    
+    return {
+        'north': center_lat + lat_offset,
+        'south': center_lat - lat_offset,
+        'east': center_lon + lon_offset,
+        'west': center_lon - lon_offset
+    }
+
+
+def filter_bus_stops_by_viewport(
+    bus_stops_data: Optional[Dict[str, Any]], 
+    center_lat: float, 
+    center_lon: float, 
+    zoom: int
+) -> List[Dict[str, Any]]:
+    """
+    Filter bus stops data by viewport bounds.
+    
+    Args:
+        bus_stops_data: Dictionary containing bus stops data
+        center_lat: Latitude of viewport center
+        center_lon: Longitude of viewport center
+        zoom: Current zoom level
+    
+    Returns:
+        List of filtered bus stops within viewport
+    """
+    if not bus_stops_data or 'value' not in bus_stops_data:
+        return []
+    
+    bus_stops = bus_stops_data.get('value', [])
+    bounds = calculate_bus_stop_viewport_bounds(center_lat, center_lon, zoom)
+    
+    filtered_stops = []
+    for bus_stop in bus_stops:
+        try:
+            lat = float(bus_stop.get('Latitude', 0))
+            lon = float(bus_stop.get('Longitude', 0))
+            
+            if lat == 0 or lon == 0:
+                continue
+            
+            # Check if point is within viewport
+            if (bounds['south'] <= lat <= bounds['north'] and 
+                bounds['west'] <= lon <= bounds['east']):
+                filtered_stops.append(bus_stop)
+        except (ValueError, TypeError):
+            continue
+    
+    return filtered_stops
+
+
+def create_bus_stops_circle_markers(bus_stops_data: Optional[Dict[str, Any]]) -> List[dl.CircleMarker]:
+    """
+    Create simple CircleMarker components for bus stop locations.
+    Lightweight markers for better performance when zoomed in.
+    Click detection is handled separately via map click events.
+    
+    Args:
+        bus_stops_data: Dictionary containing bus stops response from LTA API
+    
+    Returns:
+        List of dl.CircleMarker components
+    """
+    markers = []
+    
+    if not bus_stops_data or 'value' not in bus_stops_data:
+        return markers
+    
+    bus_stops = bus_stops_data.get('value', [])
+    
+    for bus_stop in bus_stops:
+        try:
+            latitude = float(bus_stop.get('Latitude', 0))
+            longitude = float(bus_stop.get('Longitude', 0))
+            bus_stop_code = bus_stop.get('BusStopCode', 'N/A')
+            description = bus_stop.get('Description', 'N/A')
+            
+            if latitude == 0 or longitude == 0:
+                continue
+            
+            tooltip_text = f"🚏 {description} ({bus_stop_code}) - Click to view arrivals"
+            
+            markers.append(
+                dl.CircleMarker(
+                    id={'type': 'bus-stop-marker', 'index': bus_stop_code},
+                    center=[latitude, longitude],
+                    radius=8,
+                    color="#4169E1",
+                    fillColor="#4169E1",
+                    fillOpacity=0.7,
+                    weight=2,
+                    children=[
+                        dl.Tooltip(tooltip_text)
+                    ]
+                )
+            )
+        except (ValueError, TypeError, KeyError):
+            continue
+            
+    return markers
+
+
+def find_nearest_bus_stop(click_lat: float, click_lon: float, bus_stops_data: Optional[Dict[str, Any]], max_distance_m: float = 50.0) -> Optional[str]:
+    """
+    Find the nearest bus stop to a click location.
+    
+    Args:
+        click_lat: Latitude of click location
+        click_lon: Longitude of click location
+        bus_stops_data: Dictionary containing bus stops data
+        max_distance_m: Maximum distance in meters to consider a bus stop as clicked
+    
+    Returns:
+        Bus stop code if found within max_distance_m, None otherwise
+    """
+    if not bus_stops_data or 'value' not in bus_stops_data:
+        return None
+    
+    bus_stops = bus_stops_data.get('value', [])
+    nearest_code = None
+    nearest_distance = float('inf')
+    
+    for bus_stop in bus_stops:
+        try:
+            lat = float(bus_stop.get('Latitude', 0))
+            lon = float(bus_stop.get('Longitude', 0))
+            
+            if lat == 0 or lon == 0:
+                continue
+            
+            # Calculate distance using haversine formula
+            distance = _haversine_distance_m(click_lat, click_lon, lat, lon)
+            
+            if distance < nearest_distance and distance <= max_distance_m:
+                nearest_distance = distance
+                nearest_code = bus_stop.get('BusStopCode')
+        except (ValueError, TypeError):
+            continue
+    
+    return nearest_code
 
 
 def fetch_bus_arrival_data(bus_stop_code: str) -> Optional[Dict[str, Any]]:
@@ -1384,6 +1686,168 @@ def format_arrival_time_minutes(estimated_arrival: str) -> str:
         return "N/A"
 
 
+def format_bus_service_search_display(service_no: str, routes_data: Optional[Dict[str, Any]]) -> html.Div:
+    """
+    Format bus service search results for display.
+    
+    Args:
+        service_no: Bus service number to search for
+        routes_data: Dictionary containing bus routes data from LTA API
+    
+    Returns:
+        HTML Div containing formatted bus service route information
+    """
+    if not routes_data or 'value' not in routes_data:
+        return html.Div(
+            html.P(
+                "Unable to fetch bus routes data. Please try again.",
+                style={
+                    "color": "#999",
+                    "textAlign": "center",
+                    "fontSize": "0.75rem",
+                    "margin": "0.5rem 0",
+                }
+            )
+        )
+    
+    routes = routes_data.get('value', [])
+    
+    # Filter routes for the specified service number
+    service_routes = [route for route in routes if route.get('ServiceNo', '').upper() == service_no.upper().strip()]
+    
+    if not service_routes:
+        return html.Div(
+            html.P(
+                f"No routes found for service {service_no}",
+                style={
+                    "color": "#ff6b6b",
+                    "textAlign": "center",
+                    "fontSize": "0.75rem",
+                    "margin": "0.5rem 0",
+                }
+            )
+        )
+    
+    # Group routes by direction
+    directions = {}
+    for route in service_routes:
+        direction = route.get('Direction', 'N/A')
+        if direction not in directions:
+            directions[direction] = []
+        directions[direction].append(route)
+    
+    # Sort routes by direction and stop sequence
+    result_items = []
+    
+    for direction in sorted(directions.keys()):
+        direction_routes = sorted(directions[direction], key=lambda x: int(x.get('StopSequence', 0)))
+        
+        # Get origin and destination
+        origin_code = direction_routes[0].get('OriginCode', 'N/A') if direction_routes else 'N/A'
+        destination_code = direction_routes[-1].get('DestinationCode', 'N/A') if direction_routes else 'N/A'
+        
+        # Get bus stop names if available
+        bus_stops_data = fetch_bus_stops_data()
+        origin_name = 'N/A'
+        destination_name = 'N/A'
+        
+        if bus_stops_data and 'value' in bus_stops_data:
+            for bs in bus_stops_data['value']:
+                if bs.get('BusStopCode') == origin_code:
+                    origin_name = bs.get('Description', 'N/A')
+                if bs.get('BusStopCode') == destination_code:
+                    destination_name = bs.get('Description', 'N/A')
+        
+        direction_label = "Direction 1" if direction == 1 else "Direction 2" if direction == 2 else f"Direction {direction}"
+        
+        # Create direction header
+        direction_header = html.Div(
+            style={
+                "backgroundColor": "#3a4a5a",
+                "padding": "0.5rem",
+                "borderRadius": "0.25rem",
+                "marginBottom": "0.5rem",
+            },
+            children=[
+                html.Div(
+                    style={
+                        "display": "flex",
+                        "flexDirection": "column",
+                        "gap": "0.25rem",
+                    },
+                    children=[
+                        html.Span(
+                            direction_label,
+                            style={
+                                "color": "#4169E1",
+                                "fontWeight": "bold",
+                                "fontSize": "0.75rem",
+                            }
+                        ),
+                        html.Span(
+                            f"From: {origin_name} ({origin_code})",
+                            style={
+                                "color": "#ccc",
+                                "fontSize": "0.65rem",
+                            }
+                        ),
+                        html.Span(
+                            f"To: {destination_name} ({destination_code})",
+                            style={
+                                "color": "#ccc",
+                                "fontSize": "0.65rem",
+                            }
+                        ),
+                        html.Span(
+                            f"Total stops: {len(direction_routes)}",
+                            style={
+                                "color": "#999",
+                                "fontSize": "0.625rem",
+                                "fontStyle": "italic",
+                            }
+                        ),
+                    ]
+                )
+            ]
+        )
+        
+        result_items.append(direction_header)
+    
+    if not result_items:
+        return html.Div(
+            html.P(
+                f"No route information available for service {service_no}",
+                style={
+                    "color": "#999",
+                    "textAlign": "center",
+                    "fontSize": "0.75rem",
+                    "margin": "0.5rem 0",
+                }
+            )
+        )
+    
+    return html.Div(
+        style={
+            "display": "flex",
+            "flexDirection": "column",
+            "gap": "0.5rem",
+        },
+        children=[
+            html.Div(
+                f"Service {service_no} - {len(directions)} direction(s)",
+                style={
+                    "color": "#fff",
+                    "fontWeight": "bold",
+                    "fontSize": "0.8125rem",
+                    "marginBottom": "0.5rem",
+                    "textAlign": "center",
+                }
+            ),
+            *result_items
+        ]
+    )
+
+
 def format_bus_arrival_display(arrival_data: Optional[Dict[str, Any]], bus_stop_code: str) -> html.Div:
     """
     Format bus arrival data for display in the panel.
@@ -1423,6 +1887,23 @@ def format_bus_arrival_display(arrival_data: Optional[Dict[str, Any]], bus_stop_
             )
         )
     
+    # Sort services by service number in increasing numerical order
+    def get_service_number(service):
+        """Extract numeric part of service number for sorting."""
+        service_no = service.get('ServiceNo', 'N/A')
+        if service_no == 'N/A':
+            return float('inf')  # Put N/A at the end
+        try:
+            # Extract numeric part (handles cases like "21", "21A", "CT8", etc.)
+            match = re.search(r'\d+', str(service_no))
+            if match:
+                return int(match.group())
+            return float('inf')  # If no number found, put at end
+        except (ValueError, TypeError):
+            return float('inf')
+    
+    services = sorted(services, key=get_service_number)
+    
     service_items = []
     
     for service in services:
@@ -1442,88 +1923,84 @@ def format_bus_arrival_display(arrival_data: Optional[Dict[str, Any]], bus_stop_
         arrival_2_min = format_arrival_time_minutes(estimated_arrival_2)
         arrival_3_min = format_arrival_time_minutes(estimated_arrival_3)
         
-        # Create service card
+        # Build timing blocks as inline spans
+        timing_spans = []
+        
+        # First arrival time
+        timing_spans.append(
+            html.Span(
+                arrival_1_min,
+                style={
+                    "backgroundColor": "#4CAF50" if arrival_1_min != "N/A" and arrival_1_min != "Departed" else "#666",
+                    "color": "#fff",
+                    "padding": "0.125rem 0.375rem",
+                    "borderRadius": "0.1875rem",
+                    "fontSize": "0.7rem",
+                    "fontWeight": "600",
+                    "marginLeft": "0.5rem",
+                }
+            )
+        )
+        
+        # Second arrival time if available
+        if arrival_2_min != "N/A":
+            timing_spans.append(
+                html.Span(
+                    arrival_2_min,
+                    style={
+                        "backgroundColor": "#FF9800" if arrival_2_min != "Departed" else "#666",
+                        "color": "#fff",
+                        "padding": "0.125rem 0.375rem",
+                        "borderRadius": "0.1875rem",
+                        "fontSize": "0.7rem",
+                        "fontWeight": "600",
+                        "marginLeft": "0.25rem",
+                    }
+                )
+            )
+        
+        # Third arrival time if available
+        if arrival_3_min != "N/A":
+            timing_spans.append(
+                html.Span(
+                    arrival_3_min,
+                    style={
+                        "backgroundColor": "#FF5722" if arrival_3_min != "Departed" else "#666",
+                        "color": "#fff",
+                        "padding": "0.125rem 0.375rem",
+                        "borderRadius": "0.1875rem",
+                        "fontSize": "0.7rem",
+                        "fontWeight": "600",
+                        "marginLeft": "0.25rem",
+                    }
+                )
+            )
+        
+        # Create service card with all info in a single row div
         service_card = html.Div(
             style={
                 "backgroundColor": "rgb(58, 74, 90)",
-                "borderRadius": "4px",
-                "padding": "0.625rem",
-                "marginBottom": "0.5rem",
+                "borderRadius": "0.25rem",
+                "padding": "0.5rem",
+                "marginBottom": "0.375rem",
+                "display": "flex",
+                "alignItems": "center",
+                "flexWrap": "nowrap",
             },
             children=[
-                html.Div(
+                html.Span(
+                    f"Service {service_no} ({operator})",
                     style={
-                        "display": "flex",
-                        "justifyContent": "space-between",
-                        "alignItems": "center",
-                        "marginBottom": "0.375rem",
-                    },
-                    children=[
-                        html.Span(
-                            f"Service {service_no}",
-                            style={
-                                "color": "#4169E1",
-                                "fontWeight": "700",
-                                "fontSize": "0.875rem",
-                            }
-                        ),
-                        html.Span(
-                            operator,
-                            style={
-                                "color": "#999",
-                                "fontSize": "0.75rem",
-                            }
-                        ),
-                    ]
+                        "color": "#fff",
+                        "fontWeight": "600",
+                        "fontSize": "0.75rem",
+                        "whiteSpace": "nowrap",
+                    }
                 ),
-                html.Div(
-                    style={
-                        "display": "flex",
-                        "gap": "0.5rem",
-                        "flexWrap": "wrap",
-                    },
-                    children=[
-                        html.Div(
-                            arrival_1_min,
-                            style={
-                                "backgroundColor": "#4CAF50" if arrival_1_min != "N/A" and arrival_1_min != "Departed" else "#666",
-                                "color": "#fff",
-                                "padding": "0.25rem 0.5rem",
-                                "borderRadius": "4px",
-                                "fontSize": "0.75rem",
-                                "fontWeight": "600",
-                            }
-                        ),
-                        html.Div(
-                            arrival_2_min,
-                            style={
-                                "backgroundColor": "#FF9800" if arrival_2_min != "N/A" and arrival_2_min != "Departed" else "#666",
-                                "color": "#fff",
-                                "padding": "0.25rem 0.5rem",
-                                "borderRadius": "4px",
-                                "fontSize": "0.75rem",
-                                "fontWeight": "600",
-                            }
-                        ) if arrival_2_min != "N/A" else None,
-                        html.Div(
-                            arrival_3_min,
-                            style={
-                                "backgroundColor": "#FF5722" if arrival_3_min != "N/A" and arrival_3_min != "Departed" else "#666",
-                                "color": "#fff",
-                                "padding": "0.25rem 0.5rem",
-                                "borderRadius": "4px",
-                                "fontSize": "0.75rem",
-                                "fontWeight": "600",
-                            }
-                        ) if arrival_3_min != "N/A" else None,
-                    ]
-                ),
+                *timing_spans
             ]
         )
         service_items.append(service_card)
-    
-    # Filter out None values
-    service_items = [item for item in service_items if item is not None]
     
     # Extract all service numbers for summary
     service_numbers = [service.get('ServiceNo', 'N/A') for service in services]
@@ -1540,31 +2017,7 @@ def format_bus_arrival_display(arrival_data: Optional[Dict[str, Any]], bus_stop_
                     "marginBottom": "0.375rem",
                 }
             ),
-            html.Div(
-                [
-                    html.Span(
-                        "Services: ",
-                        style={
-                            "color": "#999",
-                            "fontSize": "0.75rem",
-                            "fontWeight": "600",
-                        }
-                    ),
-                    html.Span(
-                        service_summary,
-                        style={
-                            "color": "#4169E1",
-                            "fontSize": "0.75rem",
-                            "fontWeight": "600",
-                        }
-                    ),
-                ],
-                style={
-                    "marginBottom": "0.625rem",
-                    "paddingBottom": "0.5rem",
-                    "borderBottom": "1px solid #5a6a7a",
-                }
-            ),
+
             html.Div(service_items),
         ]
     )
@@ -3155,7 +3608,7 @@ def register_transport_callbacks(app):
                 "fontSize": "0.75rem",
                 "fontWeight": "600",
             }
-            text = "Hide Current Taxi Locations/Stands"
+            text = "Hide Current Taxi Availability/Stands"
         else:
             # Inactive state - outline
             style = {
@@ -3168,7 +3621,7 @@ def register_transport_callbacks(app):
                 "fontSize": "0.75rem",
                 "fontWeight": "600",
             }
-            text = "Show Current Taxi Locations/Stands"
+            text = "Show Current Taxi Availability/Stands"
         
         return new_state, style, text
     
@@ -4102,34 +4555,146 @@ def register_transport_callbacks(app):
         return markers, count_value
 
     @app.callback(
-        Output('bus-stops-count-value', 'children'),
-        Input('transport-interval', 'n_intervals')
+        [Output('bus-stops-markers', 'children'),
+         Output('bus-stops-count-value', 'children'),
+         Output('bus-stop-zoom-message', 'style'),
+         Output('bus-stop-zoom-message', 'children'),
+         Output('bus-stops-disclaimer', 'style')],
+        [Input('bus-stops-toggle-state', 'data'),
+         Input('transport-map', 'zoom'),
+         Input('transport-map', 'center'),
+         Input('transport-interval', 'n_intervals')]
     )
-    def update_bus_stops_count(n_intervals: int) -> html.Div:
+    def update_bus_stops_display(show_bus_stops: bool, zoom: Optional[int], center: Optional[List], n_intervals: int):
         """
-        Update bus stops count display using async data fetching.
-        
-        Args:
-            n_intervals: Number of intervals (from dcc.Interval component)
-        
-        Returns:
-            HTML Div with bus stops count
+        Update bus stops markers, count display, and zoom feedback.
+        Only renders bus stops within the current viewport when zoomed to level 15+.
+        Always shows total count in the metric card.
         """
         _ = n_intervals  # Used for periodic refresh
-
-        # Fetch data asynchronously
+        
+        # Default zoom and center if not available
+        current_zoom = zoom if zoom is not None else 11
+        
+        # Parse center coordinates - handle both list and dict formats
+        if center is None:
+            center_lat, center_lon = SG_MAP_CENTER[0], SG_MAP_CENTER[1]
+        elif isinstance(center, dict):
+            # Handle dict format {'lat': 1.23, 'lng': 103.45} or {'lat': 1.23, 'lon': 103.45}
+            lat = center.get('lat')
+            lon = center.get('lng') or center.get('lon')
+            try:
+                center_lat = float(lat) if lat is not None else SG_MAP_CENTER[0]
+                center_lon = float(lon) if lon is not None else SG_MAP_CENTER[1]
+            except (ValueError, TypeError):
+                center_lat, center_lon = SG_MAP_CENTER[0], SG_MAP_CENTER[1]
+        elif isinstance(center, (list, tuple)) and len(center) >= 2:
+            # Handle list/tuple format [1.23, 103.45]
+            try:
+                center_lat = float(center[0])
+                center_lon = float(center[1])
+            except (ValueError, TypeError, IndexError):
+                center_lat, center_lon = SG_MAP_CENTER[0], SG_MAP_CENTER[1]
+        else:
+            center_lat, center_lon = SG_MAP_CENTER[0], SG_MAP_CENTER[1]
+        
+        # Overlay styles
+        overlay_show = {
+            "position": "absolute",
+            "top": "50%",
+            "left": "50%",
+            "transform": "translate(-50%, -50%)",
+            "backgroundColor": "rgba(0, 0, 0, 0.8)",
+            "color": "#fbbf24",
+            "padding": "1rem 2rem",
+            "borderRadius": "0.5rem",
+            "zIndex": "1000",
+            "textAlign": "center",
+            "display": "block",
+            "fontWeight": "600",
+            "fontSize": "1rem",
+            "border": "0.0625rem solid #fbbf24",
+        }
+        overlay_hide = {"display": "none"}
+        
+        # Always fetch data to calculate total count
         future = fetch_bus_stops_data_async()
         data: Optional[Dict[str, Any]] = future.result() if future else None
         
-        # Extract count (always calculate)
+        # Calculate total count (always shown in metric card)
         bus_stops_count = 0
         if isinstance(data, dict):
             bus_stops_list = data.get('value', [])
             if isinstance(bus_stops_list, list):
                 bus_stops_count = len(bus_stops_list)
         
-        count_value = html.Div(
+        # Count card always shows total count
+        count_card = html.Div(
             html.Span(f"{bus_stops_count}", style={"color": "#4169E1"}),
+            style={
+                "backgroundColor": "rgb(58, 74, 90)",
+                "padding": "0.25rem 0.5rem",
+                "borderRadius": "0.25rem",
+            }
+        )
+        
+        # Disclaimer styles
+        disclaimer_hide = {"display": "none"}
+        disclaimer_show = {"display": "block"}
+        
+        # If toggle is OFF, return empty markers and hide disclaimer
+        if not show_bus_stops:
+            return [], count_card, overlay_hide, "", disclaimer_hide
+            
+        # Toggle is ON - Check zoom level
+        if current_zoom < 15:
+            overlay_text = f"Zoom in to level 15+ to view bus stops (Current: {current_zoom})"
+            return [], count_card, overlay_show, overlay_text, disclaimer_show
+            
+        # Toggle is ON and Zoom is >= 15 - Filter and render markers within viewport
+        filtered_stops = filter_bus_stops_by_viewport(data, center_lat, center_lon, current_zoom)
+        
+        # Create filtered data dict for marker creation
+        filtered_data = {'value': filtered_stops} if filtered_stops else None
+        
+        markers = create_bus_stops_circle_markers(filtered_data)
+        return markers, count_card, overlay_hide, "", disclaimer_show
+
+    @app.callback(
+        Output('bus-services-count-value', 'children'),
+        Input('transport-interval', 'n_intervals')
+    )
+    def update_bus_services_count(n_intervals: int) -> html.Div:
+        """
+        Update bus services count display using async data fetching.
+        
+        Args:
+            n_intervals: Number of intervals (from dcc.Interval component)
+        
+        Returns:
+            HTML Div with bus services count
+        """
+        _ = n_intervals  # Used for periodic refresh
+
+        # Fetch data asynchronously
+        future = fetch_bus_routes_data_async()
+        data: Optional[Dict[str, Any]] = future.result() if future else None
+        
+        # Calculate unique bus services count
+        bus_services_count = 0
+        if isinstance(data, dict):
+            routes_list = data.get('value', [])
+            if isinstance(routes_list, list):
+                # Extract unique service numbers
+                service_numbers = set()
+                for route in routes_list:
+                    service_no = route.get('ServiceNo', '')
+                    if service_no:
+                        service_numbers.add(service_no)
+                bus_services_count = len(service_numbers)
+        
+        count_value = html.Div(
+            html.Span(f"{bus_services_count}", style={"color": "#4169E1"}),
             style={
                 "backgroundColor": "rgb(58, 74, 90)",
                 "padding": "0.25rem 0.5rem",
@@ -4179,24 +4744,6 @@ def register_transport_callbacks(app):
             text = "Show Bus Stop Locations"
         
         return new_state, style, text
-
-    @app.callback(
-        Output('bus-stops-markers', 'children'),
-        [Input('bus-stops-toggle-state', 'data'),
-         Input('transport-interval', 'n_intervals')]
-    )
-    def update_bus_stops_markers(show_bus_stops: bool, n_intervals: int) -> List[dl.DivMarker]:
-        """Update Bus Stops markers on the map."""
-        if not show_bus_stops:
-            return []
-        
-        _ = n_intervals  # Used for periodic refresh
-        
-        # Fetch data asynchronously
-        future = fetch_bus_stops_data_async()
-        data: Optional[Dict[str, Any]] = future.result() if future else None
-        
-        return create_bus_stops_markers(data)
 
     # SPF Speed Camera callbacks
     @app.callback(
@@ -4271,38 +4818,44 @@ def register_transport_callbacks(app):
 
         return markers, count_value
 
-    # Bus arrival callback - handles clicks on bus stop markers and search input
+    # Bus arrival callback - handles search and marker clicks for bus stop arrival info
+    print("Registering update_bus_arrival_display callback...")
     @app.callback(
-        Output('bus-arrival-content', 'children'),
-        [Input({'type': 'bus-stop-marker-btn', 'index': dependencies.ALL}, 'n_clicks'),
-         Input('bus-stop-search-btn', 'n_clicks')],
-        [State({'type': 'bus-stop-marker-btn', 'index': dependencies.ALL}, 'id'),
-         State('bus-stop-search-input', 'value')],
+        [Output('bus-arrival-content', 'children'),
+         Output('transport-map', 'center'),
+         Output('transport-map', 'zoom'),
+         Output('bus-arrival-popup-layer', 'children'),
+         Output('bus-stop-search-input', 'value')],
+        [Input('bus-stop-search-btn', 'n_clicks'),
+         Input({'type': 'bus-stop-marker', 'index': ALL}, 'n_clicks')],
+        [State('bus-stop-search-input', 'value'),
+         State('bus-stops-toggle-state', 'data')],
         prevent_initial_call=True
     )
-    def update_bus_arrival_display(marker_clicks_list, search_clicks, marker_ids, search_value):
-        """Update bus arrival display when a bus stop marker is clicked or search is performed."""
-        
+    def update_bus_arrival_display(_search_clicks, marker_clicks, search_value, bus_stops_visible):
+        """
+        Update bus arrival display when search is performed or a bus stop marker is clicked.
+        Fills the textbox and shows the arrival info in the side panel.
+        """
         # Determine which input triggered the callback
         ctx = callback_context
         if not ctx.triggered:
-            return html.P(
-                "Click on a bus stop marker or search by bus stop code",
-                style={
-                    "color": "#999",
-                    "textAlign": "center",
-                    "fontSize": "0.75rem",
-                    "fontStyle": "italic",
-                    "margin": "0.5rem 0",
-                }
-            )
+            return no_update, no_update, no_update, [], no_update
         
         trigger_id = ctx.triggered[0]['prop_id']
-        
         bus_stop_code = None
         
+        # Check if a bus stop marker was clicked
+        if 'bus-stop-marker' in trigger_id:
+            # Extract the bus stop code from the triggered marker ID
+            import json
+            # Parse the pattern-matching ID from prop_id like "{'index':'12345','type':'bus-stop-marker'}.n_clicks"
+            marker_id_str = trigger_id.split('.')[0]
+            marker_id = json.loads(marker_id_str)
+            bus_stop_code = marker_id['index']
+        
         # Check if search button was clicked
-        if 'bus-stop-search-btn' in trigger_id:
+        elif 'bus-stop-search-btn' in trigger_id:
             if not search_value:
                 return html.P(
                     "Please enter a bus stop code",
@@ -4312,7 +4865,7 @@ def register_transport_callbacks(app):
                         "fontSize": "0.75rem",
                         "margin": "0.5rem 0",
                     }
-                )
+                ), no_update, no_update, [], no_update
             
             # Validate bus stop code (must be 5 digits)
             search_value = search_value.strip()
@@ -4325,53 +4878,70 @@ def register_transport_callbacks(app):
                         "fontSize": "0.75rem",
                         "margin": "0.5rem 0",
                     }
-                )
+                ), no_update, no_update, [], no_update
             
             bus_stop_code = search_value
         
-        # Check if a marker was clicked
-        elif 'bus-stop-marker-btn' in trigger_id:
-            # Find which marker was clicked
-            if not marker_clicks_list or not any(marker_clicks_list):
-                return html.P(
-                    "Click on a bus stop marker or search by bus stop code",
-                    style={
-                        "color": "#999",
-                        "textAlign": "center",
-                        "fontSize": "0.75rem",
-                        "fontStyle": "italic",
-                        "margin": "0.5rem 0",
-                    }
-                )
-            
-            # Get the index of the clicked marker
-            clicked_index = None
-            for i, clicks in enumerate(marker_clicks_list):
-                if clicks and clicks > 0:
-                    clicked_index = i
-                    break
-            
-            if clicked_index is None or clicked_index >= len(marker_ids):
-                return html.P(
-                    "Error: Could not identify bus stop. Please try again.",
-                    style={
-                        "color": "#ff6b6b",
-                        "textAlign": "center",
-                        "fontSize": "0.75rem",
-                        "margin": "0.5rem 0",
-                    }
-                )
-            
-            # Extract bus stop code from marker ID
-            marker_id = marker_ids[clicked_index]
-            if isinstance(marker_id, dict):
-                bus_stop_code = marker_id.get('index', '')
-            else:
-                bus_stop_code = str(marker_id)
-        
         if not bus_stop_code:
+            return no_update, no_update, no_update, [], no_update
+        
+        # Fetch bus arrival data
+        arrival_data = fetch_bus_arrival_data(bus_stop_code)
+        
+        # Coordinate lookup for bus stop
+        lat, lon = None, None
+        bus_stops_data = fetch_bus_stops_data()
+        if bus_stops_data and 'value' in bus_stops_data:
+            for bs in bus_stops_data['value']:
+                if bs.get('BusStopCode') == bus_stop_code:
+                    lat = float(bs.get('Latitude', 0))
+                    lon = float(bs.get('Longitude', 0))
+                    break
+        
+        # Format and return display
+        formatted_arrival = format_bus_arrival_display(arrival_data, bus_stop_code)
+        
+        # If coordinates found, update map and return highlight circle
+        if lat and lon:
+            # Create a highlight circle around the bus stop
+            highlight_circle = dl.Circle(
+                center=[lat, lon],
+                radius=30,  # 30 meters radius
+                color="#FF4136",  # Red color
+                fill=True,
+                fillColor="#FF4136",
+                fillOpacity=0.2,
+                weight=2,
+                dashArray="5, 5"  # Dashed line
+            )
+            
+            # Return with map centered on bus stop, highlight displayed, and textbox updated
+            # The arrival content is now shown in the side panel (bus-arrival-content)
+            return formatted_arrival, [lat, lon], 18, [highlight_circle], bus_stop_code
+        
+        # Fallback if coordinates not found
+        return formatted_arrival, no_update, no_update, [], bus_stop_code
+
+    @app.callback(
+        Output('bus-service-search-content', 'children'),
+        Input('bus-service-search-btn', 'n_clicks'),
+        State('bus-service-search-input', 'value'),
+        prevent_initial_call=True
+    )
+    def update_bus_service_search_display(_n_clicks, search_value):
+        """
+        Update bus service search display based on user input.
+        
+        Args:
+            _n_clicks: Number of times search button was clicked
+            search_value: Bus service number entered by user
+        
+        Returns:
+            HTML Div containing formatted bus service route information
+        """
+        if not search_value:
             return html.P(
-                "Error: Invalid bus stop code. Please try again.",
+                "Please enter a bus service number",
                 style={
                     "color": "#ff6b6b",
                     "textAlign": "center",
@@ -4380,9 +4950,23 @@ def register_transport_callbacks(app):
                 }
             )
         
-        # Fetch bus arrival data
-        arrival_data = fetch_bus_arrival_data(bus_stop_code)
+        # Clean and validate input
+        service_no = search_value.strip().upper()
+        
+        if not service_no:
+            return html.P(
+                "Invalid bus service number. Please enter a valid service number.",
+                style={
+                    "color": "#ff6b6b",
+                    "textAlign": "center",
+                    "fontSize": "0.75rem",
+                    "margin": "0.5rem 0",
+                }
+            )
+        
+        # Fetch bus routes data
+        routes_data = fetch_bus_routes_data()
         
         # Format and return display
-        return format_bus_arrival_display(arrival_data, bus_stop_code)
+        return format_bus_service_search_display(service_no, routes_data)
 
