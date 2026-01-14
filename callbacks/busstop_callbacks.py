@@ -133,20 +133,8 @@ def create_bus_stop_markers(bus_stops):
             # OneMap API might have road name in different fields
             road_name = raw.get('road', raw.get('roadName', raw.get('road_name', 'N/A')))
         
-        # Build tooltip text as bulleted points
-        tooltip_lines = [f"• Bus Stop Code: {code}" if code else "• Bus Stop Code: N/A"]
-        if road_name and road_name != 'N/A':
-            tooltip_lines.append(f"• Road Name: {road_name}")
-        tooltip_lines.append(f"• Description: {name}")
-        
-        tooltip_content = html.Pre(
-            "\n".join(tooltip_lines),
-            style={
-                "margin": "0",
-                "whiteSpace": "pre-wrap",
-                "fontSize": "0.75rem",
-            }
-        )
+        # Build tooltip text with bus stop ID only
+        tooltip_content = code if code else "N/A"
 
         # Create marker HTML with label
         marker_html = (
