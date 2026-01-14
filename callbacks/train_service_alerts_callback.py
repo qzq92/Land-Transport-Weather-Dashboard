@@ -217,21 +217,21 @@ def format_mrt_line_operational_details(data):
             
             details = []
             if direction:
-                details.append(f"Direction: {direction}")
+                details.append(f"Dir: {direction}")
             if stations:
-                details.append(f"Stations: {stations}")
+                details.append(f"Stns: {stations}")
             
-            detail_text = " | ".join(details) if details else "Service disruption"
+            detail_text = " | ".join(details) if details else "Disruption"
             # Red and bold for disruptions
             detail_text_color = "#ff4444"
         else:
             border_color = line_color  # Use line color for border when operational
-            detail_text = "Normal Service"
+            detail_text = "Normal"
             # Green and bold for normal service
             detail_text_color = "#4CAF50"
         
         # Check if detail_text indicates Normal Service (case-insensitive)
-        is_normal_service = detail_text.lower() == "normal service"
+        is_normal_service = detail_text.lower() == "normal"
         if is_normal_service:
             detail_text_color = "#4CAF50"  # Green and bold
         else:
@@ -239,37 +239,31 @@ def format_mrt_line_operational_details(data):
         
         return html.Div(
             style={
-                "padding": "0.75rem",
-                "backgroundColor": "#3a4a5a",
-                "borderRadius": "0.375rem",
-                "borderLeft": f"4px solid {border_color}",
-                "marginBottom": "0.625rem",
+                "padding": "0.25rem 0.5rem",
+                "backgroundColor": "#2c3e50",
+                "borderRadius": "0.25rem",
+                "borderLeft": f"3px solid {border_color}",
+                "display": "flex",
+                "alignItems": "center",
+                "gap": "0.5rem",
+                "minWidth": "fit-content",
             },
             children=[
-                html.Div(
+                html.Span(
+                    f"{line_name} ({line_code})",
                     style={
-                        "display": "flex",
-                        "justifyContent": "space-between",
-                        "alignItems": "center",
-                    },
-                    children=[
-                        html.Span(
-                            line_name,
-                            style={
-                                "color": line_color,  # Use line color for text
-                                "fontWeight": "600",
-                                "fontSize": "0.8125rem",
-                            }
-                        ),
-                        html.Div(
-                            detail_text,
-                            style={
-                                "color": detail_text_color,
-                                "fontSize": "0.6875rem",
-                                "fontWeight": "bold",
-                            }
-                        ),
-                    ]
+                        "color": line_color,
+                        "fontWeight": "bold",
+                        "fontSize": "0.75rem",
+                    }
+                ),
+                html.Span(
+                    detail_text,
+                    style={
+                        "color": detail_text_color,
+                        "fontSize": "0.65rem",
+                        "fontWeight": "bold",
+                    }
                 ),
             ]
         )
@@ -290,10 +284,21 @@ def format_mrt_line_operational_details(data):
                 "color": "#999",
                 "fontSize": "0.75rem",
                 "textAlign": "center",
+                "margin": "0",
             }
         )
     
-    return html.Div(children=line_elements)
+    return html.Div(
+        children=line_elements,
+        style={
+            "display": "flex",
+            "flexDirection": "row",
+            "flexWrap": "wrap",
+            "gap": "0.5rem",
+            "justifyContent": "center",
+            "width": "100%"
+        }
+    )
 
 
 def register_train_service_alerts_callbacks(app):
@@ -324,7 +329,7 @@ def register_train_service_alerts_callbacks(app):
     
     @app.callback(
         Output('mrt-line-status-display', 'children'),
-        Input('transport-interval', 'n_intervals')
+        Input('interval-component', 'n_intervals')
     )
     def update_mrt_line_operational_details(n_intervals):
         """
