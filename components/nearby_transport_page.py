@@ -83,256 +83,194 @@ def nearby_transport_page():
                                     "overflowY": "auto",
                                 },
                                 children=[
-                                    # Row 1: MRT, Carpark, Bus Stop
+                                    # Row 1: Nearest HDB Carpark
                                     html.Div(
+                                        id="nearby-transport-carpark-column",
                                         style={
-                                            "display": "flex",
-                                            "gap": "0.625rem",
                                             "width": "100%",
+                                            "backgroundColor": "#2c3e50",
+                                            "borderRadius": "0.3125rem",
+                                            "padding": "0.9375rem",
+                                            "minHeight": "9.375rem"
                                         },
                                         children=[
-                                            # Nearest MRT column
-                                            html.Div(
-                                                id="nearby-transport-mrt-column",
+                                            html.H4(
+                                                "Top 5 Nearest HDB Carparks",
                                                 style={
-                                                    "flex": "1",
-                                                    "backgroundColor": "#2c3e50",
-                                                    "borderRadius": "0.3125rem",
-                                                    "padding": "0.9375rem",
-                                                    "minHeight": "9.375rem"
+                                                    "textAlign": "center",
+                                                    "marginBottom": "0.625rem",
+                                                    "color": "#fff",
+                                                    "fontWeight": "700",
+                                                    "fontSize": "0.875rem"
+                                                }
+                                            ),
+                                            html.Div(
+                                                id="nearby-transport-carpark-content",
+                                                style={
+                                                    "overflowY": "auto",
+                                                    "overflowX": "hidden",
+                                                    "maxHeight": "calc(100% - 2.5rem)"
                                                 },
                                                 children=[
-                                                    html.H4(
-                                                        "Nearest MRT (1KM radius) with crowd level",
+                                                    html.P(
+                                                        "Select a location to view nearest carparks",
                                                         style={
                                                             "textAlign": "center",
-                                                            "marginBottom": "0.625rem",
-                                                            "color": "#fff",
-                                                            "fontWeight": "700",
-                                                            "fontSize": "0.875rem"
+                                                            "color": "#999",
+                                                            "fontSize": "0.75rem",
+                                                            "fontStyle": "italic",
+                                                            "padding": "0.9375rem"
                                                         }
-                                                    ),
-                                                    html.Div(
-                                                        id="nearby-transport-mrt-content",
-                                                        style={
-                                                            "overflowY": "auto",
-                                                            "overflowX": "hidden",
-                                                            "maxHeight": "calc(100% - 2.5rem)"
-                                                        },
-                                                        children=[
-                                                            html.P(
-                                                                "Select a location to view nearest MRT stations",
-                                                                style={
-                                                                    "textAlign": "center",
-                                                                    "color": "#999",
-                                                                    "fontSize": "0.75rem",
-                                                                    "fontStyle": "italic",
-                                                                    "padding": "0.9375rem"
-                                                                }
-                                                            )
-                                                        ]
                                                     )
                                                 ]
-                                            ),
-                                            # Nearest Carpark column
-                                            html.Div(
-                                                id="nearby-transport-carpark-column",
-                                                style={
-                                                    "flex": "1",
-                                                    "backgroundColor": "#2c3e50",
-                                                    "borderRadius": "0.3125rem",
-                                                    "padding": "0.9375rem",
-                                                    "minHeight": "9.375rem"
-                                                },
-                                                children=[
-                                                    html.H4(
-                                                        "Top 5 Nearest HDB Carparks",
-                                                        style={
-                                                            "textAlign": "center",
-                                                            "marginBottom": "0.625rem",
-                                                            "color": "#fff",
-                                                            "fontWeight": "700",
-                                                            "fontSize": "0.875rem"
-                                                        }
-                                                    ),
-                                                    html.Div(
-                                                        id="nearby-transport-carpark-content",
-                                                        style={
-                                                            "overflowY": "auto",
-                                                            "overflowX": "hidden",
-                                                            "maxHeight": "calc(100% - 2.5rem)"
-                                                        },
-                                                        children=[
-                                                            html.P(
-                                                                "Select a location to view nearest carparks",
-                                                                style={
-                                                                    "textAlign": "center",
-                                                                    "color": "#999",
-                                                                    "fontSize": "0.75rem",
-                                                                    "fontStyle": "italic",
-                                                                    "padding": "0.9375rem"
-                                                                }
-                                                            )
-                                                        ]
-                                                    )
-                                                ]
-                                            ),
-                                            # Nearest Bus Stop column
-                                            html.Div(
-                                                id="nearby-transport-bus-stop-column",
-                                                style={
-                                                    "flex": "1",
-                                                    "backgroundColor": "#2c3e50",
-                                                    "borderRadius": "0.3125rem",
-                                                    "padding": "0.9375rem",
-                                                    "minHeight": "9.375rem"
-                                                },
-                                                children=[
-                                                    html.H4(
-                                                        "Top 5 Nearest Bus Stops",
-                                                        style={
-                                                            "textAlign": "center",
-                                                            "marginBottom": "0.625rem",
-                                                            "color": "#fff",
-                                                            "fontWeight": "700",
-                                                            "fontSize": "0.875rem"
-                                                        }
-                                                    ),
-                                                    html.Div(
-                                                        id="nearby-transport-bus-stop-content",
-                                                        style={
-                                                            "overflowY": "auto",
-                                                            "overflowX": "hidden",
-                                                            "maxHeight": "calc(100% - 2.5rem)"
-                                                        },
-                                                        children=[
-                                                            html.P(
-                                                                "Select a location to view nearest bus stops",
-                                                                style={
-                                                                    "textAlign": "center",
-                                                                    "color": "#999",
-                                                                    "fontSize": "0.75rem",
-                                                                    "fontStyle": "italic",
-                                                                    "padding": "0.9375rem"
-                                                                }
-                                                            )
-                                                        ]
-                                                    )
-                                                ]
-                                            ),
+                                            )
                                         ]
                                     ),
-                                    # Row 2: Taxi Stands, Bicycle Parking
+                                    # Row 2: Nearest Bus Stop
                                     html.Div(
+                                        id="nearby-transport-bus-stop-column",
                                         style={
-                                            "display": "flex",
-                                            "gap": "0.625rem",
                                             "width": "100%",
+                                            "backgroundColor": "#2c3e50",
+                                            "borderRadius": "0.3125rem",
+                                            "padding": "0.9375rem",
+                                            "minHeight": "9.375rem"
                                         },
                                         children=[
-                                            # Taxi Stands column
-                                            html.Div(
-                                                id="nearby-transport-taxi-stand-column",
+                                            html.H4(
+                                                "Top 5 Nearest Bus Stops",
                                                 style={
-                                                    "flex": "1",
-                                                    "backgroundColor": "#2c3e50",
-                                                    "borderRadius": "0.3125rem",
-                                                    "padding": "0.9375rem",
-                                                    "minHeight": "9.375rem"
+                                                    "textAlign": "center",
+                                                    "marginBottom": "0.625rem",
+                                                    "color": "#fff",
+                                                    "fontWeight": "700",
+                                                    "fontSize": "0.875rem"
+                                                }
+                                            ),
+                                            html.Div(
+                                                id="nearby-transport-bus-stop-content",
+                                                style={
+                                                    "overflowY": "auto",
+                                                    "overflowX": "hidden",
+                                                    "maxHeight": "calc(100% - 2.5rem)"
                                                 },
                                                 children=[
-                                                    html.H4(
-                                                        "Nearby 300m Taxi Stands",
+                                                    html.P(
+                                                        "Select a location to view nearest bus stops",
                                                         style={
                                                             "textAlign": "center",
-                                                            "marginBottom": "0.625rem",
-                                                            "color": "#fff",
-                                                            "fontWeight": "700",
-                                                            "fontSize": "0.875rem"
+                                                            "color": "#999",
+                                                            "fontSize": "0.75rem",
+                                                            "fontStyle": "italic",
+                                                            "padding": "0.9375rem"
                                                         }
-                                                    ),
-                                                    html.Div(
-                                                        id="nearby-transport-taxi-stand-content",
-                                                        style={
-                                                            "overflowY": "auto",
-                                                            "overflowX": "hidden",
-                                                            "maxHeight": "calc(100% - 2.5rem)"
-                                                        },
-                                                        children=[
-                                                            html.P(
-                                                                "Select a location to view nearest taxi stands",
-                                                                style={
-                                                                    "textAlign": "center",
-                                                                    "color": "#999",
-                                                                    "fontSize": "0.75rem",
-                                                                    "fontStyle": "italic",
-                                                                    "padding": "0.9375rem"
-                                                                }
-                                                            )
-                                                        ]
                                                     )
                                                 ]
-                                            ),
-                                            # Bicycle Parking column
-                                            html.Div(
-                                                id="nearby-transport-bicycle-column",
+                                            )
+                                        ]
+                                    ),
+                                    # Row 3: Nearest EV Charging Point
+                                    html.Div(
+                                        id="nearby-transport-ev-charging-column",
+                                        style={
+                                            "width": "100%",
+                                            "backgroundColor": "#2c3e50",
+                                            "borderRadius": "0.3125rem",
+                                            "padding": "0.9375rem",
+                                            "minHeight": "9.375rem"
+                                        },
+                                        children=[
+                                            html.H4(
+                                                "Nearby EV Charging Points",
                                                 style={
-                                                    "flex": "1",
-                                                    "backgroundColor": "#2c3e50",
-                                                    "borderRadius": "0.3125rem",
-                                                    "padding": "0.9375rem",
-                                                    "minHeight": "9.375rem"
+                                                    "textAlign": "center",
+                                                    "marginBottom": "0.625rem",
+                                                    "color": "#fff",
+                                                    "fontWeight": "700",
+                                                    "fontSize": "0.875rem"
+                                                }
+                                            ),
+                                            html.Div(
+                                                id="nearby-transport-ev-charging-content",
+                                                style={
+                                                    "overflowY": "auto",
+                                                    "overflowX": "hidden",
+                                                    "maxHeight": "calc(100% - 2.5rem)"
                                                 },
                                                 children=[
-                                                    html.H4(
-                                                        "Nearby 300m Bicycle Parking Spots",
+                                                    html.P(
+                                                        "Select a location to view nearby EV charging points",
                                                         style={
                                                             "textAlign": "center",
-                                                            "marginBottom": "0.625rem",
-                                                            "color": "#fff",
-                                                            "fontWeight": "700",
-                                                            "fontSize": "0.875rem"
+                                                            "color": "#999",
+                                                            "fontSize": "0.75rem",
+                                                            "fontStyle": "italic",
+                                                            "padding": "0.9375rem"
                                                         }
-                                                    ),
-                                                    html.Div(
-                                                        id="nearby-transport-bicycle-content",
-                                                        style={
-                                                            "overflowY": "auto",
-                                                            "overflowX": "hidden",
-                                                            "maxHeight": "calc(100% - 2.5rem)"
-                                                        },
-                                                        children=[
-                                                            html.P(
-                                                                "Select a location to view nearest bicycle parking",
-                                                                style={
-                                                                    "textAlign": "center",
-                                                                    "color": "#999",
-                                                                    "fontSize": "0.75rem",
-                                                                    "fontStyle": "italic",
-                                                                    "padding": "0.9375rem"
-                                                                }
-                                                            )
-                                                        ]
                                                     )
                                                 ]
+                                            )
+                                        ]
+                                    ),
+                                    # Row 4: Nearest MRT Stations
+                                    html.Div(
+                                        id="nearby-transport-mrt-column",
+                                        style={
+                                            "width": "100%",
+                                            "backgroundColor": "#2c3e50",
+                                            "borderRadius": "0.3125rem",
+                                            "padding": "0.9375rem",
+                                            "minHeight": "9.375rem"
+                                        },
+                                        children=[
+                                            html.H4(
+                                                "Nearest MRT (1KM radius) with crowd level",
+                                                style={
+                                                    "textAlign": "center",
+                                                    "marginBottom": "0.625rem",
+                                                    "color": "#fff",
+                                                    "fontWeight": "700",
+                                                    "fontSize": "0.875rem"
+                                                }
                                             ),
+                                            html.Div(
+                                                id="nearby-transport-mrt-content",
+                                                style={
+                                                    "overflowY": "auto",
+                                                    "overflowX": "hidden",
+                                                    "maxHeight": "calc(100% - 2.5rem)"
+                                                },
+                                                children=[
+                                                    html.P(
+                                                        "Select a location to view nearest MRT stations",
+                                                        style={
+                                                            "textAlign": "center",
+                                                            "color": "#999",
+                                                            "fontSize": "0.75rem",
+                                                            "fontStyle": "italic",
+                                                            "padding": "0.9375rem"
+                                                        }
+                                                    )
+                                                ]
+                                            )
                                         ]
                                     ),
                                 ]
                             ),
-                            # EV Charging Points column
+                            # Taxi Stands column (outside nearby facilities)
                             html.Div(
-                                id="nearby-transport-ev-charging-column",
+                                id="nearby-transport-taxi-stand-column",
                                 style={
-                                    "flex": "1",
+                                    "width": "100%",
                                     "backgroundColor": "#2c3e50",
                                     "borderRadius": "0.3125rem",
                                     "padding": "0.9375rem",
-                                    "minHeight": "9.375rem"
+                                    "minHeight": "9.375rem",
+                                    "marginTop": "0.625rem"
                                 },
                                 children=[
                                     html.H4(
-                                        "Nearby EV Charging Points",
+                                        "Nearby 300m Taxi Stands",
                                         style={
                                             "textAlign": "center",
                                             "marginBottom": "0.625rem",
@@ -342,7 +280,7 @@ def nearby_transport_page():
                                         }
                                     ),
                                     html.Div(
-                                        id="nearby-transport-ev-charging-content",
+                                        id="nearby-transport-taxi-stand-content",
                                         style={
                                             "overflowY": "auto",
                                             "overflowX": "hidden",
@@ -350,7 +288,51 @@ def nearby_transport_page():
                                         },
                                         children=[
                                             html.P(
-                                                "Select a location to view nearby EV charging points",
+                                                "Select a location to view nearest taxi stands",
+                                                style={
+                                                    "textAlign": "center",
+                                                    "color": "#999",
+                                                    "fontSize": "0.75rem",
+                                                    "fontStyle": "italic",
+                                                    "padding": "0.9375rem"
+                                                }
+                                            )
+                                        ]
+                                    )
+                                ]
+                            ),
+                            # Bicycle Parking column (outside nearby facilities)
+                            html.Div(
+                                id="nearby-transport-bicycle-column",
+                                style={
+                                    "width": "100%",
+                                    "backgroundColor": "#2c3e50",
+                                    "borderRadius": "0.3125rem",
+                                    "padding": "0.9375rem",
+                                    "minHeight": "9.375rem",
+                                    "marginTop": "0.625rem"
+                                },
+                                children=[
+                                    html.H4(
+                                        "Nearby 300m Bicycle Parking Spots",
+                                        style={
+                                            "textAlign": "center",
+                                            "marginBottom": "0.625rem",
+                                            "color": "#fff",
+                                            "fontWeight": "700",
+                                            "fontSize": "0.875rem"
+                                        }
+                                    ),
+                                    html.Div(
+                                        id="nearby-transport-bicycle-content",
+                                        style={
+                                            "overflowY": "auto",
+                                            "overflowX": "hidden",
+                                            "maxHeight": "calc(100% - 2.5rem)"
+                                        },
+                                        children=[
+                                            html.P(
+                                                "Select a location to view nearest bicycle parking",
                                                 style={
                                                     "textAlign": "center",
                                                     "color": "#999",
@@ -410,7 +392,7 @@ def nearby_transport_page():
                                         center=sg_center,
                                         zoom=fixed_zoom,
                                         minZoom=10,
-                                        maxZoom=19,
+                                        maxZoom=18,
                                         maxBounds=sg_bounds,
                                         maxBoundsViscosity=1.0,
                                         style={
@@ -423,7 +405,7 @@ def nearby_transport_page():
                                     dl.TileLayer(
                                         url=onemap_tiles_url,
                                         attribution=onemap_attribution,
-                                        maxNativeZoom=19,
+                                        maxNativeZoom=18,
                                     ),
                                     dl.LayerGroup(id="nearby-transport-search-marker"),
                                     dl.LayerGroup(id="nearby-bus-stop-markers"),
