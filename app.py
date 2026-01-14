@@ -71,6 +71,30 @@ app.layout = html.Div(
                 build_dashboard_banner(),
             ],
         ),
+        # Rail Operational Status Banner --------------------------------#
+        html.Div(
+            id="rail-status-banner",
+            style={
+                "backgroundColor": "#1a2a3a",
+                "padding": "0.375rem 1.25rem",
+                "borderBottom": "0.0625rem solid #4a5a6a",
+                "width": "100%",
+                "display": "flex",
+                "alignItems": "center",
+                "justifyContent": "center",
+                "minHeight": "2rem",
+            },
+            children=[
+                html.Div(
+                    id="mrt-line-status-display",
+                    style={"width": "100%"},
+                    children=[
+                        html.P("Loading MRT line status...", 
+                               style={"color": "#999", "margin": "0", "textAlign": "center", "fontSize": "0.75rem"})
+                    ]
+                )
+            ]
+        ),
         # Hidden search bar section div (for tab navigation callback compatibility)
                 html.Div(
                     id="search-bar-section",
