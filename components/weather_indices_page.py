@@ -322,7 +322,7 @@ def weather_indices_page():
                                             dl.TileLayer(
                                                 url=onemap_tiles_url,
                                                 attribution=onemap_attribution,
-                                                maxNativeZoom=19,
+                                                maxNativeZoom=18,
                                             ),
                                             dl.LayerGroup(
                                                 id="weather-indices-markers"

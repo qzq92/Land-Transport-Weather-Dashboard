@@ -65,11 +65,11 @@ def transport_page():
                                 id="taxi-availability-card",
                                 style={
                                     "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "8px",
-                                    "padding": "10px",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
-                                    "gap": "8px",
+                                    "gap": "0.5rem",
                                 },
                                 children=[
                                     html.Div(
@@ -81,11 +81,11 @@ def transport_page():
                                         },
                                         children=[
                                             html.Span(
-                                                "🚕 Current Taxi Locations/Stands",
+                                                "🚕 Current Taxi Availability/Stands",
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
-                                                    "fontSize": "13px"
+                                                    "fontSize": "0.8125rem"
                                                 }
                                             ),
                                             html.Div(
@@ -100,8 +100,8 @@ def transport_page():
                                                         html.Span("--", style={"color": "#999"}),
                                                         style={
                                                             "backgroundColor": "rgb(58, 74, 90)",
-                                                            "padding": "4px 8px",
-                                                            "borderRadius": "4px",
+                                                            "padding": "0.25rem 0.5rem",
+                                                            "borderRadius": "0.25rem",
                                                         }
                                                     )
                                                 ]
@@ -115,11 +115,11 @@ def transport_page():
                                 id="cctv-card",
                                 style={
                                     "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "8px",
-                                    "padding": "10px",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
-                                    "gap": "8px",
+                                    "gap": "0.5rem",
                                 },
                                 children=[
                                     html.Div(
@@ -135,7 +135,7 @@ def transport_page():
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
-                                                    "fontSize": "13px"
+                                                    "fontSize": "0.8125rem"
                                                 }
                                             ),
                                             html.Div(
@@ -150,8 +150,8 @@ def transport_page():
                                                         html.Span("--", style={"color": "#999"}),
                                                         style={
                                                             "backgroundColor": "rgb(58, 74, 90)",
-                                                            "padding": "4px 8px",
-                                                            "borderRadius": "4px",
+                                                            "padding": "0.25rem 0.5rem",
+                                                            "borderRadius": "0.25rem",
                                                         }
                                                     )
                                                 ]
@@ -165,11 +165,11 @@ def transport_page():
                                 id="speed-camera-card",
                                 style={
                                     "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "8px",
-                                    "padding": "10px",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
-                                    "gap": "8px",
+                                    "gap": "0.5rem",
                                 },
                                 children=[
                                     html.Div(
@@ -185,7 +185,7 @@ def transport_page():
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
-                                                    "fontSize": "13px"
+                                                    "fontSize": "0.8125rem"
                                                 }
                                             ),
                                             html.Div(
@@ -200,8 +200,8 @@ def transport_page():
                                                         html.Span("--", style={"color": "#999"}),
                                                         style={
                                                             "backgroundColor": "rgb(58, 74, 90)",
-                                                            "padding": "4px 8px",
-                                                            "borderRadius": "4px",
+                                                            "padding": "0.25rem 0.5rem",
+                                                            "borderRadius": "0.25rem",
                                                         }
                                                     )
                                                 ]
@@ -215,11 +215,11 @@ def transport_page():
                                 id="erp-card",
                                 style={
                                     "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "8px",
-                                    "padding": "10px",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
-                                    "gap": "8px",
+                                    "gap": "0.5rem",
                                 },
                                 children=[
                                     html.Div(
@@ -235,7 +235,7 @@ def transport_page():
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
-                                                    "fontSize": "13px"
+                                                    "fontSize": "0.8125rem"
                                                 }
                                             ),
                                             html.Div(
@@ -250,8 +250,8 @@ def transport_page():
                                                         html.Span("--", style={"color": "#999"}),
                                                         style={
                                                             "backgroundColor": "rgb(58, 74, 90)",
-                                                            "padding": "4px 8px",
-                                                            "borderRadius": "4px",
+                                                            "padding": "0.25rem 0.5rem",
+                                                            "borderRadius": "0.25rem",
                                                         }
                                                     )
                                                 ]
@@ -265,11 +265,11 @@ def transport_page():
                                 id="vms-card",
                                 style={
                                     "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "8px",
-                                    "padding": "10px",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
-                                    "gap": "8px",
+                                    "gap": "0.5rem",
                                 },
                                 children=[
                                     html.Div(
@@ -285,7 +285,7 @@ def transport_page():
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
-                                                    "fontSize": "13px"
+                                                    "fontSize": "0.8125rem"
                                                 }
                                             ),
                                             html.Div(
@@ -300,8 +300,8 @@ def transport_page():
                                                         html.Span("--", style={"color": "#999"}),
                                                         style={
                                                             "backgroundColor": "rgb(58, 74, 90)",
-                                                            "padding": "4px 8px",
-                                                            "borderRadius": "4px",
+                                                            "padding": "0.25rem 0.5rem",
+                                                            "borderRadius": "0.25rem",
                                                         }
                                                     )
                                                 ]
@@ -315,11 +315,11 @@ def transport_page():
                                 id="bus-stops-card",
                                 style={
                                     "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "8px",
-                                    "padding": "10px",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
-                                    "gap": "8px",
+                                    "gap": "0.5rem",
                                 },
                                 children=[
                                     html.Div(
@@ -335,7 +335,7 @@ def transport_page():
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
-                                                    "fontSize": "13px"
+                                                    "fontSize": "0.8125rem"
                                                 }
                                             ),
                                             html.Div(
@@ -350,8 +350,74 @@ def transport_page():
                                                         html.Span("--", style={"color": "#999"}),
                                                         style={
                                                             "backgroundColor": "rgb(58, 74, 90)",
-                                                            "padding": "4px 8px",
-                                                            "borderRadius": "4px",
+                                                            "padding": "0.25rem 0.5rem",
+                                                            "borderRadius": "0.25rem",
+                                                        }
+                                                    )
+                                                ]
+                                            ),
+                                        ]
+                                    ),
+                                    html.Div(
+                                        id="bus-stops-disclaimer",
+                                        style={"display": "none"},
+                                        children=[
+                                            html.P(
+                                                "⚠️ Note: Bus stop markers may deviate from actual locations due to road construction works.",
+                                                style={
+                                                    "color": "#fbbf24",
+                                                    "fontSize": "0.7rem",
+                                                    "fontStyle": "italic",
+                                                    "margin": "0",
+                                                    "lineHeight": "1.3",
+                                                }
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            # Bus Services card
+                            html.Div(
+                                id="bus-services-card",
+                                style={
+                                    "backgroundColor": "#4a5a6a",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
+                                    "display": "flex",
+                                    "flexDirection": "column",
+                                    "gap": "0.5rem",
+                                },
+                                children=[
+                                    html.Div(
+                                        style={
+                                            "display": "flex",
+                                            "flexDirection": "row",
+                                            "alignItems": "center",
+                                            "justifyContent": "space-between",
+                                        },
+                                        children=[
+                                            html.Span(
+                                                "🚌 Bus Services Currently in Operation",
+                                                style={
+                                                    "color": "#fff",
+                                                    "fontWeight": "600",
+                                                    "fontSize": "0.8125rem"
+                                                }
+                                            ),
+                                            html.Div(
+                                                id="bus-services-count-value",
+                                                style={
+                                                    "color": "#4169E1",
+                                                    "fontSize": "1.125rem",
+                                                    "fontWeight": "700",
+                                                },
+                                                children=[
+                                                    html.Div(
+                                                        html.Span("--", style={"color": "#999"}),
+                                                        style={
+                                                            "backgroundColor": "rgb(58, 74, 90)",
+                                                            "padding": "0.25rem 0.5rem",
+                                                            "borderRadius": "0.25rem",
                                                         }
                                                     )
                                                 ]
@@ -365,11 +431,11 @@ def transport_page():
                                 id="traffic-incidents-card",
                                 style={
                                     "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "8px",
-                                    "padding": "10px",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
-                                    "gap": "8px",
+                                    "gap": "0.5rem",
                                 },
                                 children=[
                                     html.Div(
@@ -385,7 +451,7 @@ def transport_page():
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
-                                                    "fontSize": "13px"
+                                                    "fontSize": "0.8125rem"
                                                 }
                                             ),
                                             html.Div(
@@ -400,8 +466,8 @@ def transport_page():
                                                         html.Span("--", style={"color": "#999"}),
                                                         style={
                                                             "backgroundColor": "rgb(58, 74, 90)",
-                                                            "padding": "4px 8px",
-                                                            "borderRadius": "4px",
+                                                            "padding": "0.25rem 0.5rem",
+                                                            "borderRadius": "0.25rem",
                                                         }
                                                     )
                                                 ]
@@ -411,7 +477,7 @@ def transport_page():
                                     html.Div(
                                         id="traffic-incidents-messages",
                                         style={
-                                            "maxHeight": "150px",
+                                            "maxHeight": "9.375rem",
                                             "overflowY": "auto",
                                             "display": "none",
                                         }
@@ -449,17 +515,17 @@ def transport_page():
                                 },
                                 children=[
                                     html.Button(
-                                        "Show Current Taxi Locations/Stands",
+                                        "Show Current Taxi Availability/Stands",
                                         id="taxi-toggle-btn",
                                         n_clicks=0,
                                         style={
                                             "backgroundColor": "transparent",
-                                            "border": "2px solid #FFD700",
+                                            "border": "0.125rem solid #FFD700",
                                             "borderRadius": "4px",
                                             "color": "#FFD700",
                                             "cursor": "pointer",
-                                            "padding": "4px 10px",
-                                            "fontSize": "12px",
+                                            "padding": "0.25rem 0.625rem",
+                                            "fontSize": "0.75rem",
                                             "fontWeight": "600",
                                         },
                                     ),
@@ -469,12 +535,12 @@ def transport_page():
                                         n_clicks=0,
                                         style={
                                             "backgroundColor": "transparent",
-                                            "border": "2px solid #4CAF50",
+                                            "border": "0.125rem solid #4CAF50",
                                             "borderRadius": "4px",
                                             "color": "#4CAF50",
                                             "cursor": "pointer",
-                                            "padding": "4px 10px",
-                                            "fontSize": "12px",
+                                            "padding": "0.25rem 0.625rem",
+                                            "fontSize": "0.75rem",
                                             "fontWeight": "600",
                                         },
                                     ),
@@ -484,12 +550,12 @@ def transport_page():
                                         n_clicks=0,
                                         style={
                                             "backgroundColor": "transparent",
-                                            "border": "2px solid #FF6B6B",
+                                            "border": "0.125rem solid #FF6B6B",
                                             "borderRadius": "4px",
                                             "color": "#FF6B6B",
                                             "cursor": "pointer",
-                                            "padding": "4px 10px",
-                                            "fontSize": "12px",
+                                            "padding": "0.25rem 0.625rem",
+                                            "fontSize": "0.75rem",
                                             "fontWeight": "600",
                                         },
                                     ),
@@ -499,12 +565,12 @@ def transport_page():
                                         n_clicks=0,
                                         style={
                                             "backgroundColor": "transparent",
-                                            "border": "2px solid #FF9800",
+                                            "border": "0.125rem solid #FF9800",
                                             "borderRadius": "4px",
                                             "color": "#FF9800",
                                             "cursor": "pointer",
-                                            "padding": "4px 10px",
-                                            "fontSize": "12px",
+                                            "padding": "0.25rem 0.625rem",
+                                            "fontSize": "0.75rem",
                                             "fontWeight": "600",
                                         },
                                     ),
@@ -514,12 +580,12 @@ def transport_page():
                                         n_clicks=0,
                                         style={
                                             "backgroundColor": "transparent",
-                                            "border": "2px solid #C0C0C0",
+                                            "border": "0.125rem solid #C0C0C0",
                                             "borderRadius": "4px",
                                             "color": "#C0C0C0",
                                             "cursor": "pointer",
-                                            "padding": "4px 10px",
-                                            "fontSize": "12px",
+                                            "padding": "0.25rem 0.625rem",
+                                            "fontSize": "0.75rem",
                                             "fontWeight": "600",
                                         },
                                     ),
@@ -529,12 +595,12 @@ def transport_page():
                                         n_clicks=0,
                                         style={
                                             "backgroundColor": "transparent",
-                                            "border": "2px solid #81C784",
+                                            "border": "0.125rem solid #81C784",
                                             "borderRadius": "4px",
                                             "color": "#81C784",
                                             "cursor": "pointer",
-                                            "padding": "4px 10px",
-                                            "fontSize": "12px",
+                                            "padding": "0.25rem 0.625rem",
+                                            "fontSize": "0.75rem",
                                             "fontWeight": "600",
                                         },
                                     ),
@@ -544,12 +610,12 @@ def transport_page():
                                         n_clicks=0,
                                         style={
                                             "backgroundColor": "transparent",
-                                            "border": "2px solid #4169E1",
+                                            "border": "0.125rem solid #4169E1",
                                             "borderRadius": "4px",
                                             "color": "#4169E1",
                                             "cursor": "pointer",
-                                            "padding": "4px 10px",
-                                            "fontSize": "12px",
+                                            "padding": "0.25rem 0.625rem",
+                                            "fontSize": "0.75rem",
                                             "fontWeight": "600",
                                         },
                                     ),
@@ -569,7 +635,7 @@ def transport_page():
                                         center=sg_center,
                                         zoom=fixed_zoom,
                                         minZoom=10,
-                                        maxZoom=19,
+                                        maxZoom=18,
                                         maxBounds=sg_bounds,
                                         maxBoundsViscosity=1.0,
                                         style={
@@ -581,7 +647,7 @@ def transport_page():
                                             dl.TileLayer(
                                                 url=onemap_tiles_url,
                                                 attribution=onemap_attribution,
-                                                maxNativeZoom=19,
+                                                maxNativeZoom=18,
                                             ),
                                             dl.LayerGroup(id="taxi-markers"),
                                             dl.LayerGroup(id="cctv-markers"),
@@ -591,6 +657,7 @@ def transport_page():
                                             dl.LayerGroup(id="traffic-incidents-markers"),
                                             dl.LayerGroup(id="vms-markers"),
                                             dl.LayerGroup(id="bus-stops-markers"),
+                                            dl.LayerGroup(id="bus-arrival-popup-layer"),
                                         ],
                                         zoomControl=True,
                                         dragging=True,
@@ -601,24 +668,24 @@ def transport_page():
                                         id="taxi-legend",
                                         style={
                                             "position": "absolute",
-                                            "top": "10px",
-                                            "right": "10px",
+                                            "top": "0.625rem",
+                                            "right": "0.625rem",
                                             "backgroundColor": "rgba(26, 42, 58, 0.9)",
-                                            "borderRadius": "8px",
-                                            "padding": "10px",
+                                            "borderRadius": "0.5rem",
+                                            "padding": "0.625rem",
                                             "zIndex": "1000",
-                                            "boxShadow": "0 2px 8px rgba(0, 0, 0, 0.3)",
+                                            "boxShadow": "0 0.125rem 0.5rem rgba(0, 0, 0, 0.3)",
                                             "display": "none",  # Hidden by default, shown when taxi toggle is on
                                         },
                                         children=[
                                             html.Div(
                                                 style={
-                                                    "fontSize": "12px",
+                                                    "fontSize": "0.75rem",
                                                     "fontWeight": "600",
                                                     "color": "#fff",
-                                                    "marginBottom": "8px",
-                                                    "borderBottom": "1px solid #4a5a6a",
-                                                    "paddingBottom": "4px",
+                                                    "marginBottom": "0.5rem",
+                                                    "borderBottom": "0.0625rem solid #4a5a6a",
+                                                    "paddingBottom": "0.25rem",
                                                 },
                                                 children="Taxi Legend"
                                             ),
@@ -626,23 +693,23 @@ def transport_page():
                                                 style={
                                                     "display": "flex",
                                                     "alignItems": "center",
-                                                    "marginBottom": "6px",
+                                                    "marginBottom": "0.375rem",
                                                 },
                                                 children=[
                                                     html.Div(
                                                         style={
-                                                            "width": "12px",
-                                                            "height": "12px",
+                                                            "width": "0.75rem",
+                                                            "height": "0.75rem",
                                                             "borderRadius": "50%",
                                                             "backgroundColor": "#FFD700",
-                                                            "marginRight": "8px",
+                                                            "marginRight": "0.5rem",
                                                         }
                                                     ),
                                                     html.Span(
                                                         "Taxi Locations",
                                                         style={
                                                             "color": "#fff",
-                                                            "fontSize": "11px",
+                                                            "fontSize": "0.6875rem",
                                                         }
                                                     ),
                                                 ]
@@ -657,22 +724,43 @@ def transport_page():
                                                         style={
                                                             "width": "0",
                                                             "height": "0",
-                                                            "borderLeft": "6px solid transparent",
-                                                            "borderRight": "6px solid transparent",
-                                                            "borderBottom": "12px solid #FFA500",
-                                                            "marginRight": "8px",
+                                                            "borderLeft": "0.375rem solid transparent",
+                                                            "borderRight": "0.375rem solid transparent",
+                                                            "borderBottom": "0.75rem solid #FFA500",
+                                                            "marginRight": "0.5rem",
                                                         }
                                                     ),
                                                     html.Span(
                                                         "Taxi Stands",
                                                         style={
                                                             "color": "#fff",
-                                                            "fontSize": "11px",
+                                                            "fontSize": "0.6875rem",
                                                         }
                                                     ),
                                                 ]
                                             ),
                                         ]
+                                    ),
+                                    # Bus Stop Zoom Message Overlay
+                                    html.Div(
+                                        id="bus-stop-zoom-message",
+                                        style={
+                                            "position": "absolute",
+                                            "top": "50%",
+                                            "left": "50%",
+                                            "transform": "translate(-50%, -50%)",
+                                            "backgroundColor": "rgba(0, 0, 0, 0.8)",
+                                            "color": "#fbbf24",
+                                            "padding": "1rem 2rem",
+                                            "borderRadius": "8px",
+                                            "zIndex": "1000",
+                                            "textAlign": "center",
+                                            "display": "none",
+                                            "fontWeight": "600",
+                                            "fontSize": "1rem",
+                                            "border": "0.0625rem solid #fbbf24",
+                                        },
+                                        children="Zoom in to level 14+ to view bus stops"
                                     ),
                                 ]
                             ),
@@ -699,11 +787,11 @@ def transport_page():
                                 id="bus-arrival-card",
                                 style={
                                     "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "8px",
-                                    "padding": "10px",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
-                                    "gap": "8px",
+                                    "gap": "0.5rem",
                                     "marginBottom": "0.9375rem",
                                 },
                                 children=[
@@ -720,7 +808,7 @@ def transport_page():
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
-                                                    "fontSize": "13px"
+                                                    "fontSize": "0.8125rem"
                                                 }
                                             ),
                                         ]
@@ -739,8 +827,8 @@ def transport_page():
                                                 style={
                                                     "flex": "1",
                                                     "padding": "0.375rem 0.5rem",
-                                                    "borderRadius": "4px",
-                                                    "border": "1px solid #5a6a7a",
+                                                    "borderRadius": "0.25rem",
+                                                    "border": "0.0625rem solid #5a6a7a",
                                                     "backgroundColor": "rgb(58, 74, 90)",
                                                     "color": "#fff",
                                                     "fontSize": "0.75rem",
@@ -749,6 +837,96 @@ def transport_page():
                                             html.Button(
                                                 "Search",
                                                 id="bus-stop-search-btn",
+                                                n_clicks=0,
+                                                style={
+                                                    "padding": "0.375rem 0.75rem",
+                                                    "backgroundColor": "#4169E1",
+                                                    "color": "#fff",
+                                                    "border": "none",
+                                                    "borderRadius": "0.25rem",
+                                                    "cursor": "pointer",
+                                                    "fontSize": "0.75rem",
+                                                    "fontWeight": "600",
+                                                }
+                                            ),
+                                        ]
+                                    ),
+                                    html.Div(
+                                        id="bus-arrival-content",
+                                        style={
+                                            "maxHeight": "25rem",
+                                            "overflowY": "auto",
+                                        },
+                                        children=[
+                                            html.P(
+                                                "Click on a bus stop marker or search to view bus arrival times",
+                                                style={
+                                                    "color": "#999",
+                                                    "textAlign": "center",
+                                                    "fontSize": "0.75rem",
+                                                    "fontStyle": "italic",
+                                                    "margin": "0.5rem 0",
+                                                }
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            # Bus Services Search card
+                            html.Div(
+                                id="bus-services-search-card",
+                                style={
+                                    "backgroundColor": "#4a5a6a",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
+                                    "display": "flex",
+                                    "flexDirection": "column",
+                                    "gap": "0.5rem",
+                                    "marginBottom": "0.9375rem",
+                                },
+                                children=[
+                                    html.Div(
+                                        style={
+                                            "display": "flex",
+                                            "flexDirection": "row",
+                                            "alignItems": "center",
+                                            "justifyContent": "space-between",
+                                        },
+                                        children=[
+                                            html.Span(
+                                                "🔍 Bus Services Search",
+                                                style={
+                                                    "color": "#fff",
+                                                    "fontWeight": "600",
+                                                    "fontSize": "0.8125rem"
+                                                }
+                                            ),
+                                        ]
+                                    ),
+                                    html.Div(
+                                        style={
+                                            "display": "flex",
+                                            "gap": "0.5rem",
+                                            "marginBottom": "0.5rem",
+                                        },
+                                        children=[
+                                            dcc.Input(
+                                                id="bus-service-search-input",
+                                                type="text",
+                                                placeholder="Enter bus service number (e.g., 21, 21A, CT8)",
+                                                style={
+                                                    "flex": "1",
+                                                    "padding": "0.375rem 0.5rem",
+                                                    "borderRadius": "4px",
+                                                    "border": "0.0625rem solid #5a6a7a",
+                                                    "backgroundColor": "rgb(58, 74, 90)",
+                                                    "color": "#fff",
+                                                    "fontSize": "0.75rem",
+                                                },
+                                            ),
+                                            html.Button(
+                                                "Search",
+                                                id="bus-service-search-btn",
                                                 n_clicks=0,
                                                 style={
                                                     "padding": "0.375rem 0.75rem",
@@ -764,14 +942,14 @@ def transport_page():
                                         ]
                                     ),
                                     html.Div(
-                                        id="bus-arrival-content",
+                                        id="bus-service-search-content",
                                         style={
-                                            "maxHeight": "300px",
+                                            "maxHeight": "18.75rem",
                                             "overflowY": "auto",
                                         },
                                         children=[
                                             html.P(
-                                                "Click on a bus stop marker to view bus arrival times",
+                                                "Enter a bus service number to view its route information",
                                                 style={
                                                     "color": "#999",
                                                     "textAlign": "center",
@@ -782,41 +960,6 @@ def transport_page():
                                             )
                                         ]
                                     ),
-                                ]
-                            ),
-                            html.Div(
-                                style={
-                                    "borderBottom": "0.0625rem solid #5a6a7a",
-                                    "paddingBottom": "0.625rem",
-                                    "marginBottom": "0.625rem",
-                                },
-                                children=[
-                                    html.H5(
-                                        "🚇 Rail Operational Status",
-                                        style={
-                                            "margin": "0",
-                                            "color": "#fff",
-                                            "fontWeight": "600",
-                                        }
-                                    ),
-                                ]
-                            ),
-                            html.Div(
-                                id="mrt-line-status-display",
-                                style={
-                                    "display": "flex",
-                                    "flexDirection": "column",
-                                    "gap": "0.625rem",
-                                },
-                                children=[
-                                    html.P(
-                                        "Loading MRT line status...",
-                                        style={
-                                            "color": "#999",
-                                            "textAlign": "center",
-                                            "fontSize": "0.75rem",
-                                        }
-                                    )
                                 ]
                             ),
                         ]

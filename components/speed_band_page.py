@@ -310,7 +310,7 @@ def speed_band_page():
                                                 center=sg_center,
                                                 zoom=fixed_zoom,
                                                 minZoom=10,
-                                                maxZoom=19,
+                                                maxZoom=18,
                                                 maxBounds=sg_bounds,
                                                 maxBoundsViscosity=1.0,
                                                 style={
@@ -322,7 +322,7 @@ def speed_band_page():
                                                     dl.TileLayer(
                                                         url=onemap_tiles_url,
                                                         attribution=onemap_attribution,
-                                                        maxNativeZoom=19,
+                                                        maxNativeZoom=18,
                                                     ),
                                                     dl.LayerGroup(id="speed-band-map-markers"),
                                                 ],

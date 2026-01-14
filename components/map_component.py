@@ -95,7 +95,7 @@ def map_component(lat=None, lon=None):
                 dl.TileLayer(
                     url=onemap_tiles_url,
                     attribution=onemap_attribution,
-                    maxNativeZoom=19,
+                    maxNativeZoom=18,
                 ),
                 dl.ScaleControl(imperial=False, position="bottomleft"),
                 dl.LayerGroup(id="main-psi-markers"),
