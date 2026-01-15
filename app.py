@@ -26,6 +26,8 @@ from callbacks.busstop_callbacks import register_busstop_callbacks
 from callbacks.carpark_callback import register_carpark_callbacks
 from callbacks.tab_navigation_callback import register_tab_navigation_callback
 from callbacks.transport_callback import register_transport_callbacks
+from callbacks.bus_arrival_callback import register_bus_arrival_callbacks
+from callbacks.bus_service_callback import register_bus_service_callbacks
 from callbacks.train_service_alerts_callback import register_train_service_alerts_callbacks
 from callbacks.speedband_callback import register_speedband_callbacks
 from callbacks.mrt_crowd_callback import register_mrt_crowd_callbacks
@@ -56,6 +58,8 @@ register_mrt_callbacks(app)
 register_busstop_callbacks(app)
 register_carpark_callbacks(app)
 register_transport_callbacks(app)
+register_bus_arrival_callbacks(app)
+register_bus_service_callbacks(app)
 register_train_service_alerts_callbacks(app)
 register_speedband_callbacks(app)
 register_mrt_crowd_callbacks(app)
