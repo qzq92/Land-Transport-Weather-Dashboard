@@ -2,41 +2,8 @@
 Callback functions for handling flood alerts API integration.
 Reference: https://data.gov.sg/datasets?formats=API&resultId=d_f1404e08587ce555b9ea3f565e2eb9a3
 """
-import os
-import requests
 from dash import Input, Output, html
-from dotenv import load_dotenv
-
-load_dotenv(override=True)
-
-
-def fetch_flood_alerts():
-    """
-    Fetch flood alerts from data.gov.sg API.
-    Reference: https://data.gov.sg/datasets?formats=API&resultId=d_f1404e08587ce555b9ea3f565e2eb9a3
-
-    Returns:
-        Dictionary containing flood alert data or None if error
-    """
-    api_key = os.getenv('DATA_GOV_API')
-    if not api_key:
-        print("DATA_GOV_API environment variable not set")
-        return None
-
-    url = "https://api.data.gov.sg/v1/environment/flood-alerts"
-    headers = {
-        "X-API-Key": api_key,
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    }
-
-    try:
-        res = requests.get(url, headers=headers, timeout=10)
-        if res.status_code == 200:
-            return res.json()
-        print(f"Flood alerts API failed: status={res.status_code}")
-    except (requests.exceptions.RequestException, ValueError) as error:
-        print(f"Error calling flood alerts API: {error}")
-    return None
+from callbacks.realtime_weather_callback import fetch_flood_alerts_async
 
 
 def format_flood_alerts(data):
@@ -144,8 +111,9 @@ def register_flood_callbacks(app):
         # n_intervals is required by the callback but not used directly
         _ = n_intervals
 
-        # Fetch flood alerts
-        flood_data = fetch_flood_alerts()
+        # Fetch flood alerts asynchronously
+        future = fetch_flood_alerts_async()
+        flood_data = future.result() if future else None
         flood_banner = format_flood_alerts(flood_data)
 
         if flood_banner:

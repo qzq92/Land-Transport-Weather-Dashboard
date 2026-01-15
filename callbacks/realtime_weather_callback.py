@@ -24,17 +24,6 @@ LIGHTNING_URL = f"{API_BASE}/weather?api=lightning"
 SUPPORTED_ENDPOINTS = ['air-temperature', 'rainfall', 'relative-humidity', 'wind-speed']
 
 
-def fetch_flood_alerts():
-    """
-    Fetch flood alerts from data.gov.sg v2 API (threaded).
-    Reference: https://api-open.data.gov.sg/v2/real-time/api/weather/flood-alerts
-
-    Returns:
-        Dictionary containing flood alert data or None if error
-    """
-    return fetch_url_2min_cached(FLOOD_ALERTS_URL, get_default_headers())
-
-
 def fetch_flood_alerts_async():
     """
     Fetch flood alerts asynchronously (returns Future).
@@ -72,16 +61,6 @@ def fetch_realtime_data_async(endpoint):
 
     url = f"{API_BASE}/{endpoint}"
     return _executor.submit(fetch_url_2min_cached, url, get_default_headers())
-
-
-def fetch_lightning_data():
-    """
-    Fetch lightning observations from data.gov.sg weather API.
-
-    Returns:
-        Dictionary containing lightning data or None if error
-    """
-    return fetch_url_2min_cached(LIGHTNING_URL, get_default_headers())
 
 
 def fetch_lightning_data_async():
@@ -1809,7 +1788,8 @@ def register_realtime_weather_callbacks(app):
     def update_lightning_readings(n_intervals):
         """Update lightning readings periodically."""
         _ = n_intervals
-        data = fetch_lightning_data()
+        future = fetch_lightning_data_async()
+        data = future.result() if future else None
         return format_lightning_readings(data)
 
     @app.callback(
@@ -1819,7 +1799,8 @@ def register_realtime_weather_callbacks(app):
     def update_flood_readings(n_intervals):
         """Update flood readings periodically."""
         _ = n_intervals
-        data = fetch_flood_alerts()
+        future = fetch_flood_alerts_async()
+        data = future.result() if future else None
         return format_flood_readings(data)
 
     @app.callback(
@@ -1970,11 +1951,13 @@ def register_realtime_weather_callbacks(app):
                 speed_data = fetch_realtime_data('wind-speed')
                 return create_wind_textbox_markers(speed_data)
             if button_id == 'toggle-lightning-readings':
-                data = fetch_lightning_data()
+                future = fetch_lightning_data_async()
+                data = future.result() if future else None
                 if data:
                     return create_lightning_markers(data)
             if button_id == 'toggle-flood-readings':
-                data = fetch_flood_alerts()
+                future = fetch_flood_alerts_async()
+                data = future.result() if future else None
                 if data:
                     return create_flood_markers(data)
             if button_id == 'toggle-wbgt-readings':
@@ -2117,7 +2100,8 @@ def register_realtime_weather_callbacks(app):
         """Update lightning sensor values when section is visible."""
         if style and style.get('display') == 'none':
             return html.P("Loading...", style={"color": "#999", "fontSize": "12px", "textAlign": "center"})
-        data = fetch_lightning_data()
+        future = fetch_lightning_data_async()
+        data = future.result() if future else None
         return format_lightning_indicator(data)
 
     @app.callback(
@@ -2129,7 +2113,8 @@ def register_realtime_weather_callbacks(app):
         """Update flood sensor values when section is visible."""
         if style and style.get('display') == 'none':
             return html.P("Loading...", style={"color": "#999", "fontSize": "12px", "textAlign": "center"})
-        data = fetch_flood_alerts()
+        future = fetch_flood_alerts_async()
+        data = future.result() if future else None
         return format_flood_indicator(data)
 
     @app.callback(
@@ -2381,7 +2366,8 @@ def register_realtime_weather_callbacks(app):
     def update_lightning_indicator(n_intervals):
         """Update lightning status indicator periodically."""
         _ = n_intervals
-        data = fetch_lightning_data()
+        future = fetch_lightning_data_async()
+        data = future.result() if future else None
         return format_lightning_indicator(data)
 
     @app.callback(
@@ -2391,7 +2377,8 @@ def register_realtime_weather_callbacks(app):
     def update_lightning_markers(n_intervals):
         """Update lightning markers on map periodically."""
         _ = n_intervals
-        data = fetch_lightning_data()
+        future = fetch_lightning_data_async()
+        data = future.result() if future else None
         if data:
             return create_lightning_markers(data)
         return []
@@ -2403,7 +2390,8 @@ def register_realtime_weather_callbacks(app):
     def update_flood_indicator(n_intervals):
         """Update flood status indicator periodically."""
         _ = n_intervals
-        data = fetch_flood_alerts()
+        future = fetch_flood_alerts_async()
+        data = future.result() if future else None
         return format_flood_indicator(data)
 
     @app.callback(
@@ -2413,7 +2401,8 @@ def register_realtime_weather_callbacks(app):
     def update_flood_markers(n_intervals):
         """Update flood markers on map periodically."""
         _ = n_intervals
-        data = fetch_flood_alerts()
+        future = fetch_flood_alerts_async()
+        data = future.result() if future else None
         if data:
             return create_flood_markers(data)
         return []
@@ -2427,7 +2416,8 @@ def register_realtime_weather_callbacks(app):
     def update_main_lightning_indicator(n_intervals):
         """Update lightning status indicator on main page periodically."""
         _ = n_intervals
-        data = fetch_lightning_data()
+        future = fetch_lightning_data_async()
+        data = future.result() if future else None
         summary = format_lightning_summary(data)
         # For content, show detailed list of locations
         content = format_lightning_readings(data)
@@ -2441,7 +2431,8 @@ def register_realtime_weather_callbacks(app):
     def update_main_flood_indicator(n_intervals):
         """Update flood status indicator on main page periodically."""
         _ = n_intervals
-        data = fetch_flood_alerts()
+        future = fetch_flood_alerts_async()
+        data = future.result() if future else None
         summary = format_flood_summary(data)
         # For content, show detailed list of alerts
         content = format_flood_readings(data)
