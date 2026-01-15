@@ -11,6 +11,7 @@ from utils.map_utils import (
     SG_MAP_BOUNDS,
     ONEMAP_TILES_URL
 )
+from components.metric_card import create_metric_card
 
 
 def transport_page():
@@ -331,7 +332,7 @@ def transport_page():
                                         },
                                         children=[
                                             html.Span(
-                                                "🚌 Bus Stops",
+                                                "🚏 Bus Stops",
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
@@ -377,54 +378,11 @@ def transport_page():
                                 ]
                             ),
                             # Bus Services card
-                            html.Div(
-                                id="bus-services-card",
-                                style={
-                                    "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "0.5rem",
-                                    "padding": "0.625rem",
-                                    "display": "flex",
-                                    "flexDirection": "column",
-                                    "gap": "0.5rem",
-                                },
-                                children=[
-                                    html.Div(
-                                        style={
-                                            "display": "flex",
-                                            "flexDirection": "row",
-                                            "alignItems": "center",
-                                            "justifyContent": "space-between",
-                                        },
-                                        children=[
-                                            html.Span(
-                                                "🚌 Bus Services Currently in Operation",
-                                                style={
-                                                    "color": "#fff",
-                                                    "fontWeight": "600",
-                                                    "fontSize": "0.8125rem"
-                                                }
-                                            ),
-                                            html.Div(
-                                                id="bus-services-count-value",
-                                                style={
-                                                    "color": "#4169E1",
-                                                    "fontSize": "1.125rem",
-                                                    "fontWeight": "700",
-                                                },
-                                                children=[
-                                                    html.Div(
-                                                        html.Span("--", style={"color": "#999"}),
-                                                        style={
-                                                            "backgroundColor": "rgb(58, 74, 90)",
-                                                            "padding": "0.25rem 0.5rem",
-                                                            "borderRadius": "0.25rem",
-                                                        }
-                                                    )
-                                                ]
-                                            ),
-                                        ]
-                                    ),
-                                ]
+                            create_metric_card(
+                                card_id="bus-services-card",
+                                label="🚌 Bus Services Currently in Operation",
+                                value_id="bus-services-count-value",
+                                initial_value="--"
                             ),
                             # Traffic Incidents card
                             html.Div(
