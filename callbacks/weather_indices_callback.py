@@ -940,7 +940,7 @@ def _create_wbgt_row(name, wbgt, heat_stress):
                     html.Span(
                         f"{wbgt}°C",
                         style={
-                            "color": color,
+                            "color": "#fff",
                             "fontWeight": "600",
                             "fontSize": "12px",
                             "minWidth": "50px",

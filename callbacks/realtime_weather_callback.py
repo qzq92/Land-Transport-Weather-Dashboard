@@ -16,6 +16,7 @@ import dash_leaflet as dl
 from conf.windspeed_icon import get_windspeed_icon, get_windspeed_description, WINDSPEED_THRESHOLDS
 from utils.async_fetcher import get_default_headers, fetch_url_2min_cached, _executor
 from callbacks.weather_indices_callback import fetch_wbgt_data, format_wbgt_display, create_wbgt_markers
+from components.metric_card import create_metric_value_display
 
 # API URLs
 API_BASE = "https://api-open.data.gov.sg/v2/real-time/api"
@@ -499,7 +500,7 @@ def format_wind_readings(speed_data):
             html.Span(formatted_avg, style={
                 "fontSize": "14px",
                 "fontWeight": "600",
-            "color": "#fff",
+            "color": "#4CAF50",
             }),
         style={
             "padding": "6px 8px",
@@ -1748,7 +1749,7 @@ def register_realtime_weather_callbacks(app):
         """Update temperature readings periodically."""
         _ = n_intervals
         data = fetch_realtime_data('air-temperature')
-        return format_readings_grid(data, '°C', '#fff')
+        return format_readings_grid(data, '°C', '#FF9800')
 
     @app.callback(
         Output('rainfall-readings-content', 'children'),
@@ -1759,7 +1760,7 @@ def register_realtime_weather_callbacks(app):
         _ = n_intervals
         data = fetch_realtime_data('rainfall')
         # Pass default unit, but format_readings_grid will try to extract from API first
-        return format_readings_grid(data, 'mm', '#fff')
+        return format_readings_grid(data, 'mm', '#2196F3')
 
     @app.callback(
         Output('humidity-readings-content', 'children'),
@@ -1769,7 +1770,7 @@ def register_realtime_weather_callbacks(app):
         """Update humidity readings periodically."""
         _ = n_intervals
         data = fetch_realtime_data('relative-humidity')
-        return format_readings_grid(data, '%', '#fff')
+        return format_readings_grid(data, '%', '#00BCD4')
 
     @app.callback(
         Output('wind-readings-content', 'children'),
@@ -2024,7 +2025,7 @@ def register_realtime_weather_callbacks(app):
         if style and style.get('display') == 'none':
             return html.P("Loading...", style={"color": "#999", "fontSize": "12px", "textAlign": "center"})
         data = fetch_realtime_data('air-temperature')
-        return format_sensor_values_grid(data, '°C', '#fff')
+        return format_sensor_values_grid(data, '°C', '#FF9800')
 
     @app.callback(
         Output('rainfall-sensor-content', 'children'),
@@ -2036,7 +2037,7 @@ def register_realtime_weather_callbacks(app):
         if style and style.get('display') == 'none':
             return html.P("Loading...", style={"color": "#999", "fontSize": "12px", "textAlign": "center"})
         data = fetch_realtime_data('rainfall')
-        return format_sensor_values_grid(data, 'mm', '#fff')
+        return format_sensor_values_grid(data, 'mm', '#2196F3')
 
     @app.callback(
         Output('humidity-sensor-content', 'children'),
@@ -2048,7 +2049,7 @@ def register_realtime_weather_callbacks(app):
         if style and style.get('display') == 'none':
             return html.P("Loading...", style={"color": "#999", "fontSize": "12px", "textAlign": "center"})
         data = fetch_realtime_data('relative-humidity')
-        return format_sensor_values_grid(data, '%', '#fff')
+        return format_sensor_values_grid(data, '%', '#00BCD4')
 
     @app.callback(
         Output('wind-sensor-content', 'children'),
@@ -2087,7 +2088,7 @@ def register_realtime_weather_callbacks(app):
         for name, speed_kmh in readings_sorted:
             icon = get_windspeed_icon(speed_kmh)
             display = f"{icon} {speed_kmh} km/h"
-            reading_divs.append(_create_reading_div(name, display, "#fff"))
+            reading_divs.append(_create_reading_div(name, display, "#4CAF50"))
 
         return _build_grid_content(reading_divs, reading_item.get('timestamp', ''))
 
@@ -2409,8 +2410,7 @@ def register_realtime_weather_callbacks(app):
 
     # Main page callbacks for lightning and flood indicators
     @app.callback(
-        [Output('main-lightning-indicator-summary', 'children'),
-         Output('main-lightning-indicator-content', 'children')],
+        Output('main-lightning-indicator-summary', 'children'),
         Input('interval-component', 'n_intervals')
     )
     def update_main_lightning_indicator(n_intervals):
@@ -2418,25 +2418,57 @@ def register_realtime_weather_callbacks(app):
         _ = n_intervals
         future = fetch_lightning_data_async()
         data = future.result() if future else None
-        summary = format_lightning_summary(data)
-        # For content, show detailed list of locations
-        content = format_lightning_readings(data)
-        return summary, content
+        
+        # Get count from format_lightning_summary
+        if not data or 'data' not in data:
+            count_value = "Error"
+        else:
+            records = data['data'].get('records', [])
+            if not records:
+                count_value = "0"
+            else:
+                # Count lightning observations within last 5 minutes and within Singapore bounds
+                lightning_count = 0
+                for record in records:
+                    item = record.get('item', {})
+                    readings = item.get('readings', [])
+                    for reading in readings:
+                        location = reading.get('location', {})
+                        lat = location.get('latitude', '')
+                        lon = location.get('longtitude') or location.get('longitude', '')
+                        datetime_str = reading.get('datetime', '')
+                        if lat and lon and _is_within_singapore_bounds(lat, lon) and _is_within_last_5_minutes(datetime_str):
+                            lightning_count += 1
+                count_value = str(lightning_count)
+        
+        # Format to match metric card pattern
+        return create_metric_value_display(count_value)
 
     @app.callback(
-        [Output('main-flood-indicator-summary', 'children'),
-         Output('main-flood-indicator-content', 'children')],
-        Input('interval-component', 'n_intervals')
+        Output('main-flood-indicator-summary', 'children'),
+        Input('flood-alert-interval', 'n_intervals')
     )
     def update_main_flood_indicator(n_intervals):
-        """Update flood status indicator on main page periodically."""
+        """Update flood status indicator on main page periodically (every 3 minutes)."""
         _ = n_intervals
         future = fetch_flood_alerts_async()
         data = future.result() if future else None
-        summary = format_flood_summary(data)
-        # For content, show detailed list of alerts
-        content = format_flood_readings(data)
-        return summary, content
+        
+        # Get count from format_flood_summary
+        if not data or 'data' not in data:
+            count_value = "Error"
+        else:
+            records = data['data'].get('records', [])
+            if not records:
+                count_value = "0"
+            else:
+                first_record = records[0]
+                item = first_record.get('item', {})
+                readings = item.get('readings', [])
+                count_value = str(len(readings)) if readings else "0"
+        
+        # Format to match metric card pattern
+        return create_metric_value_display(count_value)
 
     @app.callback(
         Output('main-traffic-incidents-indicator', 'children'),

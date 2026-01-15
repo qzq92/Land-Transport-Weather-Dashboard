@@ -20,6 +20,7 @@ from utils.async_fetcher import fetch_url, fetch_async, fetch_url_2min_cached
 from utils.data_download_helper import fetch_erp_gantry_data
 from utils.map_utils import SG_MAP_CENTER
 from callbacks.map_callback import _haversine_distance_m
+from components.metric_card import create_metric_value_display
 
 # API URLs
 TAXI_API_URL = "https://api.data.gov.sg/v1/transport/taxi-availability"
@@ -4333,16 +4334,7 @@ def register_transport_callbacks(app):
                         service_numbers.add(service_no)
                 bus_services_count = len(service_numbers)
         
-        count_value = html.Div(
-            html.Span(f"{bus_services_count}", style={"color": "#4169E1"}),
-            style={
-                "backgroundColor": "rgb(58, 74, 90)",
-                "padding": "0.25rem 0.5rem",
-                "borderRadius": "0.25rem",
-            }
-        )
-
-        return count_value
+        return create_metric_value_display(str(bus_services_count), color="#4169E1")
 
     @app.callback(
         [Output('bus-stops-toggle-state', 'data'),
@@ -4462,8 +4454,6 @@ def register_transport_callbacks(app):
     print("Registering update_bus_arrival_display callback...")
     @app.callback(
         [Output('bus-arrival-content', 'children'),
-         Output('transport-map', 'center'),
-         Output('transport-map', 'zoom'),
          Output('bus-arrival-popup-layer', 'children'),
          Output('bus-stop-search-input', 'value')],
         [Input('bus-stop-search-btn', 'n_clicks'),
@@ -4476,17 +4466,24 @@ def register_transport_callbacks(app):
         """
         Update bus arrival display when search is performed or a bus stop marker is clicked.
         Fills the textbox and shows the arrival info in the side panel.
+        Note: Map viewport is not auto-centered to allow user to freely navigate.
         """
         # Determine which input triggered the callback
         ctx = callback_context
         if not ctx.triggered:
-            return no_update, no_update, no_update, [], no_update
+            return no_update, [], no_update
         
         trigger_id = ctx.triggered[0]['prop_id']
+        trigger_value = ctx.triggered[0]['value']
         bus_stop_code = None
         
         # Check if a bus stop marker was clicked
         if 'bus-stop-marker' in trigger_id:
+            # Validate that this was an actual click (n_clicks must be a positive number)
+            # This prevents the callback from triggering when markers are re-rendered due to viewport changes
+            if trigger_value is None or trigger_value == 0:
+                return no_update, [], no_update
+            
             # Extract the bus stop code from the triggered marker ID
             import json
             # Parse the pattern-matching ID from prop_id like "{'index':'12345','type':'bus-stop-marker'}.n_clicks"
@@ -4505,7 +4502,7 @@ def register_transport_callbacks(app):
                         "fontSize": "0.75rem",
                         "margin": "0.5rem 0",
                     }
-                ), no_update, no_update, [], no_update
+                ), [], no_update
             
             # Validate bus stop code (must be 5 digits)
             search_value = search_value.strip()
@@ -4518,12 +4515,12 @@ def register_transport_callbacks(app):
                         "fontSize": "0.75rem",
                         "margin": "0.5rem 0",
                     }
-                ), no_update, no_update, [], no_update
+                ), [], no_update
             
             bus_stop_code = search_value
         
         if not bus_stop_code:
-            return no_update, no_update, no_update, [], no_update
+            return no_update, [], no_update
         
         # Fetch bus arrival data
         arrival_data = fetch_bus_arrival_data(bus_stop_code)
@@ -4555,12 +4552,13 @@ def register_transport_callbacks(app):
                 dashArray="5, 5"  # Dashed line
             )
             
-            # Return with map centered on bus stop, highlight displayed, and textbox updated
+            # Return with highlight displayed and textbox updated
             # The arrival content is now shown in the side panel (bus-arrival-content)
-            return formatted_arrival, [lat, lon], 18, [highlight_circle], bus_stop_code
+            # Map viewport is not auto-centered to allow user to freely navigate
+            return formatted_arrival, [highlight_circle], bus_stop_code
         
-        # Fallback if coordinates not found
-        return formatted_arrival, no_update, no_update, [], bus_stop_code
+        # If no coordinates found, just display the arrival info without highlighting
+        return formatted_arrival, [], bus_stop_code
 
     @app.callback(
         Output('bus-service-search-content', 'children'),
