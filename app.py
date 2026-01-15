@@ -15,6 +15,7 @@ from components.transport_page import transport_page
 from components.nearby_transport_page import nearby_transport_page
 from components.speed_band_page import speed_band_page
 from components.train_service_alerts_component import train_service_alerts_component
+from components.metric_card import create_metric_card
 from callbacks.map_callback import register_search_callbacks
 from callbacks.traffic_callback import register_camera_feed_callbacks
 from callbacks.weather_callback import register_weather_callbacks
@@ -344,16 +345,16 @@ app.layout = html.Div(
                                         "gap": "2rem",
                                     },
                                     children=[
-                                        # Flood alert (as separate sibling container)
+                                        # Flood alert metric card
                                         html.Div(
                                             id="main-flood-indicator-container",
                                             style={
                                                 "backgroundColor": "#4a5a6a",
-                                                "borderRadius": "8px",
-                                                "padding": "0.25rem",
+                                                "borderRadius": "0.5rem",
+                                                "padding": "0.625rem",
                                                 "display": "flex",
                                                 "flexDirection": "column",
-                                                "gap": "8px",
+                                                "gap": "0.5rem",
                                                 "flexShrink": "0",
                                             },
                                             children=[
@@ -375,98 +376,32 @@ app.layout = html.Div(
                                                         ),
                                                         html.Div(
                                                             id="main-flood-indicator-summary",
+                                                            style={
+                                                                "color": "#4169E1",
+                                                                "fontSize": "1.125rem",
+                                                                "fontWeight": "700",
+                                                            },
                                                             children=[
-                                                                html.Span("Loading...", style={
-                                                                    "color": "#999",
-                                                                    "fontSize": "0.75rem"
-                                                                })
+                                                                html.Div(
+                                                                    html.Span("--", style={"color": "#999"}),
+                                                                    style={
+                                                                        "backgroundColor": "rgb(58, 74, 90)",
+                                                                        "padding": "0.25rem 0.5rem",
+                                                                        "borderRadius": "0.25rem",
+                                                                    }
+                                                                )
                                                             ],
                                                         ),
                                                     ]
                                                 ),
-                                                html.Div(
-                                                    id="main-flood-indicator",
-                                                    style={
-                                                        "display": "none",
-                                                        "backgroundColor": "#3a4a5a",
-                                                        "borderRadius": "0.3125rem",
-                                                        "padding": "0.25rem",
-                                                        "maxHeight": "12.5rem",
-                                                        "overflowY": "auto",
-                                                    },
-                                                    children=[
-                                                        html.Div(id="main-flood-indicator-content", children=[
-                                                            html.P("No flooding notice at the moment", style={
-                                                                "color": "#999",
-                                                                "fontSize": "0.75rem",
-                                                                "textAlign": "center"
-                                                            })
-                                                        ])
-                                                    ]
-                                                )
                                             ]
                                         ),
-                                        # Lightning observations (as separate sibling container)
-                                        html.Div(
-                                            id="main-lightning-indicator-container",
-                                            style={
-                                                "backgroundColor": "#4a5a6a",
-                                                "borderRadius": "0.5rem",
-                                                "padding": "0.25rem",
-                                                "display": "flex",
-                                                "flexDirection": "column",
-                                                "gap": "0.5rem",
-                                                "flexShrink": "0",
-                                            },
-                                            children=[
-                                                html.Div(
-                                                    style={
-                                                        "display": "flex",
-                                                        "flexDirection": "row",
-                                                        "alignItems": "center",
-                                                        "justifyContent": "space-between",
-                                                    },
-                                                    children=[
-                                                        html.Span(
-                                                            "⚡ Lightning observations (past 5 mins)",
-                                                            style={
-                                                                "color": "#fff",
-                                                                "fontWeight": "600",
-                                                                "fontSize": "0.8125rem"
-                                                            }
-                                                        ),
-                                                        html.Div(
-                                                            id="main-lightning-indicator-summary",
-                                                            children=[
-                                                                html.Span("Loading...", style={
-                                                                    "color": "#999",
-                                                                    "fontSize": "0.75rem"
-                                                                })
-                                                            ],
-                                                        ),
-                                                    ]
-                                                ),
-                                                html.Div(
-                                                    id="main-lightning-indicator",
-                                                    style={
-                                                        "display": "none",
-                                                        "backgroundColor": "#3a4a5a",
-                                                        "borderRadius": "0.3125rem",
-                                                        "padding": "0.25rem",
-                                                        "maxHeight": "12.5rem",
-                                                        "overflowY": "auto",
-                                                    },
-                                                    children=[
-                                                        html.Div(id="main-lightning-indicator-content", children=[
-                                                            html.P("Loading...", style={
-                                                                "color": "#999",
-                                                                "fontSize": "0.75rem",
-                                                                "textAlign": "center"
-                                                            })
-                                                        ])
-                                                    ]
-                                                )
-                                            ]
+                                        # Lightning observations metric card
+                                        create_metric_card(
+                                            card_id="main-lightning-indicator-container",
+                                            label="⚡ Lightning observations (past 5 mins)",
+                                            value_id="main-lightning-indicator-summary",
+                                            initial_value="--"
                                         ),
                                         # 24-hour Weather forecast section (as separate sibling container)
                                         html.Div(
@@ -709,6 +644,12 @@ app.layout = html.Div(
                 dcc.Interval(
                     id='interval-component',
                     interval=2*60*1000,  # Update every 2 minutes
+                    n_intervals=0
+                ),
+                # Interval component for flood alerts (updates every 3 minutes)
+                dcc.Interval(
+                    id='flood-alert-interval',
+                    interval=3*60*1000,  # Update every 3 minutes
                     n_intervals=0
                 ),
             ],
