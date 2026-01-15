@@ -1999,7 +1999,8 @@ def register_realtime_weather_callbacks(app):
     # Toggle callback for WBGT sensor values
     @app.callback(
         [Output('wbgt-sensor-values', 'style'),
-         Output('toggle-wbgt-readings', 'children')],
+         Output('toggle-wbgt-readings', 'children'),
+         Output('toggle-wbgt-readings', 'style')],
         Input('toggle-wbgt-readings', 'n_clicks'),
         prevent_initial_call=True
     )
@@ -2009,10 +2010,30 @@ def register_realtime_weather_callbacks(app):
             style = {"display": "block", "backgroundColor": "#3a4a5a",
                     "borderRadius": "5px", "padding": "10px", "maxHeight": "200px", "overflowY": "auto"}
             text = "Hide WBGT sensor locations"
-            return style, text
+            button_style = {
+                "padding": "4px 8px",
+                "borderRadius": "4px",
+                "border": "2px solid #FF8C00",
+                "backgroundColor": "#FF8C00",
+                "color": "#fff",
+                "cursor": "pointer",
+                "fontSize": "12px",
+                "fontWeight": "600",
+            }
+            return style, text, button_style
         style = {"display": "none"}
         text = "Show WBGT sensor locations"
-        return style, text
+        button_style = {
+            "padding": "4px 8px",
+            "borderRadius": "4px",
+            "border": "2px solid #FF8C00",
+            "backgroundColor": "transparent",
+            "color": "#fff",
+            "cursor": "pointer",
+            "fontSize": "12px",
+            "fontWeight": "600",
+        }
+        return style, text, button_style
 
     # Callbacks to populate sensor values when sections are visible
     @app.callback(
@@ -2441,8 +2462,8 @@ def register_realtime_weather_callbacks(app):
                             lightning_count += 1
                 count_value = str(lightning_count)
         
-        # Format to match metric card pattern
-        return create_metric_value_display(count_value)
+        # Format to match metric card pattern with yellow color to match toggle tab
+        return create_metric_value_display(count_value, color="#FFD700")
 
     @app.callback(
         Output('main-flood-indicator-summary', 'children'),
