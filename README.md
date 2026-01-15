@@ -37,8 +37,8 @@ This analytics dashboard provides real-time information on:
 ### Main Dashboard
 - **Average PSI Reading**: 24-hour average Pollutant Standards Index across all regions (calculated from regional averages)
 - **Meteorological Alerts Section**: 
-  - **Number of latest flood alerts**: Flood alert count and detailed information
-  - **Lightning observations (past 5 mins)**: Lightning detection count and location details
+  - **Number of latest flood alerts**: Flood alert count displayed in standardized metric card format (updates every 3 minutes)
+  - **Lightning observations (past 5 mins)**: Lightning detection count displayed in standardized metric card format
   - **Next 24-Hour Forecast**: Temperature, humidity, wind, and rain forecast
 - **Traffic incident/ traffic light issues**: Traffic incidents and faulty traffic lights displayed in a grid format
 - **MRT/LRT service alerts**: Real-time train service status and disruptions
@@ -92,7 +92,7 @@ This analytics dashboard provides real-time information on:
 - **Toggle Controls**: All toggle buttons (PSI display mode, Zika clusters, Dengue clusters) positioned above map
 - **Layout**: Optimized 2:6:2 ratio (indices panel : map : legend)
 
-### Details on Transport Related Info Page
+### Road & Transport Page
 - **Taxi Availability**: Real-time taxi locations (4,500+ taxis) displayed as yellow markers on map
 - **Traffic Cameras**: CCTV camera locations with live feed popups showing traffic conditions
 - **ERP Gantries**: Electronic Road Pricing gantry locations displayed as red polylines on map
@@ -104,8 +104,14 @@ This analytics dashboard provides real-time information on:
   - MRT lines displayed with official colors (NSL-red, EWL-green, CCL-yellow, DTL-blue, NEL-purple, TEL-brown)
   - LRT lines (Punggol, Sengkang, Bukit Panjang) displayed in grey
   - Operational status and disruption details for each line
+- **Bus Stops**: Interactive bus stop markers with arrival time information
+  - Bus stops displayed as clickable markers (visible at zoom level 15+)
+  - Clicking a bus stop displays arrival times in side panel and highlights the stop on map
+  - Bus stop selection persists when navigating the map (no auto-selection on viewport changes)
+  - Re-center button available to return to selected bus stop location
+  - Viewport filtering for optimal performance (only renders visible bus stops)
 - **Toggle Controls**: Show/hide each transport layer independently
-- **Metrics Display**: Count displays and information panels for all transport metrics
+- **Metrics Display**: Standardized metric cards for bus stops and bus services counts
 - **Zoomable Map**: Map supports zoom levels 10-19 for detailed exploration
 
 ## Application Structure
@@ -122,7 +128,9 @@ The dashboard consists of 5 main pages accessible via tabs with glossy black-to-
 3. **📊 Daily Health and Environmental Watch**: UV Index trends, comprehensive PSI pollutant data, Zika clusters, and Dengue clusters
    - **PSI Display Modes**: Toggle between map text boxes and detailed metrics table
    - **Zika/Dengue Clusters**: Toggle visibility of cluster polygons on map
-4. **Details on Transport Related Info**: Taxi availability, traffic cameras, ERP gantries, traffic speed bands, taxi stands, and MRT/LRT operational status
+4. **🚦 Road & Transport**: Taxi availability, traffic cameras, ERP gantries, traffic speed bands, taxi stands, bus stops, and MRT/LRT operational status
+   - **Bus Stop Interaction**: Click bus stops to view arrival times (zoom level 15+ required)
+   - **Selection Persistence**: Selected bus stops remain active during map navigation
    - **Zoomable Map**: Supports zoom levels 10-19 for detailed exploration
 5. **📍 Nearby Transportation & Parking**: Nearby bus stops, MRT/LRT stations, taxi stands, carparks, bicycle parking, and EV charging points
 
@@ -130,13 +138,19 @@ The dashboard consists of 5 main pages accessible via tabs with glossy black-to-
 
 ### Performance Optimizations
 - **Async API Fetching**: Uses ThreadPoolExecutor for parallel API calls, reducing load times
+  - Flood alerts and lightning observations fetched asynchronously
   - Zika and Dengue cluster data fetched asynchronously
   - Parallel coordinate processing for large cluster datasets (>10 features)
+  - All weather-related API calls use async implementation for improved responsiveness
 - **Data Caching**: 
   - PSI data cached for 60 seconds to minimize redundant API requests
   - ERP gantry data cached for 24 hours (static dataset)
+  - Bus stops and bus routes data cached with monthly refresh buckets
   - Dataset caches for initiate-download API endpoints
-- **Efficient Map Rendering**: Automatic map resize handling when switching between tabs and toggling sections
+- **Efficient Map Rendering**: 
+  - Automatic map resize handling when switching between tabs and toggling sections
+  - Viewport filtering for bus stops (only renders markers visible in current view)
+  - Conditional marker rendering based on zoom level
 - **Conditional Data Fetching**: 2H weather forecast only fetches data when section is visible
 - **Startup Data Downloads**: 
   - HDB carpark information downloaded on startup (only if file doesn't exist)
@@ -147,9 +161,11 @@ The dashboard consists of 5 main pages accessible via tabs with glossy black-to-
 - **Multi-layer Support**: Toggle visibility of different data layers (weather markers, transport facilities, taxis, cameras, ERP gantries, health clusters)
 - **Standardized Configuration**: Consistent zoom levels, center coordinates, and boundaries across all pages
 - **Location Search**: Search for any address in Singapore with autocomplete (white text on dark background)
-- **Real-time Updates**: Auto-refresh every 30-60 seconds for live data
+- **Real-time Updates**: Auto-refresh every 30-60 seconds for live data (flood alerts update every 3 minutes)
 - **Custom Markers**: Color-coded markers and polylines for different data types
 - **Polygon Visualization**: Zika and Dengue clusters displayed as colored polygons on map
+- **User-Controlled Selection**: Bus stop selection only changes on explicit user clicks, not on map navigation
+- **Persistent Selection**: Selected bus stops remain active when panning/zooming the map
 
 ### Data Visualization
 - **UV Index Trends**: Line graph showing hourly UV index throughout the day
@@ -179,10 +195,19 @@ The dashboard consists of 5 main pages accessible via tabs with glossy black-to-
   - Active tabs feature vibrant gradient colors (purple-blue gradient)
   - Consistent styling across all interactive elements
   - White text on dark backgrounds for improved readability
+- **Standardized Metric Cards**: Reusable metric card component used across main dashboard, weather metrics, and transport pages
+  - Consistent design pattern for all metric displays
+  - Unified styling for count/value displays
+  - Supports additional children (e.g., disclaimers) for context-specific information
 
 ## Known Limitations and Restrictions
 ### Speed Band Visualization
 - **Speed band plotting requires zoomed-in view**: Due to the massive number of traffic speed band segments (>100,000) returned by the LTA DataMall API, plotting all segments at once can cause the web browser to hang or become unresponsive. To mitigate this, speed band visualization is only displayed when the map is zoomed in to a sufficient level, reducing the number of visible segments and ensuring smooth performance.
+
+### Bus Stop Visualization
+- **Bus stop markers require zoom level 15+**: Bus stops are only displayed when zoomed in to level 15 or higher to optimize map performance and reduce visual clutter
+- **Viewport filtering**: Only bus stops visible in the current map viewport are rendered, improving performance when zoomed out
+- **Bus stop marker deviation**: Bus stop markers may deviate from actual locations due to ongoing road construction works (disclaimer shown when bus stops are displayed)
 
 ## Screenshots of app
 
