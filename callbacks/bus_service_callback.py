@@ -80,8 +80,8 @@ def _create_bus_timing_table(timing_info: Dict[str, Any]) -> Optional[html.Div]:
     sun_first_formatted = format_time(sun_first)
     sun_last_formatted = format_time(sun_last)
     
-    # Create table with 3 rows (Weekdays, Saturday, Sunday) and 4 columns
-    # Columns: Day Type, First Bus, Last Bus, (empty for spacing)
+    # Create table with 3 rows (Weekdays, Saturday, Sunday) and 3 columns
+    # Columns: Day Type, First Bus, Last Bus
     table_rows = [
         # Header row
         html.Tr(
@@ -110,11 +110,6 @@ def _create_bus_timing_table(timing_info: Dict[str, Any]) -> Optional[html.Div]:
                     "border": "0.0625rem solid #555",
                     "textAlign": "center",
                 }),
-                html.Td("", style={
-                    "padding": "0.375rem",
-                    "border": "0.0625rem solid #555",
-                    "width": "1rem",
-                }),
             ]
         ),
         # Weekdays row
@@ -140,10 +135,6 @@ def _create_bus_timing_table(timing_info: Dict[str, Any]) -> Optional[html.Div]:
                     "color": "#fff",
                     "border": "0.0625rem solid #555",
                     "textAlign": "center",
-                }),
-                html.Td("", style={
-                    "padding": "0.375rem",
-                    "border": "0.0625rem solid #555",
                 }),
             ]
         ),
@@ -171,10 +162,6 @@ def _create_bus_timing_table(timing_info: Dict[str, Any]) -> Optional[html.Div]:
                     "border": "0.0625rem solid #555",
                     "textAlign": "center",
                 }),
-                html.Td("", style={
-                    "padding": "0.375rem",
-                    "border": "0.0625rem solid #555",
-                }),
             ]
         ),
         # Sunday row
@@ -200,10 +187,6 @@ def _create_bus_timing_table(timing_info: Dict[str, Any]) -> Optional[html.Div]:
                     "color": "#fff",
                     "border": "0.0625rem solid #555",
                     "textAlign": "center",
-                }),
-                html.Td("", style={
-                    "padding": "0.375rem",
-                    "border": "0.0625rem solid #555",
                 }),
             ]
         ),
@@ -294,6 +277,15 @@ def format_bus_service_search_display(service_no: str, routes_data: Optional[Dic
             directions[direction] = []
         directions[direction].append(route)
     
+    # Get bus stops data and create a dictionary mapping for efficient lookup
+    bus_stops_data = fetch_bus_stops_data()
+    bus_stop_map = {}
+    if bus_stops_data and 'value' in bus_stops_data:
+        for bs in bus_stops_data['value']:
+            bus_stop_code = bs.get('BusStopCode')
+            if bus_stop_code:
+                bus_stop_map[bus_stop_code] = bs.get('Description', 'N/A')
+    
     # Sort routes by direction and stop sequence
     result_items = []
     
@@ -303,24 +295,30 @@ def format_bus_service_search_display(service_no: str, routes_data: Optional[Dic
         if timing_table:
             result_items.append(timing_table)
     
+    # Collect direction headers first
+    direction_headers = []
     for direction in sorted(directions.keys()):
         direction_routes = sorted(directions[direction], key=lambda x: int(x.get('StopSequence', 0)))
-        print(direction_routes)
-        # Get origin and destination
-        origin_code = direction_routes[0].get('OriginCode', 'N/A') if direction_routes else 'N/A'
-        destination_code = direction_routes[-1].get('DestinationCode', 'N/A') if direction_routes else 'N/A'
         
-        # Get bus stop names if available
-        bus_stops_data = fetch_bus_stops_data()
-        origin_name = 'N/A'
-        destination_name = 'N/A'
+        # Get origin and destination using BusStopCode from StopSequence: 1 and last StopSequence
+        origin_code = None
+        destination_code = None
         
-        if bus_stops_data and 'value' in bus_stops_data:
-            for bs in bus_stops_data['value']:
-                if bs.get('BusStopCode') == origin_code:
-                    origin_name = bs.get('Description', 'N/A')
-                if bs.get('BusStopCode') == destination_code:
-                    destination_name = bs.get('Description', 'N/A')
+        if direction_routes:
+            # Find route with StopSequence: 1 for origin
+            for route in direction_routes:
+                if route.get('StopSequence') == 1:
+                    origin_code = route.get('BusStopCode', 'N/A')
+                    break
+            
+            # Get destination from the last route (highest StopSequence)
+            if direction_routes:
+                last_route = direction_routes[-1]
+                destination_code = last_route.get('BusStopCode', 'N/A')
+        
+        # Get bus stop names from dictionary mapping
+        origin_name = bus_stop_map.get(origin_code, 'N/A') if origin_code else 'N/A'
+        destination_name = bus_stop_map.get(destination_code, 'N/A') if destination_code else 'N/A'
         
         direction_label = "Direction 1" if direction == 1 else "Direction 2" if direction == 2 else f"Direction {direction}"
         
@@ -330,7 +328,8 @@ def format_bus_service_search_display(service_no: str, routes_data: Optional[Dic
                 "backgroundColor": "#3a4a5a",
                 "padding": "0.5rem",
                 "borderRadius": "0.25rem",
-                "marginBottom": "0.5rem",
+                "flex": "1",
+                "minWidth": "0",
             },
             children=[
                 html.Div(
@@ -349,14 +348,14 @@ def format_bus_service_search_display(service_no: str, routes_data: Optional[Dic
                             }
                         ),
                         html.Span(
-                            f"From: {origin_name} ({origin_code})",
+                            f"From: {origin_name} ({origin_code})" if origin_code else "From: N/A",
                             style={
                                 "color": "#ccc",
                                 "fontSize": "0.65rem",
                             }
                         ),
                         html.Span(
-                            f"To: {destination_name} ({destination_code})",
+                            f"To: {destination_name} ({destination_code})" if destination_code else "To: N/A",
                             style={
                                 "color": "#ccc",
                                 "fontSize": "0.65rem",
@@ -383,7 +382,23 @@ def format_bus_service_search_display(service_no: str, routes_data: Optional[Dic
             ]
         )
         
-        result_items.append(direction_header)
+        direction_headers.append(direction_header)
+    
+    # Display directions side-by-side if there are 2 directions
+    if len(direction_headers) == 2:
+        directions_container = html.Div(
+            style={
+                "display": "flex",
+                "flexDirection": "row",
+                "gap": "0.5rem",
+                "marginBottom": "0.5rem",
+            },
+            children=direction_headers
+        )
+        result_items.append(directions_container)
+    else:
+        # If not exactly 2 directions, display them vertically
+        result_items.extend(direction_headers)
     
     if not result_items:
         return html.Div(
