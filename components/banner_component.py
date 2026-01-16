@@ -66,7 +66,7 @@ def build_dashboard_banner():
                             selected_style=TAB_SELECTED_STYLE,
                         ),
                         dcc.Tab(
-                            label="🗺️ Nearby Transportation & Parking",
+                            label="🗺️ Nearby Facilities",
                             value="nearby-transport",
                             style=TAB_STYLE,
                             selected_style=TAB_SELECTED_STYLE,

@@ -768,7 +768,8 @@ def register_carpark_callbacks(app):
             ], []
 
         # Fetch availability data from API
-        api_data = fetch_carpark_availability()
+        future = fetch_carpark_availability_async()
+        api_data = future.result() if future else None
 
         if not api_data:
             return [

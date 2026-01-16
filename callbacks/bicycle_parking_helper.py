@@ -1,6 +1,6 @@
 """
 Helper functions for bicycle parking data fetching and processing.
-Used specifically for the Nearby Transportation & Parking tab.
+Used specifically for the Nearby Facilities tab.
 """
 import os
 from datetime import datetime

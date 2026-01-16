@@ -58,6 +58,44 @@ def _process_bus_stop_data(data, lat, lon, radius_m):
     return processed_results
 
 
+def fetch_nearby_bus_stops(lat: float, lon: float, radius_m: int = 500):
+    """
+    Fetch nearest bus stops using OneMap Nearby Transport API.
+    Reference: https://www.onemap.gov.sg/apidocs/nearbytransport
+    
+    Args:
+        lat: Latitude in degrees
+        lon: Longitude in degrees
+        radius_m: Search radius in meters (default: 500)
+    
+    Returns:
+        List of bus stop dictionaries with distance information
+    """
+    try:
+        # OneMap Nearby Transport API endpoint for bus stops
+        url = f"https://www.onemap.gov.sg/api/public/nearbysvc/getNearestBusStops?latitude={lat}&longitude={lon}&radius_in_meters={radius_m}"
+        
+        headers = _get_onemap_headers()
+        response_data = fetch_url(url, headers=headers)
+        
+        if not response_data:
+            return []
+        
+        # Process the response data (API may return dict or list)
+        if isinstance(response_data, dict):
+            bus_stops = response_data.get('results', [])
+        elif isinstance(response_data, list):
+            bus_stops = response_data
+        else:
+            print(f"Unexpected bus stop response type: {type(response_data)}")
+            return []
+        return _process_bus_stop_data(bus_stops, lat, lon, radius_m)
+        
+    except Exception as e:
+        print(f"Error fetching nearby bus stops: {e}")
+        return []
+
+
 def fetch_nearby_bus_stops_async(lat: float, lon: float, radius_m: int = 500):
     """
     Fetch nearest bus stops asynchronously (returns Future).
@@ -307,19 +345,19 @@ def register_busstop_callbacks(app):
     @app.callback(
         [Output('nearby-transport-bus-stop-column', 'children'),
          Output('nearby-bus-stop-markers', 'children')],
-        Input('nearby-transport-search', 'value')
+        Input('nearby-transport-location-store', 'data')
     )
-    def update_nearby_transport_bus_stop_content(search_value):
+    def update_nearby_transport_bus_stop_content(location_data):
         """
         Update the nearest bus stop content for nearby transport page based on selected location.
         
         Args:
-            search_value: Selected value from search dropdown (format: 'lat,lon,address')
+            location_data: Dictionary containing {'lat': float, 'lon': float} of selected location
         
         Returns:
             HTML Div containing nearest bus stops within 500m
         """
-        if not search_value:
+        if not location_data:
             return [
                 html.H4(
                     "Top 5 Nearest Bus Stops",
@@ -344,11 +382,9 @@ def register_busstop_callbacks(app):
             ], []
 
         try:
-            # Parse the search value to get coordinates
-            parts = search_value.split(',', 2)
-            lat = float(parts[0])
-            lon = float(parts[1])
-        except (ValueError, IndexError, TypeError):
+            lat = float(location_data.get('lat'))
+            lon = float(location_data.get('lon'))
+        except (ValueError, TypeError, KeyError):
             return [
                 html.H4(
                     "Top 5 Nearest Bus Stops",
@@ -372,7 +408,8 @@ def register_busstop_callbacks(app):
             ], []
 
         # Fetch nearby bus stops within 500m
-        bus_stops = fetch_nearby_bus_stops(lat, lon, radius_m=500)
+        future = fetch_nearby_bus_stops_async(lat, lon, radius_m=500)
+        bus_stops = future.result() if future else []
 
         # Limit to top 5 nearest
         bus_stops = bus_stops[:5]
