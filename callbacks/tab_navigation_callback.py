@@ -42,28 +42,28 @@ def register_tab_navigation_callback(app):
         if tab_value == 'realtime-weather':
             realtime_style = {
                 "display": "block",
-                "padding": "20px",
+                "padding": "0.5rem",
                 "height": "calc(100vh - 120px)",
                 "width": "100%",
             }
         elif tab_value == 'weather-indices':
             indices_style = {
                 "display": "block",
-                "padding": "20px",
+                "padding": "0.5rem",
                 "height": "calc(100vh - 120px)",
                 "width": "100%",
             }
         elif tab_value == 'transport':
             transport_style = {
                 "display": "block",
-                "padding": "20px",
+                "padding": "0.5rem",
                 "height": "calc(100vh - 120px)",
                 "width": "100%",
             }
         elif tab_value == 'nearby-transport':
             nearby_transport_style = {
                 "display": "block",
-                "padding": "20px",
+                "padding": "0.5rem",
                 "height": "calc(100vh - 120px)",
                 "width": "100%",
             }
@@ -72,8 +72,8 @@ def register_tab_navigation_callback(app):
             main_style = {
                 "display": "flex",
                 "width": "100%",
-                "gap": "20px",
-                "padding": "10px 20px",
+                "gap": "0.5rem",
+                "padding": "0.25rem 0.5rem",
                 "height": "calc(100vh - 100px)",
                 "alignItems": "stretch",
             }

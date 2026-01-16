@@ -282,7 +282,7 @@ def register_mrt_crowd_callbacks(app):
                 "padding: 8px 12px; "
                 "background-color: rgba(0, 188, 212, 0.9); "
                 "color: white; "
-                "border-radius: 20px; "
+                "border-radius: 0.5rem; "
                 "border: 2px solid white; "
                 "box-shadow: 0 0 10px rgba(0,0,0,0.5); "
                 "font-weight: bold; "

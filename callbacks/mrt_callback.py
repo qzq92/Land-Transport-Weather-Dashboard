@@ -159,7 +159,7 @@ def register_mrt_callbacks(app):
                     "color": "#999",
                     "fontSize": "14px",
                     "fontStyle": "italic",
-                    "padding": "20px"
+                    "padding": "0.5rem"
                 }
             )
         
@@ -175,7 +175,7 @@ def register_mrt_callbacks(app):
                     "textAlign": "center",
                     "color": "#ff6b6b",
                     "fontSize": "14px",
-                    "padding": "20px"
+                    "padding": "0.5rem"
                 }
             )
         
@@ -191,7 +191,7 @@ def register_mrt_callbacks(app):
                     "color": "#999",
                     "fontSize": "14px",
                     "fontStyle": "italic",
-                    "padding": "20px"
+                    "padding": "0.5rem"
                 }
             )
         

@@ -1733,12 +1733,12 @@ def format_traffic_incidents_indicator(data, faulty_lights_data=None):
             )
         )
     
-    # Return container with metric cards in 2-column grid layout
+    # Return container with metric cards in 3-column grid layout
     return html.Div(
         metric_cards,
         style={
             "display": "grid",
-            "gridTemplateColumns": "repeat(2, 1fr)",
+            "gridTemplateColumns": "repeat(3, 1fr)",
             "gap": "0.5rem",
         }
     )

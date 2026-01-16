@@ -72,7 +72,7 @@ def format_flood_alerts(data):
                 style={
                     "display": "flex",
                     "alignItems": "center",
-                    "padding": "10px 20px",
+                    "padding": "0.25rem 0.5rem",
                 }
             )
         ],
