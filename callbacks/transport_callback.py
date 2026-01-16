@@ -31,6 +31,8 @@ VMS_URL = "https://datamall2.mytransport.sg/ltaodataservice/VMS"
 EV_CHARGING_URL = "https://datamall2.mytransport.sg/ltaodataservice/EVChargingPoints"
 BUS_STOPS_URL = "https://datamall2.mytransport.sg/ltaodataservice/BusStops"
 BUS_ROUTES_URL = "https://datamall2.mytransport.sg/ltaodataservice/BusRoutes"
+BUS_SERVICES_URL = "https://datamall2.mytransport.sg/ltaodataservice/BusServices"
+BUS_SERVICES_URL = "https://datamall2.mytransport.sg/ltaodataservice/BusServices"
 
 # In-memory cache for static road infrastructure data
 # These represent physical infrastructure that rarely changes
@@ -45,6 +47,7 @@ _road_infra_cache: Dict[str, Optional[Any]] = {
     'bicycle_parking_bucket': None,  # YYYYMM bucket for monthly refresh
     'speed_camera_df': None,  # DataFrame cache
     'erp_gantries': None,  # Parsed ERP gantry data
+    'bus_services': None,  # Bus services data
 }
 
 
@@ -65,6 +68,7 @@ def clear_road_infra_cache():
         'bicycle_parking_bucket': None,
         'speed_camera_df': None,
         'erp_gantries': None,
+        'bus_services': None,
     }
     print("Road infrastructure cache cleared")
 
@@ -1338,6 +1342,42 @@ def fetch_bus_routes_data_async() -> Optional[Future]:
     
     # Submit the synchronous function to thread pool
     return _executor.submit(fetch_bus_routes_data)
+
+
+def fetch_bus_services_data() -> Optional[Dict[str, Any]]:
+    """
+    Fetch bus services data from LTA DataMall API.
+    Uses in-memory cache since bus services are static infrastructure.
+    
+    Returns:
+        Dictionary containing bus services data or None if error
+    """
+    global _road_infra_cache
+    
+    # Return cached data if available
+    if _road_infra_cache.get('bus_services') is not None:
+        return _road_infra_cache['bus_services']
+    
+    api_key = os.getenv("LTA_API_KEY")
+    
+    if not api_key:
+        print("Warning: LTA_API_KEY not found in environment variables")
+        return None
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "AccountKey": api_key,
+        "Content-Type": "application/json"
+    }
+    
+    data = fetch_url(BUS_SERVICES_URL, headers)
+    
+    # Cache the result
+    if data:
+        _road_infra_cache['bus_services'] = data
+        print("Bus services data cached in memory")
+    
+    return data
 
 
 def get_bus_services_count() -> int:

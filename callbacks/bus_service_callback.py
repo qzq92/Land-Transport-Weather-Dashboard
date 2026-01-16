@@ -7,7 +7,8 @@ import dash_leaflet as dl
 from callbacks.transport_callback import (
     fetch_bus_routes_data,
     fetch_bus_routes_data_async,
-    fetch_bus_stops_data
+    fetch_bus_stops_data,
+    fetch_bus_services_data
 )
 from components.metric_card import create_metric_value_display
 
@@ -44,12 +45,15 @@ def _format_route_distance(direction_routes: List[Dict[str, Any]]) -> str:
         return f"Distance: {distance}"
 
 
-def _create_bus_timing_table(timing_info: Dict[str, Any]) -> Optional[html.Div]:
+def _create_bus_timing_table(timing_info: Dict[str, Any], service_no: str = None, bus_services_data: Optional[Dict[str, Any]] = None) -> Optional[html.Div]:
     """
-    Create a 3x4 table grid showing first and last bus times for weekdays, Saturday, and Sunday.
+    Create a table showing first and last bus times for weekdays, Saturday, and Sunday,
+    with frequency columns (AM Peak, AM Offpeak, PM Peak, PM Offpeak).
     
     Args:
         timing_info: Dictionary containing bus route timing information
+        service_no: Bus service number to look up frequency data
+        bus_services_data: Dictionary containing bus services data from LTA API
     
     Returns:
         HTML Div containing the timing table, or None if no timing data available
@@ -85,8 +89,53 @@ def _create_bus_timing_table(timing_info: Dict[str, Any]) -> Optional[html.Div]:
     sun_first_formatted = format_time(sun_first)
     sun_last_formatted = format_time(sun_last)
     
-    # Create table with 3 rows (Weekdays, Saturday, Sunday) and 3 columns
-    # Columns: Day Type, First Bus, Last Bus
+    # Extract frequency data from bus services data
+    am_peak_freq = "N/A"
+    am_offpeak_freq = "N/A"
+    pm_peak_freq = "N/A"
+    pm_offpeak_freq = "N/A"
+    
+    if service_no and bus_services_data:
+        services = []
+        if isinstance(bus_services_data, dict):
+            if "value" in bus_services_data:
+                services = bus_services_data.get("value", [])
+            elif isinstance(bus_services_data, list):
+                services = bus_services_data
+        elif isinstance(bus_services_data, list):
+            services = bus_services_data
+        
+        # Find matching service
+        for service in services:
+            if isinstance(service, dict):
+                service_number = service.get("ServiceNo", service.get("serviceNo", ""))
+                if str(service_number).upper() == str(service_no).upper():
+                    am_peak_freq = service.get("AM_Peak_Freq", service.get("amPeakFreq", "N/A"))
+                    am_offpeak_freq = service.get("AM_Offpeak_Freq", service.get("amOffpeakFreq", "N/A"))
+                    pm_peak_freq = service.get("PM_Peak_Freq", service.get("pmPeakFreq", "N/A"))
+                    pm_offpeak_freq = service.get("PM_Offpeak_Freq", service.get("pmOffpeakFreq", "N/A"))
+                    break
+    
+    # Format frequency values
+    def format_frequency(freq):
+        if freq == "N/A" or not freq or freq == "":
+            return "N/A"
+        try:
+            freq_str = str(freq)
+            # If it's a number, add " min" suffix
+            if freq_str.replace(".", "").isdigit():
+                return f"{freq_str} min"
+            return freq_str
+        except (ValueError, TypeError, AttributeError):
+            return str(freq) if freq else "N/A"
+    
+    am_peak_freq_formatted = format_frequency(am_peak_freq)
+    am_offpeak_freq_formatted = format_frequency(am_offpeak_freq)
+    pm_peak_freq_formatted = format_frequency(pm_peak_freq)
+    pm_offpeak_freq_formatted = format_frequency(pm_offpeak_freq)
+    
+    # Create table with 3 rows (Weekdays, Saturday, Sunday) and 7 columns
+    # Columns: Day Type, First Bus, Last Bus, AM Peak Frequency, AM Offpeak Frequency, PM Peak Frequency, PM Offpeak Frequency
     table_rows = [
         # Header row
         html.Tr(
@@ -108,6 +157,38 @@ def _create_bus_timing_table(timing_info: Dict[str, Any]) -> Optional[html.Div]:
                     "textAlign": "center",
                 }),
                 html.Td("Last Bus", style={
+                    "padding": "0.375rem",
+                    "fontWeight": "600",
+                    "fontSize": "0.6875rem",
+                    "color": "#4169E1",
+                    "border": "0.0625rem solid #555",
+                    "textAlign": "center",
+                }),
+                html.Td("AM Peak Frequency", style={
+                    "padding": "0.375rem",
+                    "fontWeight": "600",
+                    "fontSize": "0.6875rem",
+                    "color": "#4169E1",
+                    "border": "0.0625rem solid #555",
+                    "textAlign": "center",
+                }),
+                html.Td("AM Offpeak Frequency", style={
+                    "padding": "0.375rem",
+                    "fontWeight": "600",
+                    "fontSize": "0.6875rem",
+                    "color": "#4169E1",
+                    "border": "0.0625rem solid #555",
+                    "textAlign": "center",
+                }),
+                html.Td("PM Peak Frequency", style={
+                    "padding": "0.375rem",
+                    "fontWeight": "600",
+                    "fontSize": "0.6875rem",
+                    "color": "#4169E1",
+                    "border": "0.0625rem solid #555",
+                    "textAlign": "center",
+                }),
+                html.Td("PM Offpeak Frequency", style={
                     "padding": "0.375rem",
                     "fontWeight": "600",
                     "fontSize": "0.6875rem",
@@ -141,6 +222,34 @@ def _create_bus_timing_table(timing_info: Dict[str, Any]) -> Optional[html.Div]:
                     "border": "0.0625rem solid #555",
                     "textAlign": "center",
                 }),
+                html.Td(am_peak_freq_formatted, style={
+                    "padding": "0.375rem",
+                    "fontSize": "0.6875rem",
+                    "color": "#fff",
+                    "border": "0.0625rem solid #555",
+                    "textAlign": "center",
+                }),
+                html.Td(am_offpeak_freq_formatted, style={
+                    "padding": "0.375rem",
+                    "fontSize": "0.6875rem",
+                    "color": "#fff",
+                    "border": "0.0625rem solid #555",
+                    "textAlign": "center",
+                }),
+                html.Td(pm_peak_freq_formatted, style={
+                    "padding": "0.375rem",
+                    "fontSize": "0.6875rem",
+                    "color": "#fff",
+                    "border": "0.0625rem solid #555",
+                    "textAlign": "center",
+                }),
+                html.Td(pm_offpeak_freq_formatted, style={
+                    "padding": "0.375rem",
+                    "fontSize": "0.6875rem",
+                    "color": "#fff",
+                    "border": "0.0625rem solid #555",
+                    "textAlign": "center",
+                }),
             ]
         ),
         # Saturday row
@@ -167,6 +276,34 @@ def _create_bus_timing_table(timing_info: Dict[str, Any]) -> Optional[html.Div]:
                     "border": "0.0625rem solid #555",
                     "textAlign": "center",
                 }),
+                html.Td(am_peak_freq_formatted, style={
+                    "padding": "0.375rem",
+                    "fontSize": "0.6875rem",
+                    "color": "#fff",
+                    "border": "0.0625rem solid #555",
+                    "textAlign": "center",
+                }),
+                html.Td(am_offpeak_freq_formatted, style={
+                    "padding": "0.375rem",
+                    "fontSize": "0.6875rem",
+                    "color": "#fff",
+                    "border": "0.0625rem solid #555",
+                    "textAlign": "center",
+                }),
+                html.Td(pm_peak_freq_formatted, style={
+                    "padding": "0.375rem",
+                    "fontSize": "0.6875rem",
+                    "color": "#fff",
+                    "border": "0.0625rem solid #555",
+                    "textAlign": "center",
+                }),
+                html.Td(pm_offpeak_freq_formatted, style={
+                    "padding": "0.375rem",
+                    "fontSize": "0.6875rem",
+                    "color": "#fff",
+                    "border": "0.0625rem solid #555",
+                    "textAlign": "center",
+                }),
             ]
         ),
         # Sunday row
@@ -187,6 +324,34 @@ def _create_bus_timing_table(timing_info: Dict[str, Any]) -> Optional[html.Div]:
                     "textAlign": "center",
                 }),
                 html.Td(sun_last_formatted, style={
+                    "padding": "0.375rem",
+                    "fontSize": "0.6875rem",
+                    "color": "#fff",
+                    "border": "0.0625rem solid #555",
+                    "textAlign": "center",
+                }),
+                html.Td(am_peak_freq_formatted, style={
+                    "padding": "0.375rem",
+                    "fontSize": "0.6875rem",
+                    "color": "#fff",
+                    "border": "0.0625rem solid #555",
+                    "textAlign": "center",
+                }),
+                html.Td(am_offpeak_freq_formatted, style={
+                    "padding": "0.375rem",
+                    "fontSize": "0.6875rem",
+                    "color": "#fff",
+                    "border": "0.0625rem solid #555",
+                    "textAlign": "center",
+                }),
+                html.Td(pm_peak_freq_formatted, style={
+                    "padding": "0.375rem",
+                    "fontSize": "0.6875rem",
+                    "color": "#fff",
+                    "border": "0.0625rem solid #555",
+                    "textAlign": "center",
+                }),
+                html.Td(pm_offpeak_freq_formatted, style={
                     "padding": "0.375rem",
                     "fontSize": "0.6875rem",
                     "color": "#fff",
@@ -424,9 +589,12 @@ def format_bus_service_search_display(service_no: str, routes_data: Optional[Dic
     # Sort routes by direction and stop sequence
     result_items = []
     
+    # Fetch bus services data for frequency information
+    bus_services_data = fetch_bus_services_data()
+    
     # Add bus timing table if timing info is available
     if timing_info:
-        timing_table = _create_bus_timing_table(timing_info)
+        timing_table = _create_bus_timing_table(timing_info, service_no, bus_services_data)
         if timing_table:
             result_items.append(timing_table)
     
