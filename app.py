@@ -98,7 +98,7 @@ app.layout = html.Div(
                     },
                     children=[
                         html.Span(
-                            "MRT Lines:",
+                            "MRT Lines Service Statuses:",
                             style={
                                 "color": "#fff",
                                 "fontWeight": "600",
@@ -126,7 +126,7 @@ app.layout = html.Div(
                     },
                     children=[
                         html.Span(
-                            "LRT Lines:",
+                            "LRT Lines Service Statuses:",
                             style={
                                 "color": "#fff",
                                 "fontWeight": "600",
@@ -420,23 +420,16 @@ app.layout = html.Div(
                                                     children=[
                                                         html.Div(
                                                             style={
-                                                                "width": "0.75rem",
-                                                                "height": "0.9375rem",
-                                                                "backgroundColor": "#FF6B00",
-                                                                "border": "0.0625rem solid #FFA500",
-                                                                "borderRadius": "0.125rem",
+                                                                "width": "1.5rem",
+                                                                "height": "1.5rem",
                                                                 "marginRight": "0.5rem",
-                                                                "position": "relative",
+                                                                "display": "flex",
+                                                                "alignItems": "center",
+                                                                "justifyContent": "center",
                                                             },
-                                                            children=html.Div(
-                                                                style={
-                                                                    "position": "absolute",
-                                                                    "top": "0.125rem",
-                                                                    "left": "0.125rem",
-                                                                    "right": "0.125rem",
-                                                                    "height": "0.125rem",
-                                                                    "backgroundColor": "#000",
-                                                                }
+                                                            children=html.Img(
+                                                                src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB4PSIyIiB5PSIyIiB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIGZpbGw9IiNEQzI2MjYiIHN0cm9rZT0iIzk5MUIxQiIgc3Ryb2tlLXdpZHRoPSIyIiByeD0iMiIvPjxsaW5lIHgxPSI2IiB5MT0iNiIgeDI9IjE4IiB5Mj0iMTgiIHN0cm9rZT0iI0ZGRkZGRiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iMTgiIHkxPSI2IiB4Mj0iNiIgeTI9IjE4IiBzdHJva2U9IiNGRkZGRkYiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHJlY3QgeD0iNCIgeT0iNCIgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2IiBmaWxsPSJub25lIiBzdHJva2U9IiNGRkZGRkYiIHN0cm9rZS13aWR0aD0iMS41IiByeD0iMSIvPjwvc3ZnPg==",
+                                                                style={"width": "1.5rem", "height": "1.5rem"}
                                                             )
                                                         ),
                                                         html.Span(
@@ -457,24 +450,16 @@ app.layout = html.Div(
                                                     children=[
                                                         html.Div(
                                                             style={
-                                                                "width": "0",
-                                                                "height": "0",
-                                                                "borderLeft": "0.375rem solid transparent",
-                                                                "borderRight": "0.375rem solid transparent",
-                                                                "borderBottom": "0.625rem solid #FFA500",
+                                                                "width": "1.25rem",
+                                                                "height": "1.75rem",
                                                                 "marginRight": "0.5rem",
-                                                                "position": "relative",
+                                                                "display": "flex",
+                                                                "alignItems": "center",
+                                                                "justifyContent": "center",
                                                             },
-                                                            children=html.Div(
-                                                                style={
-                                                                    "position": "absolute",
-                                                                    "top": "0.125rem",
-                                                                    "left": "-0.1875rem",
-                                                                    "width": "0.375rem",
-                                                                    "height": "0.375rem",
-                                                                    "backgroundColor": "#FFD700",
-                                                                    "borderRadius": "50%",
-                                                                }
+                                                            children=html.Img(
+                                                                src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjgiIHZpZXdCb3g9IjAgMCAyMCAyOCIgZXhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTSAxMCAyIEwgMTggMjYgTCAyIDI2IFoiIGZpbGw9IiNGOTczMTYiIHN0cm9rZT0iI0VBNTgwQyIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48cGF0aCBkPSJNIDEwIDYgTCAxNiAyNCBMIDQgMjQgWiIgZmlsbD0iI0ZCOTIzQyIvPjxyZWN0IHg9IjYiIHk9IjEwIiB3aWR0aD0iOCIgaGVpZ2h0PSIyIiBmaWxsPSIjRkZGRkZGIiByeD0iMSIvPjxyZWN0IHg9IjYiIHk9IjE0IiB3aWR0aD0iOCIgaGVpZ2h0PSIyIiBmaWxsPSIjRkZGRkZGIiByeD0iMSIvPjxyZWN0IHg9IjYiIHk9IjE4IiB3aWR0aD0iOCIgaGVpZ2h0PSIyIiBmaWxsPSIjRkZGRkZGIiByeD0iMSIvPjxjaXJjbGUgY3g9IjEwIiBjeT0iMjgiIHI9IjIiIGZpbGw9IiMxRjI5MzciLz48L3N2Zz4=",
+                                                                style={"width": "1.25rem", "height": "1.75rem"}
                                                             )
                                                         ),
                                                         html.Span(
@@ -495,27 +480,17 @@ app.layout = html.Div(
                                                     children=[
                                                         html.Div(
                                                             style={
-                                                                "width": "0.75rem",
-                                                                "height": "0.75rem",
-                                                                "backgroundColor": "#FF9800",
-                                                                "border": "0.0625rem solid #FF6B6B",
-                                                                "borderRadius": "0.125rem",
+                                                                "width": "1.5rem",
+                                                                "height": "1.5rem",
                                                                 "marginRight": "0.5rem",
-                                                                "position": "relative",
+                                                                "display": "flex",
+                                                                "alignItems": "center",
+                                                                "justifyContent": "center",
                                                             },
-                                                            children=[
-                                                                html.Div(
-                                                                    style={
-                                                                        "position": "absolute",
-                                                                        "top": "0.125rem",
-                                                                        "left": "0.125rem",
-                                                                        "width": "0.5rem",
-                                                                        "height": "0.5rem",
-                                                                        "backgroundColor": "#FFD700",
-                                                                        "borderRadius": "0.0625rem",
-                                                                    }
-                                                                )
-                                                            ]
+                                                            children=html.Img(
+                                                                src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMSIgZmlsbD0iI0VGNjQ0NCIgc3Ryb2tlPSIjREMyNjI2IiBzdHJva2Utd2lkdGg9IjIiLz48cGF0aCBkPSJNIDYgMTQgTCA2IDE4IEwgMTggMTggTCAxOCAxNCBMIDE1IDEwIEwgOSAxMCBaIiBmaWxsPSIjRkZGRkZGIiBzdHJva2U9IiMxRjI5MzciIHN0cm9rZS13aWR0aD0iMS41Ii8+PGNpcmNsZSBjeD0iOSIgY3k9IjE4IiByPSIyIiBmaWxsPSIjMUYyOTM3Ii8+PGNpcmNsZSBjeD0iMTUiIGN5PSIxOCIgcj0iMiIgZmlsbD0iIzFGMjkzNyIvPjxwYXRoIGQ9Ik0gOCAxMCBMIDkgNyBMIDE1IDcgTCAxNiAxMCIgZmlsbD0iI0ZFRjNDNyIgc3Ryb2tlPSIjMUYyOTM3IiBzdHJva2Utd2lkdGg9IjEiLz48bGluZSB4MT0iMTIiIHkxPSI3IiB4Mj0iMTIiIHkyPSIxMCIgc3Ryb2tlPSIjREMyNjI2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxsaW5lIHgxPSIxMiIgeTE9IjUiIHgyPSIxMiIgeTI9IjMiIHN0cm9rZT0iI0ZGRkZGRiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiNGRkZGRkYiLz48L3N2Zz4=",
+                                                                style={"width": "1.5rem", "height": "1.5rem"}
+                                                            )
                                                         ),
                                                         html.Span(
                                                             "Accident/Breakdown",
@@ -535,23 +510,16 @@ app.layout = html.Div(
                                                     children=[
                                                         html.Div(
                                                             style={
-                                                                "width": "0",
-                                                                "height": "0",
-                                                                "borderLeft": "0.375rem solid transparent",
-                                                                "borderRight": "0.375rem solid transparent",
-                                                                "borderTop": "0.5625rem solid #FF9800",
+                                                                "width": "1.5rem",
+                                                                "height": "1.5rem",
                                                                 "marginRight": "0.5rem",
-                                                                "position": "relative",
+                                                                "display": "flex",
+                                                                "alignItems": "center",
+                                                                "justifyContent": "center",
                                                             },
-                                                            children=html.Div(
-                                                                style={
-                                                                    "position": "absolute",
-                                                                    "top": "-0.4375rem",
-                                                                    "left": "-0.0625rem",
-                                                                    "width": "0.125rem",
-                                                                    "height": "0.375rem",
-                                                                    "backgroundColor": "#000",
-                                                                }
+                                                            children=html.Img(
+                                                                src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNIDEyIDIgTCAyMiAyMCBMIDIgMjAgWiIgZmlsbD0iI0ZDRDM0RCIgc3Ryb2tlPSIjRjU5RTAwQiIgc3Ryb2tlLXdpZHRoPSIyIi8+PHBhdGggZD0iTSAxMiA2IEwgMTIgMTQiIHN0cm9rZT0iIzkyNDAwRSIgc3Ryb2tlLXdpZHRoPSIyLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTciIHI9IjEuNSIgZmlsbD0iIzkyNDAwRSIvPjwvc3ZnPg==",
+                                                                style={"width": "1.5rem", "height": "1.5rem"}
                                                             )
                                                         ),
                                                         html.Span(
@@ -571,12 +539,17 @@ app.layout = html.Div(
                                                     children=[
                                                         html.Div(
                                                             style={
-                                                                "width": "0.75rem",
-                                                                "height": "0.75rem",
-                                                                "borderRadius": "50%",
-                                                                "backgroundColor": "#FF8C00",
+                                                                "width": "1.25rem",
+                                                                "height": "1.5rem",
                                                                 "marginRight": "0.5rem",
-                                                            }
+                                                                "display": "flex",
+                                                                "alignItems": "center",
+                                                                "justifyContent": "center",
+                                                            },
+                                                            children=html.Img(
+                                                                src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyMCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB4PSI2IiB5PSIyIiB3aWR0aD0iOCIgaGVpZ2h0PSIxOCIgZmlsbD0iIzFGMjkzNyIgc3Ryb2tlPSIjMzc0MTUxIiBzdHJva2Utd2lkdGg9IjEuNSIgcng9IjEiLz48Y2lyY2xlIGN4PSIxMCIgY3k9IjciIHI9IjIuNSIgZmlsbD0iI0VGNjQ0NCIvPjxjaXJjbGUgY3g9IjEwIiBjeT0iMTIiIHI9IjIuNSIgZmlsbD0iI0ZDRDM0RCIvPjxjaXJjbGUgY3g9IjEwIiBjeT0iMTciIHI9IjIuNSIgZmlsbD0iIzEwQjk4MSIgZmlsbC1vcGFjaXR5PSIwLjMiLz48cmVjdCB4PSI4IiB5PSIyMCIgd2lkdGg9IjQiIGhlaWdodD0iMiIgZmlsbD0iIzFGMjkzNyIgcng9IjAuNSIvPjxsaW5lIHgxPSIxMCIgeTE9IjciIHgyPSIxMCIgeTI9IjciIHN0cm9rZT0iI0ZGRkZGRiIgc3Ryb2tlLXdpZHRoPSIxIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iMTAiIHkxPSIxMiIgeDI9IjEwIiB5Mj0iMTIiIHN0cm9rZT0iI0ZGRkZGRiIgc3Ryb2tlLXdpZHRoPSIxIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=",
+                                                                style={"width": "1.25rem", "height": "1.5rem"}
+                                                            )
                                                         ),
                                                         html.Span(
                                                             "Faulty Traffic Lights",
