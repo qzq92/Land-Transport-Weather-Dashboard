@@ -1589,25 +1589,50 @@ def format_traffic_incidents_indicator(data, faulty_lights_data=None):
                         incidents = value
                         break
 
-    # Count incidents by type/name
-    incident_counts = {}
+    # Categorize incidents into 4 types
+    road_block_count = 0
+    road_work_count = 0
+    accident_breakdown_count = 0
+    other_count = 0
+    
     for incident in incidents:
         if isinstance(incident, dict):
-            # Try different possible keys for incident name/type
-            incident_name = (
-                incident.get('Type') or
-                incident.get('type') or
+            # Get incident message
+            incident_message = (
                 incident.get('Message') or
                 incident.get('message') or
+                incident.get('Type') or
+                incident.get('type') or
                 incident.get('IncidentType') or
                 incident.get('incidentType') or
-                incident.get('Name') or
-                incident.get('name') or
                 'Unknown'
             )
-            incident_counts[incident_name] = incident_counts.get(incident_name, 0) + 1
+            incident_message_lower = str(incident_message).lower()
+            
+            # Categorize
+            if ('road block' in incident_message_lower or
+                'roadblock' in incident_message_lower or
+                'blocked' in incident_message_lower or
+                'closure' in incident_message_lower or
+                'closed' in incident_message_lower):
+                road_block_count += 1
+            elif ('road work' in incident_message_lower or
+                  'roadwork' in incident_message_lower or
+                  'construction' in incident_message_lower or
+                  'maintenance' in incident_message_lower or
+                  'repair' in incident_message_lower):
+                road_work_count += 1
+            elif ('accident' in incident_message_lower or
+                  'breakdown' in incident_message_lower or
+                  'vehicle' in incident_message_lower or
+                  'collision' in incident_message_lower or
+                  'crash' in incident_message_lower):
+                accident_breakdown_count += 1
+            else:
+                other_count += 1
 
-    # Add faulty traffic lights count if data is provided
+    # Count faulty traffic lights if data is provided
+    faulty_lights_count = 0
     if faulty_lights_data:
         faulty_lights = []
         if isinstance(faulty_lights_data, dict):
@@ -1630,106 +1655,71 @@ def format_traffic_incidents_indicator(data, faulty_lights_data=None):
         for light in faulty_lights:
             if isinstance(light, dict):
                 node_id = (
-                    light.get('NodeID') or
-                    light.get('nodeID') or
-                    light.get('node_id') or
-                    light.get('NodeId') or
-                    light.get('Node')
+                    light.get('NodeID')
                 )
                 if node_id:
                     node_ids.add(str(node_id))
         
         if node_ids:
-            incident_counts['Faulty traffic lights'] = len(node_ids)
+            faulty_lights_count = len(node_ids)
 
-    if not incident_counts:
-        return html.Div(
-            [
-                html.P(
-                    "No incidents",
-                    style={
-                        "fontSize": "12px",
-                        "color": "#888",
-                        "textAlign": "center",
-                        "margin": "0",
-                    }
-                )
-            ]
-        )
+    # Import create_metric_card (create_metric_value_display already imported at top)
+    from components.metric_card import create_metric_card
 
-    # Create grid layout (n×5) - 5 columns
-    incident_items = sorted(incident_counts.items())
-    if not incident_items:
-        return html.Div(
-            [
-                html.P(
-                    "No incidents",
-                    style={
-                        "fontSize": "12px",
-                        "color": "#888",
-                        "textAlign": "center",
-                        "margin": "0",
-                    }
-                )
-            ]
-        )
-
-    # Create grid tiles
-    grid_tiles = []
-    for incident_name, count in incident_items:
-        grid_tiles.append(
-            html.Div(
-                [
-                    html.Div(
-                        incident_name,
-                        style={
-                            "fontSize": "10px",
-                            "color": "#FF9800",
-                            "fontWeight": "600",
-                            "textAlign": "center",
-                            "marginBottom": "4px",
-                            "wordWrap": "break-word",
-                            "overflowWrap": "break-word",
-                            "lineHeight": "1.3",
-                        }
-                    ),
-                    html.Div(
-                        str(count),
-                        style={
-                            "fontSize": "18px",
-                            "color": "#FF9800",
-                            "fontWeight": "700",
-                            "textAlign": "center",
-                        }
-                    ),
-                ],
-                style={
-                    "padding": "8px",
-                    "backgroundColor": "#3a4a5a",
-                    "borderRadius": "4px",
-                    "borderLeft": "3px solid #FF9800",
-                    "display": "flex",
-                    "flexDirection": "column",
-                    "justifyContent": "center",
-                    "minHeight": "70px",
-                    "height": "100%",
-                    "boxSizing": "border-box",
-                }
-            )
-        )
-
-    # Arrange in grid: dynamic columns based on number of incident types
-    # If less than 5 types, use that number so elements fill the parent div
-    num_incidents = len(incident_items)
-    num_columns = min(num_incidents, 5)  # Use number of incidents or 5, whichever is smaller
+    # Create 4 consecutive metric cards with values
+    metric_cards = []
     
+    # Road Block
+    road_block_card = create_metric_card(
+        card_id="traffic-road-block-card",
+        label="🚧 Road Block",
+        value_id="traffic-road-block-value",
+        initial_value="0"
+    )
+    # Replace the value display with orange-colored value
+    road_block_card.children[0].children[1].children = [create_metric_value_display(str(road_block_count), color="#FF9800")]
+    metric_cards.append(road_block_card)
+    
+    # Road Work
+    road_work_card = create_metric_card(
+        card_id="traffic-road-work-card",
+        label="🔧 Road Work",
+        value_id="traffic-road-work-value",
+        initial_value="0"
+    )
+    # Replace the value display with orange-colored value
+    road_work_card.children[0].children[1].children = [create_metric_value_display(str(road_work_count), color="#FF9800")]
+    metric_cards.append(road_work_card)
+    
+    # Accident/Breakdown
+    accident_card = create_metric_card(
+        card_id="traffic-accident-card",
+        label="🚗 Accident/Breakdown",
+        value_id="traffic-accident-value",
+        initial_value="0"
+    )
+    # Replace the value display with orange-colored value
+    accident_card.children[0].children[1].children = [create_metric_value_display(str(accident_breakdown_count), color="#FF9800")]
+    metric_cards.append(accident_card)
+    
+    # Faulty Traffic Lights
+    faulty_lights_card = create_metric_card(
+        card_id="traffic-faulty-lights-card",
+        label="🚦 Faulty Traffic Lights",
+        value_id="traffic-faulty-lights-value",
+        initial_value="0"
+    )
+    # Replace the value display with orange-colored value
+    faulty_lights_card.children[0].children[1].children = [create_metric_value_display(str(faulty_lights_count), color="#FF9800")]
+    metric_cards.append(faulty_lights_card)
+    
+    # Return container with metric cards in 2-column grid layout
     return html.Div(
-        grid_tiles,
+        metric_cards,
         style={
             "display": "grid",
-            "gridTemplateColumns": f"repeat({num_columns}, 1fr)",
-            "gap": "8px",
-            "gridAutoRows": "minmax(70px, auto)",
+            "gridTemplateColumns": "repeat(2, 1fr)",
+            "gap": "0.5rem",
         }
     )
 

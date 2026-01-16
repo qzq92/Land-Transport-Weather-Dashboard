@@ -148,7 +148,38 @@ def format_bus_arrival_display(arrival_data: Optional[Dict[str, Any]], bus_stop_
     
     services = sorted(services, key=get_service_number)
     
-    service_items = []
+    # Create table rows
+    table_rows = []
+    
+    # Header row
+    table_rows.append(
+        html.Tr(
+            [
+                html.Td(
+                    "Service (Operator)",
+                    style={
+                        "padding": "0.375rem",
+                        "fontWeight": "600",
+                        "fontSize": "0.6875rem",
+                        "color": "#4169E1",
+                        "border": "0.0625rem solid #555",
+                        "textAlign": "left",
+                    }
+                ),
+                html.Td(
+                    "Next Bus Arrival",
+                    style={
+                        "padding": "0.375rem",
+                        "fontWeight": "600",
+                        "fontSize": "0.6875rem",
+                        "color": "#4169E1",
+                        "border": "0.0625rem solid #555",
+                        "textAlign": "center",
+                    }
+                ),
+            ]
+        )
+    )
     
     for service in services:
         service_no = service.get('ServiceNo', 'N/A')
@@ -181,7 +212,7 @@ def format_bus_arrival_display(arrival_data: Optional[Dict[str, Any]], bus_stop_
                     "borderRadius": "0.1875rem",
                     "fontSize": "0.7rem",
                     "fontWeight": "600",
-                    "marginLeft": "0.5rem",
+                    "marginRight": "0.25rem",
                 }
             )
         )
@@ -198,7 +229,7 @@ def format_bus_arrival_display(arrival_data: Optional[Dict[str, Any]], bus_stop_
                         "borderRadius": "0.1875rem",
                         "fontSize": "0.7rem",
                         "fontWeight": "600",
-                        "marginLeft": "0.25rem",
+                        "marginRight": "0.25rem",
                     }
                 )
             )
@@ -215,36 +246,37 @@ def format_bus_arrival_display(arrival_data: Optional[Dict[str, Any]], bus_stop_
                         "borderRadius": "0.1875rem",
                         "fontSize": "0.7rem",
                         "fontWeight": "600",
-                        "marginLeft": "0.25rem",
                     }
                 )
             )
         
-        # Create service card with all info in a single row div
-        service_card = html.Div(
-            style={
-                "backgroundColor": "rgb(58, 74, 90)",
-                "borderRadius": "0.25rem",
-                "padding": "0.5rem",
-                "marginBottom": "0.375rem",
-                "display": "flex",
-                "alignItems": "center",
-                "flexWrap": "nowrap",
-            },
-            children=[
-                html.Span(
-                    f"Service {service_no} ({operator})",
-                    style={
-                        "color": "#fff",
-                        "fontWeight": "600",
-                        "fontSize": "0.75rem",
-                        "whiteSpace": "nowrap",
-                    }
-                ),
-                *timing_spans
-            ]
+        # Create table row
+        table_rows.append(
+            html.Tr(
+                [
+                    html.Td(
+                        f"Service {service_no} ({operator})",
+                        style={
+                            "padding": "0.375rem",
+                            "fontSize": "0.6875rem",
+                            "color": "#fff",
+                            "border": "0.0625rem solid #555",
+                            "textAlign": "left",
+                        }
+                    ),
+                    html.Td(
+                        timing_spans if timing_spans else [html.Span("N/A", style={"color": "#999"})],
+                        style={
+                            "padding": "0.375rem",
+                            "fontSize": "0.6875rem",
+                            "color": "#fff",
+                            "border": "0.0625rem solid #555",
+                            "textAlign": "center",
+                        }
+                    ),
+                ]
+            )
         )
-        service_items.append(service_card)
     
     return html.Div(
         children=[
@@ -257,8 +289,14 @@ def format_bus_arrival_display(arrival_data: Optional[Dict[str, Any]], bus_stop_
                     "marginBottom": "0.375rem",
                 }
             ),
-
-            html.Div(service_items),
+            html.Table(
+                style={
+                    "width": "100%",
+                    "borderCollapse": "collapse",
+                    "fontSize": "0.6875rem",
+                },
+                children=table_rows
+            ),
         ]
     )
 
@@ -271,18 +309,51 @@ def register_bus_arrival_callbacks(app):
         app: Dash application instance
     """
     @app.callback(
+        Output('current-bus-stop-code', 'data'),
+        [Input('bus-stop-search-btn', 'n_clicks'),
+         Input({'type': 'bus-stop-marker', 'index': ALL}, 'n_clicks')],
+        [State('bus-stop-search-input', 'value')],
+        prevent_initial_call=True
+    )
+    def update_current_bus_stop_code(_search_clicks, marker_clicks, search_value):
+        """Store the current bus stop code for auto-refresh."""
+        ctx = callback_context
+        if not ctx.triggered:
+            return no_update
+        
+        trigger_id = ctx.triggered[0]['prop_id']
+        trigger_value = ctx.triggered[0]['value']
+        bus_stop_code = None
+        
+        # Check if a bus stop marker was clicked
+        if 'bus-stop-marker' in trigger_id:
+            if trigger_value is None or trigger_value == 0:
+                return no_update
+            marker_id_str = trigger_id.split('.')[0]
+            marker_id = json.loads(marker_id_str)
+            bus_stop_code = marker_id['index']
+        # Check if search button was clicked
+        elif 'bus-stop-search-btn' in trigger_id:
+            if search_value and search_value.strip().isdigit() and len(search_value.strip()) == 5:
+                bus_stop_code = search_value.strip()
+        
+        return bus_stop_code if bus_stop_code else no_update
+
+    @app.callback(
         [Output('bus-arrival-content', 'children'),
          Output('bus-arrival-popup-layer', 'children'),
          Output('bus-stop-search-input', 'value')],
         [Input('bus-stop-search-btn', 'n_clicks'),
-         Input({'type': 'bus-stop-marker', 'index': ALL}, 'n_clicks')],
+         Input({'type': 'bus-stop-marker', 'index': ALL}, 'n_clicks'),
+         Input('bus-arrival-interval', 'n_intervals')],
         [State('bus-stop-search-input', 'value'),
-         State('bus-stops-toggle-state', 'data')],
+         State('bus-stops-toggle-state', 'data'),
+         State('current-bus-stop-code', 'data')],
         prevent_initial_call=True
     )
-    def update_bus_arrival_display(_search_clicks, marker_clicks, search_value, bus_stops_visible):
+    def update_bus_arrival_display(_search_clicks, marker_clicks, _interval_n, search_value, bus_stops_visible, stored_bus_stop_code):
         """
-        Update bus arrival display when search is performed or a bus stop marker is clicked.
+        Update bus arrival display when search is performed, a bus stop marker is clicked, or interval triggers.
         Fills the textbox and shows the arrival info in the side panel.
         Note: Map viewport is not auto-centered to allow user to freely navigate.
         """
@@ -295,15 +366,21 @@ def register_bus_arrival_callbacks(app):
         trigger_value = ctx.triggered[0]['value']
         bus_stop_code = None
         
+        # Check if interval triggered (auto-refresh)
+        if 'bus-arrival-interval' in trigger_id:
+            # Use stored bus stop code for auto-refresh
+            if stored_bus_stop_code:
+                bus_stop_code = stored_bus_stop_code
+            else:
+                return no_update, [], no_update
+        
         # Check if a bus stop marker was clicked
-        if 'bus-stop-marker' in trigger_id:
+        elif 'bus-stop-marker' in trigger_id:
             # Validate that this was an actual click (n_clicks must be a positive number)
-            # This prevents the callback from triggering when markers are re-rendered due to viewport changes
             if trigger_value is None or trigger_value == 0:
                 return no_update, [], no_update
             
             # Extract the bus stop code from the triggered marker ID
-            # Parse the pattern-matching ID from prop_id like "{'index':'12345','type':'bus-stop-marker'}.n_clicks"
             marker_id_str = trigger_id.split('.')[0]
             marker_id = json.loads(marker_id_str)
             bus_stop_code = marker_id['index']

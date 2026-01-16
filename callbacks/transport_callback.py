@@ -14,13 +14,12 @@ import pandas as pd
 from datetime import datetime
 from typing import Optional, Dict, List, Any, Tuple
 from concurrent.futures import Future
-from dash import Input, Output, State, html, dependencies, callback_context, no_update, ALL
+from dash import Input, Output, State, html, dependencies
 import dash_leaflet as dl
 from utils.async_fetcher import fetch_url, fetch_async, fetch_url_2min_cached
 from utils.data_download_helper import fetch_erp_gantry_data
 from utils.map_utils import SG_MAP_CENTER
 from callbacks.map_callback import _haversine_distance_m
-from components.metric_card import create_metric_value_display
 
 # API URLs
 TAXI_API_URL = "https://api.data.gov.sg/v1/transport/taxi-availability"
@@ -2316,26 +2315,107 @@ def create_traffic_incidents_markers(incidents_data, faulty_lights_data=None):
             # Create tooltip with full incident message
             tooltip_html = f"🚦 {incident_message}"
             
-            # Use triangle marker pointing down (warning sign style) for traffic incidents
-            # This distinguishes them from taxi stands which point up
-            triangle_svg = (
-                '<svg width="20" height="18" viewBox="0 0 20 18" xmlns="http://www.w3.org/2000/svg">'
-                '<path d="M 10 18 L 0 0 L 20 0 Z" fill="#FF9800" stroke="#FF6B6B" stroke-width="1.5"/>'
-                '</svg>'
-            )
-            triangle_svg_base64 = base64.b64encode(triangle_svg.encode()).decode()
+            # Categorize incident type based on message content
+            incident_message_lower = str(incident_message).lower()
             
-            triangle_icon = {
-                "iconUrl": f"data:image/svg+xml;base64,{triangle_svg_base64}",
-                "iconSize": [20, 18],
-                "iconAnchor": [10, 0],
-                "popupAnchor": [0, 18],
+            # Determine incident category
+            is_road_block = (
+                'road block' in incident_message_lower or
+                'roadblock' in incident_message_lower or
+                'blocked' in incident_message_lower or
+                'closure' in incident_message_lower or
+                'closed' in incident_message_lower
+            )
+            
+            is_road_work = (
+                'road work' in incident_message_lower or
+                'roadwork' in incident_message_lower or
+                'construction' in incident_message_lower or
+                'maintenance' in incident_message_lower or
+                'repair' in incident_message_lower
+            )
+            
+            is_accident_breakdown = (
+                'accident' in incident_message_lower or
+                'breakdown' in incident_message_lower or
+                'vehicle' in incident_message_lower or
+                'collision' in incident_message_lower or
+                'crash' in incident_message_lower
+            )
+            
+            # Create appropriate icon based on category
+            if is_road_block:
+                # Road block icon - barrier/blockade
+                road_block_svg = (
+                    '<svg width="20" height="24" viewBox="0 0 20 24" xmlns="http://www.w3.org/2000/svg">'
+                    '<rect x="2" y="4" width="16" height="16" fill="#FF6B00" stroke="#FFA500" stroke-width="1.5" rx="2"/>'
+                    '<line x1="6" y1="8" x2="14" y2="8" stroke="#000" stroke-width="2"/>'
+                    '<line x1="6" y1="12" x2="14" y2="12" stroke="#000" stroke-width="2"/>'
+                    '<line x1="6" y1="16" x2="14" y2="16" stroke="#000" stroke-width="2"/>'
+                    '<circle cx="10" cy="22" r="2" fill="#000"/>'
+                    '</svg>'
+                )
+                icon_svg_base64 = base64.b64encode(road_block_svg.encode()).decode()
+                icon_size = [20, 24]
+                icon_anchor = [10, 24]
+                popup_anchor = [0, -24]
+                
+            elif is_road_work:
+                # Road work icon - construction cone
+                road_work_svg = (
+                    '<svg width="20" height="24" viewBox="0 0 20 24" xmlns="http://www.w3.org/2000/svg">'
+                    '<path d="M 10 0 L 18 20 L 2 20 Z" fill="#FFA500" stroke="#FF6B00" stroke-width="1.5"/>'
+                    '<path d="M 10 4 L 15 18 L 5 18 Z" fill="#FFD700"/>'
+                    '<path d="M 10 0 L 10 20" stroke="#000" stroke-width="1"/>'
+                    '<circle cx="10" cy="22" r="2" fill="#000"/>'
+                    '</svg>'
+                )
+                icon_svg_base64 = base64.b64encode(road_work_svg.encode()).decode()
+                icon_size = [20, 24]
+                icon_anchor = [10, 24]
+                popup_anchor = [0, -24]
+                
+            elif is_accident_breakdown:
+                # Accident/breakdown icon - car with warning
+                accident_svg = (
+                    '<svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">'
+                    '<rect x="3" y="8" width="14" height="8" fill="#FF9800" stroke="#FF6B6B" stroke-width="1.5" rx="1"/>'
+                    '<circle cx="7" cy="16" r="2" fill="#000"/>'
+                    '<circle cx="13" cy="16" r="2" fill="#000"/>'
+                    '<path d="M 5 8 L 7 4 L 13 4 L 15 8" fill="#FFD700" stroke="#FF9800" stroke-width="1"/>'
+                    '<line x1="10" y1="4" x2="10" y2="8" stroke="#FF6B6B" stroke-width="1.5"/>'
+                    '</svg>'
+                )
+                icon_svg_base64 = base64.b64encode(accident_svg.encode()).decode()
+                icon_size = [20, 20]
+                icon_anchor = [10, 20]
+                popup_anchor = [0, -20]
+                
+            else:
+                # Other incidents - triangle warning sign
+                other_svg = (
+                    '<svg width="20" height="18" viewBox="0 0 20 18" xmlns="http://www.w3.org/2000/svg">'
+                    '<path d="M 10 18 L 0 0 L 20 0 Z" fill="#FF9800" stroke="#FF6B6B" stroke-width="1.5"/>'
+                    '<path d="M 10 4 L 10 12" stroke="#000" stroke-width="2" stroke-linecap="round"/>'
+                    '<circle cx="10" cy="14" r="1" fill="#000"/>'
+                    '</svg>'
+                )
+                icon_svg_base64 = base64.b64encode(other_svg.encode()).decode()
+                icon_size = [20, 18]
+                icon_anchor = [10, 0]
+                popup_anchor = [0, 18]
+            
+            incident_icon = {
+                "iconUrl": f"data:image/svg+xml;base64,{icon_svg_base64}",
+                "iconSize": icon_size,
+                "iconAnchor": icon_anchor,
+                "popupAnchor": popup_anchor,
             }
             
             markers.append(
                 dl.Marker(
                     position=[latitude, longitude],
-                    icon=triangle_icon,
+                    icon=incident_icon,
                     children=[
                         dl.Tooltip(tooltip_html),
                     ]

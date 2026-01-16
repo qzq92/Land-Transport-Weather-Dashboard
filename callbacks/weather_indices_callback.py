@@ -16,6 +16,7 @@ import requests
 from dash import html, dcc, Input, Output, State
 from utils.async_fetcher import get_default_headers, fetch_url_2min_cached, _executor
 from callbacks.transport_callback import fetch_taxi_availability
+from components.metric_card import create_metric_value_display
 
 # Thread pool for async exposure index fetching
 _exposure_executor = ThreadPoolExecutor(max_workers=5)
@@ -1849,27 +1850,77 @@ def register_weather_indices_callbacks(app):
             return "📍 Hide Regional PSI Info"
         return "📍 Regional PSI Info"
 
+    @app.callback(
+        Output('main-psi-24h-value', 'children'),
+        Input('interval-component', 'n_intervals')
+    )
+    def update_main_psi_24h_value(_n_intervals):
+        """Update average 24h PSI display on main page with category."""
+        data = fetch_psi_data()
+        
+        if not data or data.get("code") != 0:
+            return create_metric_value_display("Error", color="#ff6b6b")
+
+        items = data.get("data", {}).get("items", [])
+        if not items:
+            return create_metric_value_display("N/A", color="#999")
+
+        readings = items[0].get("readings", {})
+
+        # Get 24H PSI data and calculate average across regions
+        psi_24h_data = readings.get("psi_twenty_four_hourly", {})
+        psi_24h = _calc_regional_average(psi_24h_data)
+
+        if psi_24h is None:
+            return create_metric_value_display("N/A", color="#999")
+
+        # Get color and category based on PSI value
+        color, category = get_psi_category(psi_24h)
+
+        # Create display with value and category
+        return html.Div(
+            [
+                html.Span(
+                    str(psi_24h),
+                    style={"color": color, "fontWeight": "700"}
+                ),
+                html.Span(
+                    f" ({category})",
+                    style={"color": color, "fontSize": "0.875rem", "fontWeight": "600", "marginLeft": "0.25rem"}
+                )
+            ],
+            style={
+                "backgroundColor": "rgb(58, 74, 90)",
+                "padding": "0.25rem 0.5rem",
+                "borderRadius": "0.25rem",
+                "display": "flex",
+                "alignItems": "center",
+            }
+        )
+
 
 
 def format_main_page_zika_count(data):
     """
-    Format Zika cluster count for main page display.
+    Format Zika cluster count for main page display using standard metric card.
     
     Args:
         data: API response with Zika cluster data (FeatureCollection format)
     
     Returns:
-        HTML Div with Zika cluster count information
+        HTML Div with Zika cluster count information using metric card
     """
+    from components.metric_card import create_metric_card
+    
     if not data:
-        return html.P(
-            "Error loading Zika data",
-            style={
-                "textAlign": "center",
-                "color": "#ff6b6b",
-                "fontSize": "0.75rem"
-            }
+        zika_card = create_metric_card(
+            card_id="zika-cluster-card",
+            label="🦠 Zika",
+            value_id="zika-count-value",
+            initial_value="Error"
         )
+        zika_card.children[0].children[1].children = [create_metric_value_display("Error", color="#ff0000")]
+        return zika_card
     
     # Handle FeatureCollection format (GeoJSON)
     features = []
@@ -1884,69 +1935,40 @@ def format_main_page_zika_count(data):
         elif 'result' in data and 'records' in data['result']:
             features = data['result']['records']
     
-    if not features:
-        return html.P(
-            "No Zika cluster data available",
-            style={
-                "textAlign": "center",
-                "color": "#999",
-                "fontSize": "0.75rem"
-            }
-        )
-    
     # Count the number of features
-    cluster_count = len(features)
+    cluster_count = len(features) if features else 0
     
-    return html.Div(
-        [
-            html.Div(
-                [
-                    html.Span(
-                        "🦠",
-                        style={"fontSize": "1.5rem", "marginRight": "0.5rem"}
-                    ),
-                    html.Span(
-                        f"{cluster_count}",
-                        style={
-                            "fontSize": "1.75rem",
-                            "fontWeight": "bold",
-                            "color": "#ff4444",
-                        }
-                    ),
-                ],
-                style={
-                    "display": "flex",
-                    "alignItems": "center",
-                    "justifyContent": "center",
-                    "marginBottom": "0.25rem",
-                }
-            ),
-        ],
-        style={
-            "padding": "0.25rem 0",
-        }
+    zika_card = create_metric_card(
+        card_id="zika-cluster-card",
+        label="🦠 Zika",
+        value_id="zika-count-value",
+        initial_value=str(cluster_count)
     )
+    zika_card.children[0].children[1].children = [create_metric_value_display(str(cluster_count), color="#ff0000")]
+    return zika_card
 
 
 def format_main_page_dengue_count(data):
     """
-    Format Dengue cluster count for main page display.
+    Format Dengue cluster count for main page display using standard metric card.
     
     Args:
         data: API response with Dengue cluster data (FeatureCollection format)
     
     Returns:
-        HTML Div with Dengue cluster count information
+        HTML Div with Dengue cluster count information using metric card
     """
+    from components.metric_card import create_metric_card
+    
     if not data:
-        return html.P(
-            "Error loading Dengue data",
-            style={
-                "textAlign": "center",
-                "color": "#ff6b6b",
-                "fontSize": "0.75rem"
-            }
+        dengue_card = create_metric_card(
+            card_id="dengue-cluster-card",
+            label="🦟 Dengue",
+            value_id="dengue-count-value",
+            initial_value="Error"
         )
+        dengue_card.children[0].children[1].children = [create_metric_value_display("Error", color="#ff0000")]
+        return dengue_card
     
     # Handle FeatureCollection format (GeoJSON)
     features = []
@@ -1961,48 +1983,17 @@ def format_main_page_dengue_count(data):
         elif 'result' in data and 'records' in data['result']:
             features = data['result']['records']
     
-    if not features:
-        return html.P(
-            "No Dengue cluster data available",
-            style={
-                "textAlign": "center",
-                "color": "#999",
-                "fontSize": "0.75rem"
-            }
-        )
-    
     # Count the number of features
-    cluster_count = len(features)
+    cluster_count = len(features) if features else 0
     
-    return html.Div(
-        [
-            html.Div(
-                [
-                    html.Span(
-                        "🦟",
-                        style={"fontSize": "1.5rem", "marginRight": "0.5rem"}
-                    ),
-                    html.Span(
-                        f"{cluster_count}",
-                        style={
-                            "fontSize": "1.75rem",
-                            "fontWeight": "bold",
-                            "color": "#ff8800",
-                        }
-                    ),
-                ],
-                style={
-                    "display": "flex",
-                    "alignItems": "center",
-                    "justifyContent": "center",
-                    "marginBottom": "0.25rem",
-                }
-            ),
-        ],
-        style={
-            "padding": "0.25rem 0",
-        }
+    dengue_card = create_metric_card(
+        card_id="dengue-cluster-card",
+        label="🦟 Dengue",
+        value_id="dengue-count-value",
+        initial_value=str(cluster_count)
     )
+    dengue_card.children[0].children[1].children = [create_metric_value_display(str(cluster_count), color="#ff0000")]
+    return dengue_card
 
 
 def format_main_page_taxi_count(data):

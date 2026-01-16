@@ -7,7 +7,7 @@ from urllib.parse import quote_plus
 
 import requests
 from dotenv import load_dotenv
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from dash import no_update
 import dash_leaflet as dl
 load_dotenv(override=True)
@@ -343,3 +343,99 @@ def register_search_callbacks(app):
             import traceback
             traceback.print_exc()
             return no_update, no_update, []
+
+    # Traffic Incidents toggle state callback
+    @app.callback(
+        Output('main-traffic-incidents-toggle-state', 'data'),
+        Input('toggle-main-traffic-incidents', 'n_clicks'),
+        State('main-traffic-incidents-toggle-state', 'data'),
+        prevent_initial_call=True
+    )
+    def update_traffic_incidents_toggle_state(n_clicks, current_state):
+        """Update traffic incidents toggle state in store."""
+        if n_clicks is None or n_clicks == 0:
+            return False
+        return not current_state
+
+    # Traffic Incidents toggle button label callback
+    @app.callback(
+        Output('toggle-main-traffic-incidents', 'children'),
+        Input('toggle-main-traffic-incidents', 'n_clicks'),
+        State('main-traffic-incidents-toggle-state', 'data')
+    )
+    def toggle_traffic_incidents_button_label(n_clicks, current_state):
+        """
+        Toggle Traffic Incidents button label based on current state.
+
+        Args:
+            n_clicks: Number of button clicks
+            current_state: Current toggle state from store
+
+        Returns:
+            Button label
+        """
+        if n_clicks is None or n_clicks == 0:
+            # Default state: hidden
+            return "🚧 Show Traffic Incidents"
+
+        # Show text based on current state (before toggle)
+        # If currently visible (True), show "Hide", otherwise show "Show"
+        if current_state:
+            return "🚧 Hide Traffic Incidents"
+        return "🚧 Show Traffic Incidents"
+
+    # Traffic Incidents markers callback
+    @app.callback(
+        [Output('main-traffic-incidents-markers', 'children'),
+         Output('main-traffic-incidents-legend', 'style')],
+        [Input('main-traffic-incidents-toggle-state', 'data'),
+         Input('interval-component', 'n_intervals')]
+    )
+    def update_main_traffic_incidents_markers(show_incidents, n_intervals):
+        """Update traffic incidents markers on main map and show/hide legend."""
+        _ = n_intervals  # Used for periodic refresh
+
+        # Legend style based on toggle state
+        if show_incidents:
+            legend_style = {
+                "position": "absolute",
+                "top": "0.625rem",
+                "right": "0.625rem",
+                "backgroundColor": "rgba(26, 42, 58, 0.9)",
+                "borderRadius": "0.5rem",
+                "padding": "0.625rem",
+                "zIndex": "1000",
+                "boxShadow": "0 0.125rem 0.5rem rgba(0, 0, 0, 0.3)",
+                "display": "block",
+            }
+        else:
+            legend_style = {
+                "position": "absolute",
+                "top": "0.625rem",
+                "right": "0.625rem",
+                "backgroundColor": "rgba(26, 42, 58, 0.9)",
+                "borderRadius": "0.5rem",
+                "padding": "0.625rem",
+                "zIndex": "1000",
+                "boxShadow": "0 0.125rem 0.5rem rgba(0, 0, 0, 0.3)",
+                "display": "none",
+            }
+
+        if not show_incidents:
+            return [], legend_style
+
+        # Import here to avoid circular imports
+        from callbacks.transport_callback import (
+            fetch_traffic_incidents_data,
+            fetch_faulty_traffic_lights_data,
+            create_traffic_incidents_markers
+        )
+
+        # Fetch data
+        incidents_data = fetch_traffic_incidents_data()
+        faulty_lights_data = fetch_faulty_traffic_lights_data()
+
+        # Create markers using existing function
+        markers = create_traffic_incidents_markers(incidents_data, faulty_lights_data)
+
+        return markers, legend_style

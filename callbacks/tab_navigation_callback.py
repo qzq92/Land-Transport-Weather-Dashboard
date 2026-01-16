@@ -17,7 +17,6 @@ def register_tab_navigation_callback(app):
          Output('weather-indices-page', 'style'),
          Output('transport-page', 'style'),
          Output('nearby-transport-page', 'style'),
-         Output('speed-band-page', 'style'),
          Output('search-bar-section', 'style')],
         Input('navigation-tabs', 'value')
     )
@@ -27,7 +26,7 @@ def register_tab_navigation_callback(app):
 
         Args:
             tab_value: Selected tab value
-                ('main', 'realtime-weather', 'weather-indices', 'transport', 'nearby-transport', 'speed-band')
+                ('main', 'realtime-weather', 'weather-indices', 'transport', 'nearby-transport')
 
         Returns:
             Tuple of style dictionaries for each page and search bar
@@ -38,7 +37,6 @@ def register_tab_navigation_callback(app):
         indices_style = {'display': 'none'}
         transport_style = {'display': 'none'}
         nearby_transport_style = {'display': 'none'}
-        speed_band_style = {'display': 'none'}
         search_bar_style = {'display': 'none'}
 
         if tab_value == 'realtime-weather':
@@ -69,13 +67,6 @@ def register_tab_navigation_callback(app):
                 "height": "calc(100vh - 120px)",
                 "width": "100%",
             }
-        elif tab_value == 'speed-band':
-            speed_band_style = {
-                "display": "block",
-                "padding": "20px",
-                "height": "calc(100vh - 120px)",
-                "width": "100%",
-            }
         else:
             # Main dashboard (search bar is now inside map container)
             main_style = {
@@ -90,7 +81,7 @@ def register_tab_navigation_callback(app):
             search_bar_style = {"display": "none"}
 
         return (main_style, realtime_style,
-                indices_style, transport_style, nearby_transport_style, speed_band_style, search_bar_style)
+                indices_style, transport_style, nearby_transport_style, search_bar_style)
 
     # Clientside callback to fix map rendering after tab switch
     # This triggers invalidateSize() on Leaflet maps when tabs change
@@ -103,8 +94,7 @@ def register_tab_navigation_callback(app):
                 'realtime-weather': 'realtime-weather-map',
                 'weather-indices': 'weather-indices-map',
                 'transport': 'transport-map',
-                'nearby-transport': 'nearby-transport-map',
-                'speed-band': 'speed-band-map'
+                'nearby-transport': 'nearby-transport-map'
             };
             
             var targetMapId = tabMapIds[tab_value];

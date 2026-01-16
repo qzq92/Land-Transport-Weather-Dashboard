@@ -204,84 +204,41 @@ def format_weather_2h(data):
     )
 
 
-def _create_weather_card(title, emoji, color, value):
-    """
-    Helper to create a weather info card with compact value display.
-    Values are self-contained and proportional to container size.
-
-    Args:
-        title: Card title
-        emoji: Icon/emoji for the card
-        color: Theme color for the card
-        value: Main value to display (e.g., "23 °C - 33 °C")
-    """
-    return html.Div(
-        [
-            html.Div(
-                f"{emoji} {title}",
-                style={
-                    "fontSize": "clamp(9px, 1vw, 11px)",
-                    "fontWeight": "700",
-                    "color": color,
-                    "marginBottom": "clamp(4px, 0.8vh, 8px)",
-                    "textAlign": "center",
-                    "overflow": "hidden",
-                    "textOverflow": "ellipsis",
-                    "whiteSpace": "nowrap",
-                }
-            ),
-            html.Div(
-                value,
-                style={
-                    "fontSize": "clamp(10px, 1.5vw, 16px)",
-                    "fontWeight": "700",
-                    "color": color,
-                    "textAlign": "center",
-                    "wordBreak": "break-word",
-                    "overflowWrap": "break-word",
-                    "overflow": "hidden",
-                    "lineHeight": "1.2",
-                }
-            )
-        ],
-        style={
-            "flex": "1",
-            "padding": "clamp(6px, 1vw, 10px)",
-            "backgroundColor": "#3a4a5a",
-            "borderRadius": "6px",
-            "border": "1px solid #555",
-            "minWidth": "0",
-            "overflow": "hidden",
-            "display": "flex",
-            "flexDirection": "column",
-            "justifyContent": "center",
-        }
-    )
-
-
 def _build_weather_grid(general):
     """
-    Build weather info cards from general forecast data.
+    Build weather info cards from general forecast data using standard metric cards.
     Returns 4 cards: Temperature, Humidity, Wind, and General Forecast.
     Values shown as ranges with units beside each value (e.g., "23 °C - 33 °C").
     """
+    from components.metric_card import create_metric_card, create_metric_value_display
+    
     grid_items = []
 
     # Temperature card: "23 °C - 33 °C"
     temp = general.get('temperature', {})
     if temp:
-        grid_items.append(_create_weather_card(
-            "Temperature", "🌡️", "#FF9800",
-            f"{temp.get('low', 'N/A')} °C - {temp.get('high', 'N/A')} °C"
-        ))
+        temp_value = f"{temp.get('low', 'N/A')} °C - {temp.get('high', 'N/A')} °C"
+        temp_card = create_metric_card(
+            card_id="forecast-24h-temperature-card",
+            label="🌡️ Temperature",
+            value_id="forecast-24h-temperature-value",
+            initial_value=temp_value
+        )
+        temp_card.children[0].children[1].children = [create_metric_value_display(temp_value, color="#FF9800")]
+        grid_items.append(temp_card)
 
     # Humidity card: "65 % - 95 %"
     hum = general.get('relativeHumidity', {})
     if hum:
-        grid_items.append(_create_weather_card(
-            "Humidity", "💧", "#2196F3",
-            f"{hum.get('low', 'N/A')} % - {hum.get('high', 'N/A')} %"
-        ))
+        hum_value = f"{hum.get('low', 'N/A')} % - {hum.get('high', 'N/A')} %"
+        hum_card = create_metric_card(
+            card_id="forecast-24h-humidity-card",
+            label="💧 Humidity",
+            value_id="forecast-24h-humidity-value",
+            initial_value=hum_value
+        )
+        hum_card.children[0].children[1].children = [create_metric_value_display(hum_value, color="#2196F3")]
+        grid_items.append(hum_card)
 
     # Wind card: "15 km/h - 35 km/h SW"
     wind = general.get('wind', {})
@@ -289,18 +246,28 @@ def _build_weather_grid(general):
         spd = wind.get('speed', {})
         direction = wind.get('direction', '')
         dir_text = f" {direction}" if direction else ""
-        grid_items.append(_create_weather_card(
-            "Wind", "🌬️", "#9C27B0",
-            f"{spd.get('low', 'N/A')} - {spd.get('high', 'N/A')} km/h{dir_text}"
-        ))
+        wind_value = f"{spd.get('low', 'N/A')} - {spd.get('high', 'N/A')} km/h{dir_text}"
+        wind_card = create_metric_card(
+            card_id="forecast-24h-wind-card",
+            label="🌬️ Wind",
+            value_id="forecast-24h-wind-value",
+            initial_value=wind_value
+        )
+        wind_card.children[0].children[1].children = [create_metric_value_display(wind_value, color="#9C27B0")]
+        grid_items.append(wind_card)
 
     # General Forecast card
     forecast = general.get('forecast', {})
     if forecast:
         text = forecast.get('text', 'N/A')
-        grid_items.append(_create_weather_card(
-            "Rain Forecast", get_weather_icon(text), "#4CAF50", text
-        ))
+        forecast_card = create_metric_card(
+            card_id="forecast-24h-forecast-card",
+            label=f"{get_weather_icon(text)} Rain Forecast",
+            value_id="forecast-24h-forecast-value",
+            initial_value=text
+        )
+        forecast_card.children[0].children[1].children = [create_metric_value_display(text, color="#4CAF50")]
+        grid_items.append(forecast_card)
 
     return grid_items
 
@@ -373,18 +340,14 @@ def fetch_and_format_weather_24h():
             style={"padding": "10px", "color": "#999", "textAlign": "center"}
         )
 
-    # Return 2x2 grid layout with responsive sizing, fully contained
+    # Return 1-column layout with standard metric cards
     return html.Div(
         grid_items,
         style={
-            "display": "grid",
-            "gridTemplateColumns": "repeat(2, minmax(0, 1fr))",
-            "gridTemplateRows": "repeat(2, minmax(0, 1fr))",
-            "gap": "clamp(6px, 1vw, 10px)",
+            "display": "flex",
+            "flexDirection": "column",
+            "gap": "0.5rem",
             "width": "100%",
-            "height": "100%",
-            "overflow": "hidden",
-            "boxSizing": "border-box",
         }
     )
 

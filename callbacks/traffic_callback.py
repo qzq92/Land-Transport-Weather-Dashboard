@@ -64,9 +64,10 @@ def query_traffic_metadata():
     return all_traffic_metadata_dict
 
 
-def get_camera_feed(metadata_dict: Dict, camera_id: str, agent_id: str="test_qzq"):
+def get_camera_feed(metadata_dict: Dict, camera_id: str, agent_id: str="qzq_dev"):
     try:
         # Extract the camera id from metadata_dict to obtain its metadata of interest
+        print(f"Extracting camera id: {camera_id}")
         specific_camera_metadata_dict = metadata_dict[camera_id]
 
     except KeyError:
@@ -110,12 +111,29 @@ def get_camera_image_base64(metadata_dict: Dict, camera_id: str, agent_id: str =
         Base64 encoded image string or None if error
     """
     try:
-        raw_response = get_camera_feed(metadata_dict, camera_id, agent_id)
-        if raw_response is None:
+        # Get image URL directly from metadata instead of using get_camera_feed
+        if camera_id not in metadata_dict:
             return None
         
-        # Read the raw response content
-        image_data = raw_response.read()
+        image_url = metadata_dict[camera_id].get("image_url")
+        if not image_url:
+            return None
+        
+        # Randomised agent id
+        rand_agent_id = agent_id + str(np.random.randint(0, 500))
+        
+        # Fetch image with timeout and stream=False to avoid blocking
+        response = requests.get(
+            image_url,
+            stream=False,  # Changed to False to avoid blocking issues
+            headers={'User-agent': rand_agent_id},
+            timeout=5
+        )
+        
+        response.raise_for_status()
+        
+        # Read the response content directly (not from raw stream)
+        image_data = response.content
         
         # Convert to base64
         base64_string = base64.b64encode(image_data).decode('utf-8')
@@ -126,7 +144,7 @@ def get_camera_image_base64(metadata_dict: Dict, camera_id: str, agent_id: str =
         
         # Return data URI format
         return f"data:image/{image_format};base64,{base64_string}"
-    except (IOError, ValueError, AttributeError) as error:
+    except (IOError, ValueError, AttributeError, requests.exceptions.RequestException) as error:
         print(f"Error converting image to base64 for camera {camera_id}: {error}")
         return None
 
@@ -207,24 +225,37 @@ def register_camera_feed_callbacks(app):
         """
         # n_intervals is required by the callback but not used directly
         _ = n_intervals
+        
+        # Default error response
+        no_image_text = html.Div(
+            "Image not available",
+            style={
+                "color": "#999",
+                "fontSize": "0.875rem",
+                "textAlign": "center",
+            }
+        )
+        default_meta = "Metadata unavailable"
+        
         try:
             # Get metadata for all cameras
             metadata_dict = query_traffic_metadata()
 
             if not metadata_dict:
-                no_image_text = html.Div(
-                    "Image not available",
-                    style={
-                        "color": "#999",
-                        "fontSize": "0.875rem",
-                        "textAlign": "center",
-                    }
-                )
-                return no_image_text, no_image_text, "Metadata unavailable", "Metadata unavailable"
+                return no_image_text, no_image_text, default_meta, default_meta
 
-            # Get images for specific cameras
-            img_2701 = get_camera_image_base64(metadata_dict, "2701")
-            img_4713 = get_camera_image_base64(metadata_dict, "4713")
+            # Get images for specific cameras with error handling
+            img_2701 = None
+            img_4713 = None
+            try:
+                img_2701 = get_camera_image_base64(metadata_dict, "2701")
+            except Exception as e:
+                print(f"Error fetching image for camera 2701: {e}")
+            
+            try:
+                img_4713 = get_camera_image_base64(metadata_dict, "4713")
+            except Exception as e:
+                print(f"Error fetching image for camera 4713: {e}")
 
             # Get metadata text
             meta_2701 = format_metadata_text(metadata_dict, "2701")
@@ -241,14 +272,7 @@ def register_camera_feed_callbacks(app):
                     }
                 )
             else:
-                container_2701 = html.Div(
-                    "Image not available",
-                    style={
-                        "color": "#999",
-                        "fontSize": "0.875rem",
-                        "textAlign": "center",
-                    }
-                )
+                container_2701 = no_image_text
 
             if img_4713:
                 container_4713 = html.Img(
@@ -260,24 +284,11 @@ def register_camera_feed_callbacks(app):
                     }
                 )
             else:
-                container_4713 = html.Div(
-                    "Image not available",
-                    style={
-                        "color": "#999",
-                        "fontSize": "0.875rem",
-                        "textAlign": "center",
-                    }
-                )
+                container_4713 = no_image_text
 
             return container_2701, container_4713, meta_2701, meta_4713
-        except (KeyError, AttributeError, TypeError) as error:
+        except Exception as error:
             print(f"Error updating camera feeds: {error}")
-            no_image_text = html.Div(
-                "Image not available",
-                style={
-                    "color": "#999",
-                    "fontSize": "0.875rem",
-                    "textAlign": "center",
-                }
-            )
-            return no_image_text, no_image_text, "Metadata unavailable", "Metadata unavailable"
+            import traceback
+            traceback.print_exc()
+            return no_image_text, no_image_text, default_meta, default_meta

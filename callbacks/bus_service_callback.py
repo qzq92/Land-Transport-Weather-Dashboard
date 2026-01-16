@@ -2,8 +2,13 @@
 Callback functions for handling bus service information.
 """
 from typing import Optional, Dict, List, Any
-from dash import Input, Output, State, html
-from callbacks.transport_callback import fetch_bus_routes_data, fetch_bus_routes_data_async, fetch_bus_stops_data
+from dash import Input, Output, State, html, ALL, MATCH, callback_context
+import dash_leaflet as dl
+from callbacks.transport_callback import (
+    fetch_bus_routes_data,
+    fetch_bus_routes_data_async,
+    fetch_bus_stops_data
+)
 from components.metric_card import create_metric_value_display
 
 
@@ -222,6 +227,136 @@ def _create_bus_timing_table(timing_info: Dict[str, Any]) -> Optional[html.Div]:
     )
 
 
+def _create_bus_stops_list(direction_routes: List[Dict[str, Any]], bus_stop_map: Dict[str, str]) -> html.Div:
+    """
+    Create a formatted list of bus stops for a direction.
+    
+    Args:
+        direction_routes: List of route segments for a direction (sorted by stop sequence)
+        bus_stop_map: Dictionary mapping bus stop codes to names
+    
+    Returns:
+        HTML Div containing formatted list of bus stops
+    """
+    stop_items = []
+    
+    for route in direction_routes:
+        seq = route.get('StopSequence', 0)
+        code = route.get('BusStopCode', 'N/A')
+        name = bus_stop_map.get(code, 'N/A')
+        
+        stop_items.append(
+            html.Div(
+                f"{seq}. {name} ({code})",
+                style={
+                    "color": "#ccc",
+                    "fontSize": "0.65rem",
+                    "padding": "0.125rem 0",
+                    "lineHeight": "1.3",
+                }
+            )
+        )
+    
+    return html.Div(
+        children=stop_items,
+        style={
+            "display": "flex",
+            "flexDirection": "column",
+            "gap": "0.125rem",
+            "padding": "0.5rem",
+            "backgroundColor": "#2a3a4a",
+            "borderRadius": "0.25rem",
+            "maxHeight": "12.5rem",
+            "overflowY": "auto",
+        }
+    )
+
+
+def create_bus_route_markers(direction_routes: List[Dict[str, Any]], bus_stop_map: Dict[str, str], direction_num: int) -> List[dl.DivMarker]:
+    """
+    Create numbered map markers for bus stops along a route.
+    
+    Args:
+        direction_routes: List of route segments for a direction (sorted by stop sequence)
+        bus_stop_map: Dictionary mapping bus stop codes to names
+        direction_num: Direction number (1 or 2)
+    
+    Returns:
+        List of DivMarker components for the bus stops
+    """
+    markers = []
+    
+    for route in direction_routes:
+        try:
+            # Get bus stop details
+            bus_stop_code = route.get('BusStopCode')
+            if not bus_stop_code:
+                continue
+            
+            # Fetch bus stop coordinates from bus stops data
+            bus_stops_data = fetch_bus_stops_data()
+            if not bus_stops_data or 'value' not in bus_stops_data:
+                continue
+            
+            # Find the matching bus stop
+            bus_stop_info = None
+            for stop in bus_stops_data['value']:
+                if stop.get('BusStopCode') == bus_stop_code:
+                    bus_stop_info = stop
+                    break
+            
+            if not bus_stop_info:
+                continue
+            
+            latitude = float(bus_stop_info.get('Latitude', 0))
+            longitude = float(bus_stop_info.get('Longitude', 0))
+            
+            if latitude == 0 or longitude == 0:
+                continue
+            
+            seq = route.get('StopSequence', 0)
+            name = bus_stop_map.get(bus_stop_code, 'N/A')
+            
+            # Set color based on direction (Blue for Direction 1, Yellow for Direction 2)
+            if direction_num == 1:
+                marker_color = "#4169E1"  # Blue
+                shadow_color = "rgba(65,105,225,0.6)"  # Blue shadow
+            else:
+                marker_color = "#FFD700"  # Yellow
+                shadow_color = "rgba(255,215,0,0.6)"  # Yellow shadow
+            
+            # Create marker HTML with sequence number
+            marker_html = (
+                f'<div style="width:28px;height:28px;background:{marker_color};'
+                f'border-radius:50%;border:3px solid #fff;'
+                f'box-shadow:0 2px 8px {shadow_color};'
+                f'cursor:pointer;display:flex;align-items:center;'
+                f'justify-content:center;font-size:12px;color:#fff;'
+                f'font-weight:bold;">'
+                f'{seq}'
+                f'</div>'
+            )
+            
+            tooltip_text = f"Stop {seq}: {name} ({bus_stop_code})"
+            marker_id = f"bus-route-marker-{direction_num}-{seq}-{bus_stop_code}"
+            
+            markers.append(dl.DivMarker(
+                id=marker_id,
+                position=[latitude, longitude],
+                iconOptions={
+                    'className': 'bus-route-marker',
+                    'html': marker_html,
+                    'iconSize': [28, 28],
+                    'iconAnchor': [14, 14],
+                },
+                children=[dl.Tooltip(tooltip_text)]
+            ))
+        except (ValueError, TypeError, KeyError):
+            continue
+    
+    return markers
+
+
 def format_bus_service_search_display(service_no: str, routes_data: Optional[Dict[str, Any]]) -> html.Div:
     """
     Format bus service search results for display.
@@ -321,8 +456,9 @@ def format_bus_service_search_display(service_no: str, routes_data: Optional[Dic
         destination_name = bus_stop_map.get(destination_code, 'N/A') if destination_code else 'N/A'
         
         direction_label = "Direction 1" if direction == 1 else "Direction 2" if direction == 2 else f"Direction {direction}"
+        direction_color = "#4169E1" if direction == 1 else "#FFD700"
         
-        # Create direction header
+        # Create direction header with toggle button
         direction_header = html.Div(
             style={
                 "backgroundColor": "#3a4a5a",
@@ -342,7 +478,7 @@ def format_bus_service_search_display(service_no: str, routes_data: Optional[Dic
                         html.Span(
                             direction_label,
                             style={
-                                "color": "#4169E1",
+                                "color": direction_color,
                                 "fontWeight": "bold",
                                 "fontSize": "0.75rem",
                             }
@@ -375,6 +511,24 @@ def format_bus_service_search_display(service_no: str, routes_data: Optional[Dic
                                 "color": "#999",
                                 "fontSize": "0.625rem",
                                 "fontStyle": "italic",
+                            }
+                        ),
+                        html.Button(
+                            "Show route stops on map",
+                            id={"type": "bus-route-toggle", "direction": direction, "service": service_no},
+                            n_clicks=0,
+                            style={
+                                "padding": "0.25rem 0.5rem",
+                                "borderRadius": "0.125rem",
+                                "border": "0.0625rem solid #999",
+                                "backgroundColor": "#2a3a4a",
+                                "color": "#fff",
+                                "cursor": "pointer",
+                                "fontSize": "0.65rem",
+                                "fontWeight": "600",
+                                "whiteSpace": "nowrap",
+                                "marginTop": "0.25rem",
+                                "alignSelf": "flex-start",
                             }
                         ),
                     ]
@@ -524,4 +678,78 @@ def register_bus_service_callbacks(app):
         
         # Format and return display
         return format_bus_service_search_display(service_no, routes_data)
+
+    @app.callback(
+        Output({"type": "bus-route-toggle", "direction": MATCH, "service": MATCH}, "children"),
+        Input({"type": "bus-route-toggle", "direction": MATCH, "service": MATCH}, "n_clicks"),
+        prevent_initial_call=True
+    )
+    def toggle_bus_route_button_text(n_clicks):
+        """Toggle button text between show and hide."""
+        if not n_clicks or n_clicks % 2 == 0:
+            return "Show route stops on map"
+        return "Hide route stops on map"
+
+    @app.callback(
+        Output("bus-route-markers", "children"),
+        [Input({"type": "bus-route-toggle", "direction": ALL, "service": ALL}, "n_clicks"),
+         Input("bus-service-search-btn", "n_clicks")],
+        [State({"type": "bus-route-toggle", "direction": ALL, "service": ALL}, "id"),
+         State("bus-service-search-input", "value")],
+        prevent_initial_call=True
+    )
+    def update_bus_route_markers(_toggle_clicks, _search_clicks, toggle_ids, search_value):
+        """Update bus route markers on the map based on toggle states."""
+        # If triggered by search button, clear all markers
+        if callback_context.triggered:
+            trigger_id = callback_context.triggered[0]['prop_id']
+            if 'bus-service-search-btn' in trigger_id:
+                return []
+
+        # No valid input
+        if not search_value or not toggle_ids or not _toggle_clicks:
+            return []
+
+        # Determine which directions are expanded
+        markers = []
+        service_no = search_value.strip().upper()
+
+        # Get routes data
+        routes_data = fetch_bus_routes_data()
+        if not routes_data or 'value' not in routes_data:
+            return []
+
+        routes = routes_data.get('value', [])
+        service_routes = [route for route in routes if route.get('ServiceNo', '').upper() == service_no]
+
+        if not service_routes:
+            return []
+
+        # Get bus stops data
+        bus_stops_data = fetch_bus_stops_data()
+        bus_stop_map = {}
+        if bus_stops_data and 'value' in bus_stops_data:
+            for bus_stop in bus_stops_data['value']:
+                bus_stop_code = bus_stop.get('BusStopCode')
+                if bus_stop_code:
+                    bus_stop_map[bus_stop_code] = bus_stop.get('Description', 'N/A')
+
+        # Group routes by direction
+        directions = {}
+        for route in service_routes:
+            direction = route.get('Direction', 'N/A')
+            if direction not in directions:
+                directions[direction] = []
+            directions[direction].append(route)
+
+        # Check each toggle state (odd n_clicks = shown, even = hidden)
+        for toggle_id, n_clicks in zip(toggle_ids, _toggle_clicks):
+            if n_clicks and n_clicks % 2 == 1:
+                direction = toggle_id.get("direction")
+                if direction in directions:
+                    direction_routes = sorted(directions[direction], key=lambda x: int(x.get('StopSequence', 0)))
+                    direction_markers = create_bus_route_markers(direction_routes, bus_stop_map, direction)
+                    markers.extend(direction_markers)
+
+        return markers
 

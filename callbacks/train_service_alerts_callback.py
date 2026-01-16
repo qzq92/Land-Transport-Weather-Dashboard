@@ -269,36 +269,59 @@ def format_mrt_line_operational_details(data):
         )
     
     # Create display for each MRT line
-    line_elements = []
+    mrt_elements = []
     for line_info in mrt_lines:
-        line_elements.append(create_line_status_display(line_info, affected_lines))
+        mrt_elements.append(create_line_status_display(line_info, affected_lines))
     
     # Create display for each LRT line
+    lrt_elements = []
     for line_info in lrt_lines:
-        line_elements.append(create_line_status_display(line_info, affected_lines))
+        lrt_elements.append(create_line_status_display(line_info, affected_lines))
     
-    if not line_elements:
-        return html.P(
-            "Unable to load MRT line status",
-            style={
-                "color": "#999",
-                "fontSize": "0.75rem",
-                "textAlign": "center",
-                "margin": "0",
-            }
-        )
-    
-    return html.Div(
-        children=line_elements,
+    # Return MRT and LRT displays separately
+    mrt_display = html.Div(
+        children=mrt_elements if mrt_elements else [
+            html.P(
+                "Unable to load MRT line status",
+                style={
+                    "color": "#999",
+                    "fontSize": "0.75rem",
+                    "margin": "0",
+                }
+            )
+        ],
         style={
             "display": "flex",
             "flexDirection": "row",
             "flexWrap": "wrap",
             "gap": "0.5rem",
-            "justifyContent": "center",
-            "width": "100%"
+            "justifyContent": "flex-start",
+            "width": "100%",
         }
     )
+    
+    lrt_display = html.Div(
+        children=lrt_elements if lrt_elements else [
+            html.P(
+                "Unable to load LRT line status",
+                style={
+                    "color": "#999",
+                    "fontSize": "0.75rem",
+                    "margin": "0",
+                }
+            )
+        ],
+        style={
+            "display": "flex",
+            "flexDirection": "row",
+            "flexWrap": "wrap",
+            "gap": "0.5rem",
+            "justifyContent": "flex-start",
+            "width": "100%",
+        }
+    )
+    
+    return mrt_display, lrt_display
 
 
 def register_train_service_alerts_callbacks(app):
@@ -328,33 +351,35 @@ def register_train_service_alerts_callbacks(app):
         return alerts_display
     
     @app.callback(
-        Output('mrt-line-status-display', 'children'),
+        [Output('mrt-lines-display', 'children'),
+         Output('lrt-lines-display', 'children')],
         Input('interval-component', 'n_intervals')
     )
     def update_mrt_line_operational_details(n_intervals):
         """
-        Update MRT line operational details on transport page periodically.
+        Update MRT and LRT line operational details in banner periodically.
         
         Args:
             n_intervals: Number of intervals (from dcc.Interval component)
             
         Returns:
-            Formatted HTML elements displaying operational status for each MRT line
+            Tuple of (MRT lines display, LRT lines display)
         """
         try:
             # Fetch train service alerts
             data = fetch_train_service_alerts()
             
-            # Format and return the line details
+            # Format and return the line details (separate MRT and LRT)
             return format_mrt_line_operational_details(data)
         except Exception as error:
-            print(f"Error updating MRT line operational details: {error}")
-            return html.P(
-                "Error loading MRT line status",
+            print(f"Error updating MRT/LRT line operational details: {error}")
+            error_display = html.P(
+                "Error loading line status",
                 style={
                     "color": "#ff4444",
                     "fontSize": "0.75rem",
-                    "textAlign": "center",
+                    "margin": "0",
                 }
             )
+            return error_display, error_display
 
