@@ -12,6 +12,7 @@ from utils.map_utils import (
     ONEMAP_TILES_URL
 )
 from components.metric_card import create_metric_card
+from conf.page_layout_config import PAGE_PADDING, PAGE_HEIGHT, get_content_container_style, STANDARD_GAP
 
 
 def transport_page():
@@ -33,21 +34,15 @@ def transport_page():
         id="transport-page",
         style={
             "display": "none",  # Hidden by default
-            "padding": "0.5rem",
-            "height": "calc(100vh - 7.5rem)",
+            "padding": PAGE_PADDING,
+            "height": PAGE_HEIGHT,
             "width": "100%",
         },
         children=[
             # Main content container
             html.Div(
                 id="transport-content",
-                style={
-                    "display": "flex",
-                    "gap": "0.5rem",
-                    "height": "calc(100% - 3.125rem)",
-                    "maxWidth": "112.5rem",
-                    "margin": "0 auto",
-                },
+                style=get_content_container_style(gap=STANDARD_GAP),
                 children=[
                     # Left side: Transport info panel
                     html.Div(
@@ -55,7 +50,6 @@ def transport_page():
                         style={
                             "flex": "1",
                             "minWidth": "18.75rem",
-                            "maxWidth": "25rem",
                             "display": "flex",
                             "flexDirection": "column",
                             "gap": "0.9375rem",
@@ -929,7 +923,6 @@ def transport_page():
                         style={
                             "flex": "1",
                             "minWidth": "18.75rem",
-                            "maxWidth": "25rem",
                             "backgroundColor": "#4a5a6a",
                             "borderRadius": "0.5rem",
                             "padding": "0.9375rem",

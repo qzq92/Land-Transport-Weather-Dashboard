@@ -11,6 +11,7 @@ from utils.map_utils import (
     SG_MAP_BOUNDS,
     ONEMAP_TILES_URL
 )
+from conf.page_layout_config import PAGE_PADDING, PAGE_HEIGHT, get_content_container_style, LARGE_GAP
 
 
 def realtime_weather_page():
@@ -32,21 +33,15 @@ def realtime_weather_page():
         id="realtime-weather-page",
         style={
             "display": "none",  # Hidden by default
-            "padding": "20px",
-            "height": "calc(100vh - 180px)",
+            "padding": PAGE_PADDING,
+            "height": PAGE_HEIGHT,
             "width": "100%",
         },
         children=[
             # Main content: readings grid on left, map and indicators on right
             html.Div(
                 id="realtime-weather-section",
-                style={
-                    "display": "flex",
-                    "gap": "20px",
-                    "height": "calc(100% - 50px)",
-                    "maxWidth": "1800px",
-                    "margin": "0 auto",
-                },
+                style=get_content_container_style(gap=LARGE_GAP),
                 children=[
                     # Store for active marker type (none by default)
                     dcc.Store(id="active-marker-type", data={'type': None, 'ts': 0}),

@@ -31,8 +31,8 @@ def weather_forecast_page():
         id="weather-forecast-page",
         style={
             "display": "none",  # Hidden by default, shown when weather tab is selected
-            "padding": "10px",
-            "height": "calc(100vh - 180px)",
+            "padding": "0.5rem",
+            "height": "calc(100vh - 11.25rem)",
             "width": "100%",
         },
         children=[
@@ -43,7 +43,6 @@ def weather_forecast_page():
                     "display": "flex",
                     "gap": "10px",
                     "height": "calc(100% - 50px)",
-                    "maxWidth": "1600px",
                     "margin": "0 auto",
                 },
                 children=[

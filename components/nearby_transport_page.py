@@ -11,6 +11,7 @@ from utils.map_utils import (
     SG_MAP_BOUNDS,
     ONEMAP_TILES_URL
 )
+from conf.page_layout_config import PAGE_PADDING, PAGE_HEIGHT, get_content_container_style, LARGE_GAP
 
 
 def nearby_transport_page():
@@ -32,21 +33,15 @@ def nearby_transport_page():
         id="nearby-transport-page",
         style={
             "display": "none",  # Hidden by default
-            "padding": "1.25rem",
-            "height": "calc(100vh - 7.5rem)",
+            "padding": PAGE_PADDING,
+            "height": PAGE_HEIGHT,
             "width": "100%",
         },
         children=[
             # Main content container
             html.Div(
                 id="nearby-transport-content",
-                style={
-                    "display": "flex",
-                    "gap": "1.25rem",
-                    "height": "calc(100% - 3.125rem)",
-                    "maxWidth": "112.5rem",
-                    "margin": "0 auto",
-                },
+                style=get_content_container_style(gap=LARGE_GAP),
                 children=[
                     # Left side: Info panel with tabs
                     html.Div(
