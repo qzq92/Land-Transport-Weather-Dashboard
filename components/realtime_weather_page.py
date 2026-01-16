@@ -722,5 +722,13 @@ def realtime_weather_page():
                 interval=2*60*1000,  # Update every 2 minutes
                 n_intervals=0
             ),
+            # Interval for map invalidation (fixes grey tiles)
+            dcc.Interval(
+                id='realtime-weather-map-invalidate-interval',
+                interval=300,  # 300ms
+                n_intervals=0,
+                max_intervals=1,  # Only fire once per activation
+                disabled=True  # Start disabled
+            ),
         ]
     )

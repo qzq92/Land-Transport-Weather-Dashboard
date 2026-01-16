@@ -101,6 +101,7 @@ def map_component(lat=None, lon=None):
                 dl.LayerGroup(id="main-psi-markers"),
                 dl.LayerGroup(id="weather-2h-markers"),
                 dl.LayerGroup(id="mrt-crowd-markers"),
+                dl.LayerGroup(id="main-traffic-incidents-markers"),
             ],
         )
     ], style={"width": "100%", "height": "100%", "display": "flex", "flexDirection": "column"})

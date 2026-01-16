@@ -610,12 +610,12 @@ def transport_page():
                                             dl.LayerGroup(id="taxi-markers"),
                                             dl.LayerGroup(id="cctv-markers"),
                                             dl.LayerGroup(id="erp-markers"),
-                                            dl.LayerGroup(id="speed-band-markers"),
                                             dl.LayerGroup(id="speed-camera-markers"),
                                             dl.LayerGroup(id="traffic-incidents-markers"),
                                             dl.LayerGroup(id="vms-markers"),
                                             dl.LayerGroup(id="bus-stops-markers"),
                                             dl.LayerGroup(id="bus-arrival-popup-layer"),
+                                            dl.LayerGroup(id="bus-route-markers"),
                                         ],
                                         zoomControl=True,
                                         dragging=True,
@@ -928,7 +928,6 @@ def transport_page():
             dcc.Store(id="taxi-toggle-state", data=False),
             dcc.Store(id="cctv-toggle-state", data=False),
             dcc.Store(id="erp-toggle-state", data=False),
-            dcc.Store(id="speed-band-toggle-state", data=False),
             dcc.Store(id="speed-camera-toggle-state", data=False),
             dcc.Store(id="traffic-incidents-toggle-state", data=False),
             dcc.Store(id="vms-toggle-state", data=False),
@@ -940,5 +939,21 @@ def transport_page():
                 interval=2*60*1000,  # Update every 2 minutes
                 n_intervals=0
             ),
+            # Interval for map invalidation (fixes grey tiles)
+            dcc.Interval(
+                id='transport-map-invalidate-interval',
+                interval=300,  # 300ms
+                n_intervals=0,
+                max_intervals=1,  # Only fire once per activation
+                disabled=True  # Start disabled
+            ),
+            # Interval for bus arrival updates (every 1 minute)
+            dcc.Interval(
+                id='bus-arrival-interval',
+                interval=60*1000,  # Update every 1 minute
+                n_intervals=0
+            ),
+            # Store for current bus stop code to enable auto-refresh
+            dcc.Store(id='current-bus-stop-code', data=None),
         ]
     )

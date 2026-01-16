@@ -66,12 +66,6 @@ def build_dashboard_banner():
                             selected_style=TAB_SELECTED_STYLE,
                         ),
                         dcc.Tab(
-                            label="🏎️ Speed band on the roads",
-                            value="speed-band",
-                            style=TAB_STYLE,
-                            selected_style=TAB_SELECTED_STYLE,
-                        ),
-                        dcc.Tab(
                             label="🗺️ Nearby Transportation & Parking",
                             value="nearby-transport",
                             style=TAB_STYLE,
