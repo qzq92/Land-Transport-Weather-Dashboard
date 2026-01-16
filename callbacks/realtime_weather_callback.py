@@ -15,7 +15,8 @@ from dash import Input, Output, State, html, callback_context
 import dash_leaflet as dl
 from conf.windspeed_icon import get_windspeed_icon, get_windspeed_description, WINDSPEED_THRESHOLDS
 from utils.async_fetcher import get_default_headers, fetch_url_2min_cached, _executor
-from callbacks.weather_indices_callback import fetch_wbgt_data, format_wbgt_display, create_wbgt_markers
+from callbacks.weather_indices_callback import fetch_wbgt_data_async, format_wbgt_display, create_wbgt_markers
+from callbacks.transport_callback import fetch_traffic_incidents_data_async, fetch_faulty_traffic_lights_data_async
 from components.metric_card import create_metric_value_display
 
 # API URLs
@@ -72,50 +73,6 @@ def fetch_lightning_data_async():
     return _executor.submit(fetch_url_2min_cached, LIGHTNING_URL, get_default_headers())
 
 
-def fetch_traffic_incidents():
-    """
-    Fetch traffic incidents from LTA DataMall API.
-    
-    Returns:
-        Dictionary containing traffic incidents data or None if error
-    """
-    traffic_incidents_url = "https://datamall2.mytransport.sg/ltaodataservice/TrafficIncidents"
-    api_key = os.getenv("LTA_API_KEY")
-    
-    if not api_key:
-        print("Warning: LTA_API_KEY not found in environment variables")
-        return None
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "AccountKey": api_key,
-        "Content-Type": "application/json"
-    }
-    
-    return fetch_url_2min_cached(traffic_incidents_url, headers)
-
-
-def fetch_faulty_traffic_lights():
-    """
-    Fetch faulty traffic lights from LTA DataMall API.
-    
-    Returns:
-        Dictionary containing faulty traffic lights data or None if error
-    """
-    faulty_traffic_lights_url = "https://datamall2.mytransport.sg/ltaodataservice/FaultyTrafficLights"
-    api_key = os.getenv("LTA_API_KEY")
-    
-    if not api_key:
-        print("Warning: LTA_API_KEY not found in environment variables")
-        return None
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "AccountKey": api_key,
-        "Content-Type": "application/json"
-    }
-    
-    return fetch_url_2min_cached(faulty_traffic_lights_url, headers)
 
 
 def build_station_lookup(data):
@@ -2015,7 +1972,8 @@ def register_realtime_weather_callbacks(app):
                 if data:
                     return create_flood_markers(data)
             if button_id == 'toggle-wbgt-readings':
-                data = fetch_wbgt_data()
+                future = fetch_wbgt_data_async()
+                data = future.result() if future else None
                 if data:
                     return create_wbgt_markers(data)
 
@@ -2029,7 +1987,8 @@ def register_realtime_weather_callbacks(app):
     )
     def update_wbgt_readings(_n_intervals):
         """Update WBGT average value display."""
-        data = fetch_wbgt_data()
+        future = fetch_wbgt_data_async()
+        data = future.result() if future else None
         return format_wbgt_average(data)
 
     # Callback to update WBGT sensor values (detailed list)
@@ -2046,7 +2005,8 @@ def register_realtime_weather_callbacks(app):
                 "fontSize": "12px",
                 "textAlign": "center"
             })
-        data = fetch_wbgt_data()
+        future = fetch_wbgt_data_async()
+        data = future.result() if future else None
         return format_wbgt_display(data)
 
     # Toggle callback for WBGT sensor values
@@ -2551,8 +2511,10 @@ def register_realtime_weather_callbacks(app):
     def update_main_traffic_incidents_indicator(n_intervals):
         """Update traffic incidents indicator on main page periodically."""
         _ = n_intervals
-        incidents_data = fetch_traffic_incidents()
-        faulty_lights_data = fetch_faulty_traffic_lights()
+        future_incidents = fetch_traffic_incidents_data_async()
+        future_faulty = fetch_faulty_traffic_lights_data_async()
+        incidents_data = future_incidents.result() if future_incidents else None
+        faulty_lights_data = future_faulty.result() if future_faulty else None
         return format_traffic_incidents_indicator(incidents_data, faulty_lights_data)
 
 

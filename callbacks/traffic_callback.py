@@ -5,7 +5,10 @@ import base64
 import requests
 import numpy as np
 from datetime import datetime
-def api_query(api_link: str,  agent_id: str) -> Union[Dict,None]:
+from utils.async_fetcher import run_in_thread
+
+@run_in_thread
+def api_query_async(api_link: str,  agent_id: str) -> Union[Dict,None]:
     """Function which executes query via an api link using a provided agent_id as an identifier to avoid rejection of query request
 
     Args:
@@ -40,10 +43,12 @@ def api_query(api_link: str,  agent_id: str) -> Union[Dict,None]:
         print(err)
     return None
 
-def query_traffic_metadata():
+@run_in_thread
+def query_traffic_metadata_async():
     api_link = "https://api.data.gov.sg/v1/transport/traffic-images"
     agent_id = "test_qzq"
-    cctv_feed = api_query(api_link=api_link, agent_id=agent_id)
+    future = api_query_async(api_link=api_link, agent_id=agent_id)
+    cctv_feed = future.result() if future else None
     all_traffic_metadata_dict = {}
     if not cctv_feed:
         print("No response received")
@@ -98,7 +103,8 @@ def get_camera_feed(metadata_dict: Dict, camera_id: str, agent_id: str="qzq_dev"
     return None
 
 
-def get_camera_image_base64(metadata_dict: Dict, camera_id: str, agent_id: str = "test_qzq") -> str:
+@run_in_thread
+def get_camera_image_base64_async(metadata_dict: Dict, camera_id: str, agent_id: str = "test_qzq") -> str:
     """
     Get camera feed image and convert to base64 string for display in Dash.
     
@@ -239,7 +245,8 @@ def register_camera_feed_callbacks(app):
         
         try:
             # Get metadata for all cameras
-            metadata_dict = query_traffic_metadata()
+            future_metadata = query_traffic_metadata_async()
+            metadata_dict = future_metadata.result() if future_metadata else None
 
             if not metadata_dict:
                 return no_image_text, no_image_text, default_meta, default_meta
@@ -248,12 +255,14 @@ def register_camera_feed_callbacks(app):
             img_2701 = None
             img_4713 = None
             try:
-                img_2701 = get_camera_image_base64(metadata_dict, "2701")
+                future_2701 = get_camera_image_base64_async(metadata_dict, "2701")
+                img_2701 = future_2701.result() if future_2701 else None
             except Exception as e:
                 print(f"Error fetching image for camera 2701: {e}")
             
             try:
-                img_4713 = get_camera_image_base64(metadata_dict, "4713")
+                future_4713 = get_camera_image_base64_async(metadata_dict, "4713")
+                img_4713 = future_4713.result() if future_4713 else None
             except Exception as e:
                 print(f"Error fetching image for camera 4713: {e}")
 

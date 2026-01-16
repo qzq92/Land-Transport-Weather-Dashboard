@@ -14,7 +14,7 @@ from dash import html
 import dash_leaflet as dl
 from typing import List, Optional, Dict, Tuple
 from pyproj import Transformer
-from utils.async_fetcher import fetch_url_2min_cached, _executor
+from utils.async_fetcher import fetch_url_2min_cached, run_in_thread
 
 # Cache for carpark location data
 _carpark_locations_cache: Optional[pd.DataFrame] = None
@@ -74,14 +74,14 @@ def load_carpark_locations() -> pd.DataFrame:
 
 
 
-def fetch_carpark_availability() -> Optional[dict]:
+@run_in_thread
+def fetch_carpark_availability_async() -> Optional[dict]:
     """
-    Fetch carpark availability data from LTA DataMall CarPark Availability API v2.
+    Fetch carpark availability asynchronously from LTA DataMall CarPark Availability API v2.
     Uses 2-minute in-memory caching aligned to system clock.
     
     Returns:
-        Dictionary containing carpark data in the format expected by the rest of the code,
-        or None if request fails
+        Future object. Call .result() to get the data.
     """
     api_key = os.getenv("LTA_API_KEY")
     if not api_key:
@@ -100,9 +100,6 @@ def fetch_carpark_availability() -> Optional[dict]:
         return None
 
     # Transform LTA DataMall API response to match expected format
-    # LTA API returns: {"value": [{"CarParkID": "...", "AvailableLots": ..., "LotType": ..., ...}]}
-    # Expected format: {"items": [{"carpark_data": [{"carpark_number": "...", "carpark_info": [...]}]}]}
-
     value = response_data.get('value', [])
     if not value:
         return None
@@ -137,14 +134,6 @@ def fetch_carpark_availability() -> Optional[dict]:
     }
 
     return transformed_data
-
-
-def fetch_carpark_availability_async():
-    """
-    Fetch carpark availability asynchronously (returns Future).
-    Call .result() to get the data when needed.
-    """
-    return _executor.submit(fetch_carpark_availability)
 
 
 def convert_wgs84_to_svy21(latitude: float, longitude: float) -> Tuple[float, float]:
@@ -485,7 +474,8 @@ def register_carpark_callbacks(app):
             ), []
         
         # Fetch availability data from API
-        api_data = fetch_carpark_availability()
+        future = fetch_carpark_availability_async()
+        api_data = future.result() if future else None
         
         if not api_data:
             return html.Div(

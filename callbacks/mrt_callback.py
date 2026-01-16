@@ -7,6 +7,7 @@ from dash.dependencies import Input, Output
 from dash import html
 from callbacks.map_callback import _haversine_distance_m
 from callbacks.mrt_crowd_callback import fetch_all_station_crowd_data
+from utils.async_fetcher import run_in_thread
 #from auth.onemap_api import get_onemap_token
 import os
 
@@ -28,7 +29,8 @@ CROWD_LABELS = {
 
 
 
-def fetch_nearby_mrt_stations(lat: float, lon: float, radius_m: int = 500) -> list:
+@run_in_thread
+def fetch_nearby_mrt_stations_async(lat: float, lon: float, radius_m: int = 500) -> list:
     """
     Fetch nearest MRT/LRT stations using OneMap Nearby Transport API.
     Reference: https://www.onemap.gov.sg/apidocs/nearbytransport
@@ -178,7 +180,8 @@ def register_mrt_callbacks(app):
             )
         
         # Fetch nearby MRT stations within 1000m
-        stations = fetch_nearby_mrt_stations(lat, lon, radius_m=1000)
+        future = fetch_nearby_mrt_stations_async(lat, lon, radius_m=1000)
+        stations = future.result() if future else []
         
         if not stations:
             return html.P(
@@ -318,7 +321,8 @@ def register_mrt_callbacks(app):
             ]
         
         # Fetch nearby MRT stations within 1000m
-        stations = fetch_nearby_mrt_stations(lat, lon, radius_m=1000)
+        future = fetch_nearby_mrt_stations_async(lat, lon, radius_m=1000)
+        stations = future.result() if future else []
         
         if not stations:
             return [

@@ -14,7 +14,7 @@ import plotly.graph_objects as go
 import dash_leaflet as dl
 import requests
 from dash import html, dcc, Input, Output, State
-from utils.async_fetcher import get_default_headers, fetch_url_2min_cached, _executor
+from utils.async_fetcher import get_default_headers, fetch_url_2min_cached, run_in_thread
 from callbacks.transport_callback import fetch_taxi_availability
 from components.metric_card import create_metric_value_display
 
@@ -197,41 +197,81 @@ def _get_pollutant_unit(pollutant_key):
     return POLLUTANT_UNITS.get(pollutant_key, "")
 
 
+@run_in_thread
 def fetch_psi_data_async():
     """
     Fetch PSI data asynchronously (returns Future).
+    Uses 2-minute in-memory caching aligned to system clock.
     """
-    return _executor.submit(fetch_url_2min_cached, PSI_URL, get_default_headers())
+    return fetch_url_2min_cached(PSI_URL, get_default_headers())
 
 
+@run_in_thread
 def fetch_uv_data_async():
     """
     Fetch UV data asynchronously (returns Future).
+    Uses 2-minute in-memory caching aligned to system clock.
     """
-    return _executor.submit(fetch_url_2min_cached, UV_URL, get_default_headers())
+    return fetch_url_2min_cached(UV_URL, get_default_headers())
 
 
+@run_in_thread
 def fetch_wbgt_data_async():
     """
     Fetch WBGT data asynchronously (returns Future).
+    Uses 2-minute in-memory caching aligned to system clock.
     """
-    return _executor.submit(fetch_url_2min_cached, WBGT_URL, get_default_headers())
+    return fetch_url_2min_cached(WBGT_URL, get_default_headers())
 
 
+@run_in_thread
 def fetch_zika_cluster_data_async():
     """
-    Fetch Zika cluster data asynchronously (returns Future).
-    Call .result() to get the data when needed.
+    Fetch Zika cluster data asynchronously from Data.gov.sg poll-download API.
     """
-    return _exposure_executor.submit(fetch_zika_cluster_data)
+    try:
+        response = requests.get(ZIKA_POLL_DOWNLOAD_URL, timeout=30)
+        response.raise_for_status()
+        poll_response = response.json()
+        download_url = None
+        if isinstance(poll_response, dict):
+            if 'url' in poll_response:
+                download_url = poll_response['url']
+            elif 'data' in poll_response and isinstance(poll_response['data'], dict):
+                download_url = poll_response['data'].get('url')
+        if not download_url:
+            return None
+        data_response = requests.get(download_url, timeout=30)
+        data_response.raise_for_status()
+        return data_response.json()
+    except Exception as e:
+        print(f"Error fetching Zika cluster data: {e}")
+        return None
 
 
+@run_in_thread
 def fetch_dengue_cluster_data_async():
     """
-    Fetch Dengue cluster data asynchronously (returns Future).
-    Call .result() to get the data when needed.
+    Fetch Dengue cluster data asynchronously from Data.gov.sg poll-download API.
     """
-    return _exposure_executor.submit(fetch_dengue_cluster_data)
+    try:
+        response = requests.get(DENGUE_POLL_DOWNLOAD_URL, timeout=30)
+        response.raise_for_status()
+        poll_response = response.json()
+        download_url = None
+        if isinstance(poll_response, dict):
+            if 'url' in poll_response:
+                download_url = poll_response['url']
+            elif 'data' in poll_response and isinstance(poll_response['data'], dict):
+                download_url = poll_response['data'].get('url')
+        if not download_url:
+            return None
+        data_response = requests.get(download_url, timeout=30)
+        data_response.raise_for_status()
+        return data_response.json()
+    except Exception as e:
+        print(f"Error fetching Dengue cluster data: {e}")
+        return None
 
 
 def _parse_timestamp(timestamp_str):
@@ -1519,7 +1559,8 @@ def register_weather_indices_callbacks(app):
     )
     def update_uv_index(_n_intervals):
         """Update UV index display."""
-        data = fetch_uv_data()
+        future = fetch_uv_data_async()
+        data = future.result() if future else None
         return format_uv_display(data)
 
 
@@ -1532,7 +1573,8 @@ def register_weather_indices_callbacks(app):
     )
     def update_psi_markers(_n_intervals, show_table):
         """Update PSI markers on map or table based on toggle state."""
-        data = fetch_psi_data()
+        future = fetch_psi_data_async()
+        data = future.result() if future else None
         
         # If table mode is enabled, show table and hide map markers
         if show_table:
@@ -1703,7 +1745,8 @@ def register_weather_indices_callbacks(app):
         # Only show markers if toggle is enabled
         if not is_visible:
             return []
-        data = fetch_psi_data()
+        future = fetch_psi_data_async()
+        data = future.result() if future else None
         return create_main_psi_markers(data)
 
     @app.callback(
@@ -1750,7 +1793,8 @@ def register_weather_indices_callbacks(app):
     )
     def update_main_psi_24h_value(_n_intervals):
         """Update average 24h PSI display on main page with category."""
-        data = fetch_psi_data()
+        future = fetch_psi_data_async()
+        data = future.result() if future else None
         
         if not data or data.get("code") != 0:
             return create_metric_value_display("Error", color="#ff6b6b")

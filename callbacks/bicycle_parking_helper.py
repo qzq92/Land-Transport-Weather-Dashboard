@@ -7,9 +7,11 @@ from datetime import datetime
 from dash import html
 import dash_leaflet as dl
 import base64
+from utils.async_fetcher import run_in_thread
 
 
-def fetch_bicycle_parking_from_api(lat: float, lon: float, dist_m: int = 300, haversine_func=None) -> list:
+@run_in_thread
+def fetch_bicycle_parking_from_api_async(lat: float, lon: float, dist_m: int = 300, haversine_func=None) -> list:
     """
     Fetch bicycle parking data directly from LTA DataMall API for a specific location.
     

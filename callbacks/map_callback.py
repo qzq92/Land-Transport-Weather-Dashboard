@@ -10,9 +10,11 @@ from dotenv import load_dotenv
 from dash.dependencies import Input, Output, State
 from dash import no_update
 import dash_leaflet as dl
+from utils.async_fetcher import run_in_thread
 load_dotenv(override=True)
 
-def search_location_via_onemap_info(searchVal: str, returnGeom: str = "Y", getAddrDetails: str = "Y", pageNum: int = 1):
+@run_in_thread
+def search_location_via_onemap_info_async(searchVal: str, returnGeom: str = "Y", getAddrDetails: str = "Y", pageNum: int = 1):
     """
     Search for location using OneMap Search API.
     Reference: https://www.onemap.gov.sg/apidocs/search
@@ -104,7 +106,8 @@ def register_search_callbacks(app):
         if not search_value or len(str(search_value).strip()) < 3:
             return []
 
-        results = search_location_via_onemap_info(search_value)
+        future = search_location_via_onemap_info_async(search_value)
+        results = future.result() if future else []
         options = []
 
         # Limit to top 5 most relevant results
@@ -231,7 +234,8 @@ def register_search_callbacks(app):
         if not search_value or len(str(search_value).strip()) < 3:
             return []
 
-        results = search_location_via_onemap_info(search_value)
+        future = search_location_via_onemap_info_async(search_value)
+        results = future.result() if future else []
         options = []
 
         # Limit to top 5 most relevant results

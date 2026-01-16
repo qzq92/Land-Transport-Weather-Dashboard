@@ -14,9 +14,9 @@ import pandas as pd
 from datetime import datetime
 from typing import Optional, Dict, List, Any, Tuple
 from concurrent.futures import Future
-from dash import Input, Output, State, html, dependencies
+from dash import Input, Output, State, html
 import dash_leaflet as dl
-from utils.async_fetcher import fetch_url, fetch_async, fetch_url_2min_cached, run_in_thread
+from utils.async_fetcher import fetch_url, fetch_url_2min_cached, run_in_thread
 from utils.data_download_helper import fetch_erp_gantry_data
 from utils.map_utils import SG_MAP_CENTER
 from callbacks.map_callback import _haversine_distance_m
@@ -3004,7 +3004,7 @@ def register_transport_callbacks(app):
         # Always fetch data to display counts
         taxi_data = fetch_taxi_availability()
         future = fetch_taxi_stands_data_async()
-    taxi_stands_data = future.result() if future else None
+        taxi_stands_data = future.result() if future else None
         
         # Extract count values (always calculate)
         taxi_count = 0
@@ -3620,7 +3620,7 @@ def register_transport_callbacks(app):
         Returns:
             HTML Div containing bicycle parking information and markers
         """
-        from callbacks.bicycle_parking_helper import fetch_bicycle_parking_from_api, create_nearby_bicycle_parking_markers
+        from callbacks.bicycle_parking_helper import fetch_bicycle_parking_from_api_async, create_nearby_bicycle_parking_markers
         
         # Prefer viewport center (so panning/zooming updates nearby results)
         center = None
@@ -3682,7 +3682,8 @@ def register_transport_callbacks(app):
                 ], []
 
         # Fetch bicycle parking from API within 300m
-        nearby_parking = fetch_bicycle_parking_from_api(center_lat, center_lon, dist_m=300, haversine_func=_haversine_distance_m)
+        future = fetch_bicycle_parking_from_api_async(center_lat, center_lon, dist_m=300, haversine_func=_haversine_distance_m)
+        nearby_parking = future.result() if future else []
 
         if not nearby_parking:
             return [

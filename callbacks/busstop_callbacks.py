@@ -58,37 +58,6 @@ def _process_bus_stop_data(data, lat, lon, radius_m):
     return processed_results
 
 
-def fetch_nearby_bus_stops(lat: float, lon: float, radius_m: int = 500) -> list:
-    """
-    Fetch nearest bus stops using OneMap Nearby Transport API.
-    Reference: https://www.onemap.gov.sg/apidocs/nearbytransport
-    
-    Uses the getNearestBusStops endpoint which returns bus stops within radius.
-    
-    Args:
-        lat: Latitude in degrees
-        lon: Longitude in degrees
-        radius_m: Search radius in meters (default: 500)
-    
-    Returns:
-        List of bus stop dictionaries with distance information
-    """
-    url = (
-        f"https://www.onemap.gov.sg/api/public/nearbysvc/getNearestBusStops"
-        f"?latitude={lat}&longitude={lon}&radius_in_meters={radius_m}"
-    )
-    print(url)
-    
-    data = fetch_url(url, _get_onemap_headers())
-    
-    if data is None:
-        print(f"No bus stops found within {radius_m}m or API error")
-        return []
-    
-    print(f"Found {len(data)} bus stops within {radius_m}m")
-    return _process_bus_stop_data(data, lat, lon, radius_m)
-
-
 def fetch_nearby_bus_stops_async(lat: float, lon: float, radius_m: int = 500):
     """
     Fetch nearest bus stops asynchronously (returns Future).
@@ -219,7 +188,8 @@ def register_busstop_callbacks(app):
             ), []
         
         # Fetch nearby bus stops within 500m
-        bus_stops = fetch_nearby_bus_stops(lat, lon, radius_m=500)
+        future = fetch_nearby_bus_stops_async(lat, lon, radius_m=500)
+        bus_stops = future.result() if future else []
         
         # Limit to top 5 nearest
         bus_stops = bus_stops[:5]
