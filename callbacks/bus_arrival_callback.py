@@ -8,6 +8,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 from dash import Input, Output, State, html, callback_context, no_update, ALL
 import dash_leaflet as dl
+from utils.async_fetcher import run_in_thread
 # Import fetch_bus_stops_data from transport_callback to avoid circular import
 # This is done inside the function to prevent circular import issues
 
@@ -15,15 +16,16 @@ import dash_leaflet as dl
 BUS_ARRIVAL_URL = "https://datamall2.mytransport.sg/ltaodataservice/v3/BusArrival"
 
 
-def fetch_bus_arrival_data(bus_stop_code: str) -> Optional[Dict[str, Any]]:
+@run_in_thread
+def fetch_bus_arrival_data_async(bus_stop_code: str) -> Optional[Dict[str, Any]]:
     """
-    Fetch bus arrival data for a specific bus stop from LTA DataMall API.
+    Fetch bus arrival data asynchronously for a specific bus stop from LTA DataMall API.
     
     Args:
         bus_stop_code: Bus stop code (e.g., "83139")
     
     Returns:
-        Dictionary containing bus arrival data, or None if error
+        Future object. Call .result() to get the data.
     """
     api_key = os.getenv("LTA_API_KEY")
     if not api_key:
@@ -431,7 +433,8 @@ def register_bus_arrival_callbacks(app):
             return no_update, [], no_update
         
         # Fetch bus arrival data
-        arrival_data = fetch_bus_arrival_data(bus_stop_code)
+        future = fetch_bus_arrival_data_async(bus_stop_code)
+        arrival_data = future.result() if future else None
         
         # Coordinate lookup for bus stop
         lat, lon = None, None

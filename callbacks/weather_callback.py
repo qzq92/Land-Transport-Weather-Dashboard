@@ -83,11 +83,9 @@ def create_weather_markers(data):
     return markers
 
 
-def fetch_weather_forecast_2h():
+def _fetch_weather_forecast_2h_internal():
     """
-    Fetch 2-hour weather forecast from data.gov.sg API.
-    Reference:
-    https://data.gov.sg/datasets?query=weather&resultId=d_3f9e064e25005b0e42969944ccaf2e7a
+    Internal sync implementation to fetch 2-hour weather forecast.
 
     Returns:
         Dictionary containing forecast data or None if error
@@ -111,6 +109,19 @@ def fetch_weather_forecast_2h():
     except (requests.exceptions.RequestException, ValueError) as error:
         print(f"Error calling 2-hour weather forecast API: {error}")
     return None
+
+
+def fetch_weather_forecast_2h_async():
+    """
+    Fetch 2-hour weather forecast asynchronously from data.gov.sg API.
+    Reference:
+    https://data.gov.sg/datasets?query=weather&resultId=d_3f9e064e25005b0e42969944ccaf2e7a
+
+    Returns:
+        Future object. Call .result() to get the data.
+    """
+    from utils.async_fetcher import _executor
+    return _executor.submit(_fetch_weather_forecast_2h_internal)
 
 
 
@@ -272,19 +283,9 @@ def _build_weather_grid(general):
     return grid_items
 
 
-def fetch_and_format_weather_24h():
+def _fetch_and_format_weather_24h_internal():
     """
-    Fetch and format 24-hour weather forecast data for main dashboard display.
-    Shows temperature, relative humidity, general forecast and wind information.
-    Reference:
-    https://data.gov.sg/datasets?query=weather&resultId=d_ce2eb1e307bda31993c533285834ef2b
-
-    API structure: data.records[0].general contains all forecast info:
-    - temperature: {low, high, unit}
-    - relativeHumidity: {low, high, unit}
-    - forecast: {code, text}
-    - validPeriod: {start, end, text}
-    - wind: {speed: {low, high}, direction}
+    Internal sync implementation to fetch and format 24-hour weather forecast data.
 
     Returns:
         HTML Div with structured forecast display
@@ -350,6 +351,20 @@ def fetch_and_format_weather_24h():
             "width": "100%",
         }
     )
+
+
+def fetch_and_format_weather_24h_async():
+    """
+    Fetch and format 24-hour weather forecast data asynchronously for main dashboard display.
+    Shows temperature, relative humidity, general forecast and wind information.
+    Reference:
+    https://data.gov.sg/datasets?query=weather&resultId=d_ce2eb1e307bda31993c533285834ef2b
+
+    Returns:
+        Future object. Call .result() to get the HTML Div.
+    """
+    from utils.async_fetcher import _executor
+    return _executor.submit(_fetch_and_format_weather_24h_internal)
 
 
 def register_weather_callbacks(app):
@@ -420,7 +435,8 @@ def register_weather_callbacks(app):
             return []
 
         # Fetch 2-hour forecast
-        weather_2h_data = fetch_weather_forecast_2h()
+        future = fetch_weather_forecast_2h_async()
+        weather_2h_data = future.result() if future else None
 
         # Create weather markers for the map
         weather_markers = create_weather_markers(weather_2h_data)
@@ -446,4 +462,5 @@ def register_weather_callbacks(app):
         _ = n_intervals
 
         # Fetch and format 24-hour forecast
-        return fetch_and_format_weather_24h()
+        future = fetch_and_format_weather_24h_async()
+        return future.result() if future else html.P("Error loading forecast")

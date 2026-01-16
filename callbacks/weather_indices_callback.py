@@ -197,27 +197,11 @@ def _get_pollutant_unit(pollutant_key):
     return POLLUTANT_UNITS.get(pollutant_key, "")
 
 
-def fetch_psi_data():
-    """
-    Fetch PSI data from Data.gov.sg API.
-    Uses 2-minute in-memory caching aligned to system clock.
-    """
-    return fetch_url_2min_cached(PSI_URL, get_default_headers())
-
-
 def fetch_psi_data_async():
     """
     Fetch PSI data asynchronously (returns Future).
     """
     return _executor.submit(fetch_url_2min_cached, PSI_URL, get_default_headers())
-
-
-def fetch_uv_data():
-    """
-    Fetch UV index data from Data.gov.sg API.
-    Uses 2-minute in-memory caching aligned to system clock.
-    """
-    return fetch_url_2min_cached(UV_URL, get_default_headers())
 
 
 def fetch_uv_data_async():
@@ -227,101 +211,11 @@ def fetch_uv_data_async():
     return _executor.submit(fetch_url_2min_cached, UV_URL, get_default_headers())
 
 
-def fetch_wbgt_data():
-    """
-    Fetch WBGT data from Data.gov.sg API.
-    Uses 2-minute in-memory caching aligned to system clock.
-    """
-    return fetch_url_2min_cached(WBGT_URL, get_default_headers())
-
-
 def fetch_wbgt_data_async():
     """
     Fetch WBGT data asynchronously (returns Future).
     """
     return _executor.submit(fetch_url_2min_cached, WBGT_URL, get_default_headers())
-
-
-def fetch_zika_cluster_data():
-    """
-    Fetch Zika cluster data from Data.gov.sg poll-download API.
-    
-    This function:
-    1. Calls poll-download endpoint to get a URL
-    2. Uses that URL to fetch the actual FeatureCollection data
-    3. Returns the FeatureCollection data
-    
-    Returns:
-        FeatureCollection data (dict) or None if error
-    """
-    try:
-        # Step 1: Call poll-download to get the URL
-        response = requests.get(ZIKA_POLL_DOWNLOAD_URL, timeout=30)
-        response.raise_for_status()
-        poll_response = response.json()
-        
-        # Step 2: Extract URL from response
-        # The response structure may be: {"url": "..."} or {"data": {"url": "..."}}
-        download_url = None
-        if isinstance(poll_response, dict):
-            if 'url' in poll_response:
-                download_url = poll_response['url']
-            elif 'data' in poll_response and isinstance(poll_response['data'], dict):
-                download_url = poll_response['data'].get('url')
-        
-        if not download_url:
-            print(f"No URL found in poll-download response: {poll_response}")
-            return None
-        
-        # Step 3: Fetch the actual data from the URL
-        data_response = requests.get(download_url, timeout=30)
-        data_response.raise_for_status()
-        return data_response.json()
-        
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching Zika cluster data: {e}")
-        return None
-
-
-def fetch_dengue_cluster_data():
-    """
-    Fetch Dengue cluster data from Data.gov.sg poll-download API.
-    
-    This function:
-    1. Calls poll-download endpoint to get a URL
-    2. Uses that URL to fetch the actual FeatureCollection data
-    3. Returns the FeatureCollection data
-    
-    Returns:
-        FeatureCollection data (dict) or None if error
-    """
-    try:
-        # Step 1: Call poll-download to get the URL
-        response = requests.get(DENGUE_POLL_DOWNLOAD_URL, timeout=30)
-        response.raise_for_status()
-        poll_response = response.json()
-        
-        # Step 2: Extract URL from response
-        # The response structure may be: {"url": "..."} or {"data": {"url": "..."}}
-        download_url = None
-        if isinstance(poll_response, dict):
-            if 'url' in poll_response:
-                download_url = poll_response['url']
-            elif 'data' in poll_response and isinstance(poll_response['data'], dict):
-                download_url = poll_response['data'].get('url')
-        
-        if not download_url:
-            print(f"No URL found in poll-download response: {poll_response}")
-            return None
-        
-        # Step 3: Fetch the actual data from the URL
-        data_response = requests.get(download_url, timeout=30)
-        data_response.raise_for_status()
-        return data_response.json()
-        
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching Dengue cluster data: {e}")
-        return None
 
 
 def fetch_zika_cluster_data_async():

@@ -16,7 +16,7 @@ from typing import Optional, Dict, List, Any, Tuple
 from concurrent.futures import Future
 from dash import Input, Output, State, html, dependencies
 import dash_leaflet as dl
-from utils.async_fetcher import fetch_url, fetch_async, fetch_url_2min_cached
+from utils.async_fetcher import fetch_url, fetch_async, fetch_url_2min_cached, run_in_thread
 from utils.data_download_helper import fetch_erp_gantry_data
 from utils.map_utils import SG_MAP_CENTER
 from callbacks.map_callback import _haversine_distance_m
@@ -639,17 +639,18 @@ def create_erp_gantry_markers(gantry_data):
 # fetch_pub_cctv_data is now imported from utils.data_download_helper
 
 
-def fetch_taxi_stands_data():
+@run_in_thread
+def fetch_taxi_stands_data_async():
     """
-    Fetch Taxi Stands data from LTA DataMall API.
+    Fetch Taxi Stands data asynchronously from LTA DataMall API.
     Uses in-memory cache since taxi stands are static infrastructure.
     
     Returns:
-        Dictionary containing taxi stands data or None if error
+        Future object. Call .result() to get the data.
     """
     global _road_infra_cache
     
-    # Return cached data if available
+    # Check cache first
     if _road_infra_cache['taxi_stands'] is not None:
         return _road_infra_cache['taxi_stands']
     
@@ -992,12 +993,14 @@ def format_combined_taxi_display(taxi_data, taxi_stands_data):
     )
 
 
-def fetch_traffic_incidents_data():
+@run_in_thread
+def fetch_traffic_incidents_data_async():
     """
-    Fetch traffic incidents from LTA DataMall API.
+    Fetch traffic incidents asynchronously from LTA DataMall API.
+    Uses 2-minute caching.
     
     Returns:
-        Dictionary containing traffic incidents data or None if error
+        Future object. Call .result() to get the data.
     """
     api_key = os.getenv("LTA_API_KEY")
     
@@ -1014,17 +1017,18 @@ def fetch_traffic_incidents_data():
     return fetch_url_2min_cached(TRAFFIC_INCIDENTS_URL, headers)
 
 
-def fetch_vms_data() -> Optional[Dict[str, Any]]:
+@run_in_thread
+def fetch_vms_data_async() -> Optional[Dict[str, Any]]:
     """
-    Fetch VMS (Variable Message Signs) data from LTA DataMall API.
+    Fetch VMS (Variable Message Signs) data asynchronously from LTA DataMall API.
     Uses in-memory cache since VMS locations are static infrastructure.
     
     Returns:
-        Dictionary containing VMS data or None if error
+        Future object. Call .result() to get the data.
     """
     global _road_infra_cache
     
-    # Return cached data if available
+    # Check cache first
     if _road_infra_cache['vms'] is not None:
         return _road_infra_cache['vms']
     
@@ -1048,29 +1052,6 @@ def fetch_vms_data() -> Optional[Dict[str, Any]]:
         print("VMS data cached in memory")
     
     return data
-
-
-def fetch_vms_data_async() -> Optional[Future]:
-    """
-    Fetch VMS data asynchronously (returns Future).
-    Call .result() to get the data when needed.
-    
-    Returns:
-        Future object that will contain the VMS data, or None if error
-    """
-    api_key = os.getenv("LTA_API_KEY")
-    
-    if not api_key:
-        print("Warning: LTA_API_KEY not found in environment variables")
-        return None
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "AccountKey": api_key,
-        "Content-Type": "application/json"
-    }
-    
-    return fetch_async(VMS_URL, headers)
 
 
 def fetch_bus_stops_data() -> Optional[Dict[str, Any]]:
@@ -1344,17 +1325,18 @@ def fetch_bus_routes_data_async() -> Optional[Future]:
     return _executor.submit(fetch_bus_routes_data)
 
 
-def fetch_bus_services_data() -> Optional[Dict[str, Any]]:
+@run_in_thread
+def fetch_bus_services_data_async() -> Optional[Dict[str, Any]]:
     """
-    Fetch bus services data from LTA DataMall API.
+    Fetch bus services data asynchronously from LTA DataMall API.
     Uses in-memory cache since bus services are static infrastructure.
     
     Returns:
-        Dictionary containing bus services data or None if error
+        Future object. Call .result() to get the data.
     """
     global _road_infra_cache
     
-    # Return cached data if available
+    # Check cache first
     if _road_infra_cache.get('bus_services') is not None:
         return _road_infra_cache['bus_services']
     
@@ -2006,12 +1988,14 @@ def create_vms_markers(vms_data: Optional[Dict[str, Any]]) -> List[dl.CircleMark
     return markers
 
 
-def fetch_faulty_traffic_lights_data():
+@run_in_thread
+def fetch_faulty_traffic_lights_data_async():
     """
-    Fetch faulty traffic lights from LTA DataMall API.
+    Fetch faulty traffic lights asynchronously from LTA DataMall API.
+    Uses 2-minute caching.
     
     Returns:
-        Dictionary containing faulty traffic lights data or None if error
+        Future object. Call .result() to get the data.
     """
     api_key = os.getenv("LTA_API_KEY")
     
@@ -2089,15 +2073,16 @@ def get_postal_code_from_coords(lat: float = None, lon: float = None, location_d
     return ""
 
 
-def fetch_ev_charging_points(postal_code: str):
+@run_in_thread
+def fetch_ev_charging_points_async(postal_code: str):
     """
-    Fetch EV charging points data from LTA DataMall API using postal code.
+    Fetch EV charging points data asynchronously from LTA DataMall API.
     
     Args:
         postal_code: Postal code as string
     
     Returns:
-        Dictionary containing EV charging points data or None if error
+        Future object. Call .result() to get the data.
     """
     import requests
     if not postal_code:
@@ -2820,7 +2805,8 @@ def fetch_nearby_taxi_stands(lat: float, lon: float, radius_m: int = 300) -> lis
         List of taxi stand dictionaries with distance information, sorted by distance
     """
     # Fetch all taxi stands data
-    taxi_stands_data = fetch_taxi_stands_data()
+    future = fetch_taxi_stands_data_async()
+    taxi_stands_data = future.result() if future else None
     
     if not taxi_stands_data:
         return []
@@ -3017,7 +3003,8 @@ def register_transport_callbacks(app):
         
         # Always fetch data to display counts
         taxi_data = fetch_taxi_availability()
-        taxi_stands_data = fetch_taxi_stands_data()
+        future = fetch_taxi_stands_data_async()
+    taxi_stands_data = future.result() if future else None
         
         # Extract count values (always calculate)
         taxi_count = 0
@@ -3280,8 +3267,10 @@ def register_transport_callbacks(app):
         _ = n_intervals  # Used for periodic refresh
 
         # Always fetch data to display counts
-        incidents_data = fetch_traffic_incidents_data()
-        faulty_lights_data = fetch_faulty_traffic_lights_data()
+        future_incidents = fetch_traffic_incidents_data_async()
+        future_faulty = fetch_faulty_traffic_lights_data_async()
+        incidents_data = future_incidents.result() if future_incidents else None
+        faulty_lights_data = future_faulty.result() if future_faulty else None
         
         # Extract count (always calculate)
         incidents = []
@@ -3897,7 +3886,8 @@ def register_transport_callbacks(app):
 
         # Fetch EV charging points using postal code
         print(f"Fetching EV charging points for postal code: {postal_code}")
-        ev_data = fetch_ev_charging_points(postal_code)
+        future = fetch_ev_charging_points_async(postal_code)
+        ev_data = future.result() if future else None
         
         # Ensure ev_data is a dictionary
         if not ev_data or not isinstance(ev_data, dict) or 'value' not in ev_data:

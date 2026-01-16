@@ -426,14 +426,16 @@ def register_search_callbacks(app):
 
         # Import here to avoid circular imports
         from callbacks.transport_callback import (
-            fetch_traffic_incidents_data,
-            fetch_faulty_traffic_lights_data,
+            fetch_traffic_incidents_data_async,
+            fetch_faulty_traffic_lights_data_async,
             create_traffic_incidents_markers
         )
 
         # Fetch data
-        incidents_data = fetch_traffic_incidents_data()
-        faulty_lights_data = fetch_faulty_traffic_lights_data()
+        future_incidents = fetch_traffic_incidents_data_async()
+        future_faulty = fetch_faulty_traffic_lights_data_async()
+        incidents_data = future_incidents.result() if future_incidents else None
+        faulty_lights_data = future_faulty.result() if future_faulty else None
 
         # Create markers using existing function
         markers = create_traffic_incidents_markers(incidents_data, faulty_lights_data)

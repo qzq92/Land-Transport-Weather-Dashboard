@@ -33,7 +33,7 @@ def transport_page():
         id="transport-page",
         style={
             "display": "none",  # Hidden by default
-            "padding": "1.25rem",
+            "padding": "0.5rem",
             "height": "calc(100vh - 7.5rem)",
             "width": "100%",
         },
@@ -43,7 +43,7 @@ def transport_page():
                 id="transport-content",
                 style={
                     "display": "flex",
-                    "gap": "1.25rem",
+                    "gap": "0.5rem",
                     "height": "calc(100% - 3.125rem)",
                     "maxWidth": "112.5rem",
                     "margin": "0 auto",

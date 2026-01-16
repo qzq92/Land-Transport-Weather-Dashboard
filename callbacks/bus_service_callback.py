@@ -8,7 +8,7 @@ from callbacks.transport_callback import (
     fetch_bus_routes_data,
     fetch_bus_routes_data_async,
     fetch_bus_stops_data,
-    fetch_bus_services_data
+    fetch_bus_services_data_async
 )
 from components.metric_card import create_metric_value_display
 
@@ -590,7 +590,8 @@ def format_bus_service_search_display(service_no: str, routes_data: Optional[Dic
     result_items = []
     
     # Fetch bus services data for frequency information
-    bus_services_data = fetch_bus_services_data()
+    future = fetch_bus_services_data_async()
+    bus_services_data = future.result() if future else None
     
     # Add bus timing table if timing info is available
     if timing_info:
