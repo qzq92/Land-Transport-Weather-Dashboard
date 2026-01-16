@@ -161,7 +161,7 @@ def format_bus_arrival_display(arrival_data: Optional[Dict[str, Any]], bus_stop_
                         "padding": "0.375rem",
                         "fontWeight": "600",
                         "fontSize": "0.6875rem",
-                        "color": "#4169E1",
+                        "color": "#fff",
                         "border": "0.0625rem solid #555",
                         "textAlign": "left",
                     }
@@ -172,7 +172,7 @@ def format_bus_arrival_display(arrival_data: Optional[Dict[str, Any]], bus_stop_
                         "padding": "0.375rem",
                         "fontWeight": "600",
                         "fontSize": "0.6875rem",
-                        "color": "#4169E1",
+                        "color": "#fff",
                         "border": "0.0625rem solid #555",
                         "textAlign": "center",
                     }
@@ -202,11 +202,25 @@ def format_bus_arrival_display(arrival_data: Optional[Dict[str, Any]], bus_stop_
         timing_spans = []
         
         # First arrival time
+        first_arrival_text = arrival_1_min
+        is_minute_based = arrival_1_min not in ("N/A", "Departed", "Arriving") and "min" in arrival_1_min
+        if is_minute_based:
+            first_arrival_text = f"{arrival_1_min}"
+        
+        standard_bg_color = "#2E7D32"
+        # Determine background color
+        if arrival_1_min == "Departed":
+            bg_color = "#666"
+        elif arrival_1_min == "Arriving":
+            bg_color = "#4CAF50"
+        else:
+            bg_color = standard_bg_color
+        
         timing_spans.append(
             html.Span(
-                arrival_1_min,
+                first_arrival_text,
                 style={
-                    "backgroundColor": "#4CAF50" if arrival_1_min != "N/A" and arrival_1_min != "Departed" else "#666",
+                    "backgroundColor": bg_color,
                     "color": "#fff",
                     "padding": "0.125rem 0.375rem",
                     "borderRadius": "0.1875rem",
@@ -223,7 +237,7 @@ def format_bus_arrival_display(arrival_data: Optional[Dict[str, Any]], bus_stop_
                 html.Span(
                     arrival_2_min,
                     style={
-                        "backgroundColor": "#FF9800" if arrival_2_min != "Departed" else "#666",
+                        "backgroundColor": standard_bg_color if arrival_2_min != "Departed" else "#666",
                         "color": "#fff",
                         "padding": "0.125rem 0.375rem",
                         "borderRadius": "0.1875rem",
@@ -240,7 +254,7 @@ def format_bus_arrival_display(arrival_data: Optional[Dict[str, Any]], bus_stop_
                 html.Span(
                     arrival_3_min,
                     style={
-                        "backgroundColor": "#FF5722" if arrival_3_min != "Departed" else "#666",
+                        "backgroundColor": standard_bg_color if arrival_3_min != "Departed" else "#666",
                         "color": "#fff",
                         "padding": "0.125rem 0.375rem",
                         "borderRadius": "0.1875rem",
@@ -255,7 +269,7 @@ def format_bus_arrival_display(arrival_data: Optional[Dict[str, Any]], bus_stop_
             html.Tr(
                 [
                     html.Td(
-                        f"Service {service_no} ({operator})",
+                        f"{service_no} ({operator})",
                         style={
                             "padding": "0.375rem",
                             "fontSize": "0.6875rem",

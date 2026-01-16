@@ -1484,7 +1484,7 @@ def format_faulty_traffic_lights_indicator(data):
                 faulty_lights = data
             else:
                 # Try to find any list in the response
-                for key, value in data.items():
+                for value in data.values():
                     if isinstance(value, list):
                         faulty_lights = value
                         break
@@ -1589,11 +1589,42 @@ def format_traffic_incidents_indicator(data, faulty_lights_data=None):
                         incidents = value
                         break
 
-    # Categorize incidents into 4 types
-    road_block_count = 0
-    road_work_count = 0
-    accident_breakdown_count = 0
-    other_count = 0
+    # Categorize incidents into expected types
+    # Expected types: Accident, Roadwork, Vehicle breakdown, Weather, Obstacle, 
+    # Road Block, Heavy Traffic, Miscellaneous, Diversion, Unattended Vehicle, 
+    # Fire, Plant Failure, Reverse Flow
+    incident_counts = {
+        'Accident': 0,
+        'Roadwork': 0,
+        'Vehicle breakdown': 0,
+        'Weather': 0,
+        'Obstacle': 0,
+        'Road Block': 0,
+        'Heavy Traffic': 0,
+        'Miscellaneous': 0,
+        'Diversion': 0,
+        'Unattended Vehicle': 0,
+        'Fire': 0,
+        'Plant Failure': 0,
+        'Reverse Flow': 0,
+    }
+    
+    # Icon mapping for each category
+    category_icons = {
+        'Accident': '🚗',
+        'Roadwork': '🔧',
+        'Vehicle breakdown': '🚛',
+        'Weather': '🌧️',
+        'Obstacle': '⚠️',
+        'Road Block': '🚧',
+        'Heavy Traffic': '🚦',
+        'Miscellaneous': '📋',
+        'Diversion': '🔄',
+        'Unattended Vehicle': '🚙',
+        'Fire': '🔥',
+        'Plant Failure': '⚙️',
+        'Reverse Flow': '↩️',
+    }
     
     for incident in incidents:
         if isinstance(incident, dict):
@@ -1609,27 +1640,59 @@ def format_traffic_incidents_indicator(data, faulty_lights_data=None):
             )
             incident_message_lower = str(incident_message).lower()
             
-            # Categorize
-            if ('road block' in incident_message_lower or
-                'roadblock' in incident_message_lower or
-                'blocked' in incident_message_lower or
-                'closure' in incident_message_lower or
-                'closed' in incident_message_lower):
-                road_block_count += 1
-            elif ('road work' in incident_message_lower or
-                  'roadwork' in incident_message_lower or
+            # Categorize based on keywords
+            if ('accident' in incident_message_lower or
+                'collision' in incident_message_lower or
+                'crash' in incident_message_lower):
+                incident_counts['Accident'] += 1
+            elif ('roadwork' in incident_message_lower or
+                  'road work' in incident_message_lower or
                   'construction' in incident_message_lower or
                   'maintenance' in incident_message_lower or
                   'repair' in incident_message_lower):
-                road_work_count += 1
-            elif ('accident' in incident_message_lower or
-                  'breakdown' in incident_message_lower or
-                  'vehicle' in incident_message_lower or
-                  'collision' in incident_message_lower or
-                  'crash' in incident_message_lower):
-                accident_breakdown_count += 1
+                incident_counts['Roadwork'] += 1
+            elif ('vehicle breakdown' in incident_message_lower or
+                  'breakdown' in incident_message_lower and 'vehicle' in incident_message_lower):
+                incident_counts['Vehicle breakdown'] += 1
+            elif ('weather' in incident_message_lower or
+                  'rain' in incident_message_lower or
+                  'flood' in incident_message_lower or
+                  'storm' in incident_message_lower):
+                incident_counts['Weather'] += 1
+            elif ('obstacle' in incident_message_lower or
+                  'debris' in incident_message_lower or
+                  'object' in incident_message_lower):
+                incident_counts['Obstacle'] += 1
+            elif ('road block' in incident_message_lower or
+                  'roadblock' in incident_message_lower or
+                  'blocked' in incident_message_lower or
+                  'closure' in incident_message_lower or
+                  'closed' in incident_message_lower):
+                incident_counts['Road Block'] += 1
+            elif ('heavy traffic' in incident_message_lower or
+                  'traffic jam' in incident_message_lower or
+                  'congestion' in incident_message_lower):
+                incident_counts['Heavy Traffic'] += 1
+            elif ('diversion' in incident_message_lower or
+                  'divert' in incident_message_lower):
+                incident_counts['Diversion'] += 1
+            elif ('unattended vehicle' in incident_message_lower or
+                  'abandoned vehicle' in incident_message_lower):
+                incident_counts['Unattended Vehicle'] += 1
+            elif 'fire' in incident_message_lower:
+                incident_counts['Fire'] += 1
+            elif ('plant failure' in incident_message_lower or
+                  'equipment failure' in incident_message_lower):
+                incident_counts['Plant Failure'] += 1
+            elif ('reverse flow' in incident_message_lower or
+                  'reversible' in incident_message_lower):
+                incident_counts['Reverse Flow'] += 1
+            elif 'vehicle' in incident_message_lower and 'breakdown' not in incident_message_lower:
+                # General vehicle-related incidents that aren't breakdowns
+                incident_counts['Vehicle breakdown'] += 1
             else:
-                other_count += 1
+                # Default to Miscellaneous for unclassified incidents
+                incident_counts['Miscellaneous'] += 1
 
     # Count faulty traffic lights if data is provided
     faulty_lights_count = 0
@@ -1666,52 +1729,52 @@ def format_traffic_incidents_indicator(data, faulty_lights_data=None):
     # Import create_metric_card (create_metric_value_display already imported at top)
     from components.metric_card import create_metric_card
 
-    # Create 4 consecutive metric cards with values
+    # Create metric cards dynamically - only for categories with positive counts
     metric_cards = []
     
-    # Road Block
-    road_block_card = create_metric_card(
-        card_id="traffic-road-block-card",
-        label="🚧 Road Block",
-        value_id="traffic-road-block-value",
-        initial_value="0"
-    )
-    # Replace the value display with orange-colored value
-    road_block_card.children[0].children[1].children = [create_metric_value_display(str(road_block_count), color="#FF9800")]
-    metric_cards.append(road_block_card)
+    # Add cards for incident types with positive counts
+    for category, count in incident_counts.items():
+        if count > 0:
+            icon = category_icons.get(category, '📋')
+            card_id = f"traffic-{category.lower().replace(' ', '-')}-card"
+            value_id = f"traffic-{category.lower().replace(' ', '-')}-value"
+            
+            category_card = create_metric_card(
+                card_id=card_id,
+                label=f"{icon} {category}",
+                value_id=value_id,
+                initial_value=str(count)
+            )
+            # Replace the value display with orange-colored value
+            category_card.children[0].children[1].children = [create_metric_value_display(str(count), color="#FF9800")]
+            metric_cards.append(category_card)
     
-    # Road Work
-    road_work_card = create_metric_card(
-        card_id="traffic-road-work-card",
-        label="🔧 Road Work",
-        value_id="traffic-road-work-value",
-        initial_value="0"
-    )
-    # Replace the value display with orange-colored value
-    road_work_card.children[0].children[1].children = [create_metric_value_display(str(road_work_count), color="#FF9800")]
-    metric_cards.append(road_work_card)
+    # Add Faulty Traffic Lights if count > 0
+    if faulty_lights_count > 0:
+        faulty_lights_card = create_metric_card(
+            card_id="traffic-faulty-lights-card",
+            label="🚦 Faulty Traffic Lights",
+            value_id="traffic-faulty-lights-value",
+            initial_value=str(faulty_lights_count)
+        )
+        # Replace the value display with orange-colored value
+        faulty_lights_card.children[0].children[1].children = [create_metric_value_display(str(faulty_lights_count), color="#FF9800")]
+        metric_cards.append(faulty_lights_card)
     
-    # Accident/Breakdown
-    accident_card = create_metric_card(
-        card_id="traffic-accident-card",
-        label="🚗 Accident/Breakdown",
-        value_id="traffic-accident-value",
-        initial_value="0"
-    )
-    # Replace the value display with orange-colored value
-    accident_card.children[0].children[1].children = [create_metric_value_display(str(accident_breakdown_count), color="#FF9800")]
-    metric_cards.append(accident_card)
-    
-    # Faulty Traffic Lights
-    faulty_lights_card = create_metric_card(
-        card_id="traffic-faulty-lights-card",
-        label="🚦 Faulty Traffic Lights",
-        value_id="traffic-faulty-lights-value",
-        initial_value="0"
-    )
-    # Replace the value display with orange-colored value
-    faulty_lights_card.children[0].children[1].children = [create_metric_value_display(str(faulty_lights_count), color="#FF9800")]
-    metric_cards.append(faulty_lights_card)
+    # If no incidents, show a message
+    if not metric_cards:
+        return html.Div(
+            html.P(
+                "No traffic incidents reported",
+                style={
+                    "fontSize": "0.75rem",
+                    "color": "#999",
+                    "textAlign": "center",
+                    "margin": "0",
+                    "fontStyle": "italic",
+                }
+            )
+        )
     
     # Return container with metric cards in 2-column grid layout
     return html.Div(

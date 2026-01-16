@@ -2345,65 +2345,69 @@ def create_traffic_incidents_markers(incidents_data, faulty_lights_data=None):
             
             # Create appropriate icon based on category
             if is_road_block:
-                # Road block icon - barrier/blockade
+                # Road block icon - red barrier with X (road closure)
                 road_block_svg = (
-                    '<svg width="20" height="24" viewBox="0 0 20 24" xmlns="http://www.w3.org/2000/svg">'
-                    '<rect x="2" y="4" width="16" height="16" fill="#FF6B00" stroke="#FFA500" stroke-width="1.5" rx="2"/>'
-                    '<line x1="6" y1="8" x2="14" y2="8" stroke="#000" stroke-width="2"/>'
-                    '<line x1="6" y1="12" x2="14" y2="12" stroke="#000" stroke-width="2"/>'
-                    '<line x1="6" y1="16" x2="14" y2="16" stroke="#000" stroke-width="2"/>'
-                    '<circle cx="10" cy="22" r="2" fill="#000"/>'
+                    '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
+                    '<rect x="2" y="2" width="20" height="20" fill="#DC2626" stroke="#991B1B" stroke-width="2" rx="2"/>'
+                    '<line x1="6" y1="6" x2="18" y2="18" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>'
+                    '<line x1="18" y1="6" x2="6" y2="18" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>'
+                    '<rect x="4" y="4" width="16" height="16" fill="none" stroke="#FFFFFF" stroke-width="1.5" rx="1"/>'
                     '</svg>'
                 )
                 icon_svg_base64 = base64.b64encode(road_block_svg.encode()).decode()
-                icon_size = [20, 24]
-                icon_anchor = [10, 24]
+                icon_size = [24, 24]
+                icon_anchor = [12, 24]
                 popup_anchor = [0, -24]
                 
             elif is_road_work:
-                # Road work icon - construction cone
+                # Road work icon - orange/yellow striped construction cone
                 road_work_svg = (
-                    '<svg width="20" height="24" viewBox="0 0 20 24" xmlns="http://www.w3.org/2000/svg">'
-                    '<path d="M 10 0 L 18 20 L 2 20 Z" fill="#FFA500" stroke="#FF6B00" stroke-width="1.5"/>'
-                    '<path d="M 10 4 L 15 18 L 5 18 Z" fill="#FFD700"/>'
-                    '<path d="M 10 0 L 10 20" stroke="#000" stroke-width="1"/>'
-                    '<circle cx="10" cy="22" r="2" fill="#000"/>'
+                    '<svg width="20" height="28" viewBox="0 0 20 28" xmlns="http://www.w3.org/2000/svg">'
+                    '<path d="M 10 2 L 18 26 L 2 26 Z" fill="#F97316" stroke="#EA580C" stroke-width="1.5"/>'
+                    '<path d="M 10 6 L 16 24 L 4 24 Z" fill="#FB923C"/>'
+                    '<rect x="6" y="10" width="8" height="2" fill="#FFFFFF" rx="1"/>'
+                    '<rect x="6" y="14" width="8" height="2" fill="#FFFFFF" rx="1"/>'
+                    '<rect x="6" y="18" width="8" height="2" fill="#FFFFFF" rx="1"/>'
+                    '<circle cx="10" cy="28" r="2" fill="#1F2937"/>'
                     '</svg>'
                 )
                 icon_svg_base64 = base64.b64encode(road_work_svg.encode()).decode()
-                icon_size = [20, 24]
-                icon_anchor = [10, 24]
-                popup_anchor = [0, -24]
+                icon_size = [20, 28]
+                icon_anchor = [10, 28]
+                popup_anchor = [0, -28]
                 
             elif is_accident_breakdown:
-                # Accident/breakdown icon - car with warning
+                # Accident/breakdown icon - red car crash with exclamation
                 accident_svg = (
-                    '<svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">'
-                    '<rect x="3" y="8" width="14" height="8" fill="#FF9800" stroke="#FF6B6B" stroke-width="1.5" rx="1"/>'
-                    '<circle cx="7" cy="16" r="2" fill="#000"/>'
-                    '<circle cx="13" cy="16" r="2" fill="#000"/>'
-                    '<path d="M 5 8 L 7 4 L 13 4 L 15 8" fill="#FFD700" stroke="#FF9800" stroke-width="1"/>'
-                    '<line x1="10" y1="4" x2="10" y2="8" stroke="#FF6B6B" stroke-width="1.5"/>'
+                    '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
+                    '<circle cx="12" cy="12" r="11" fill="#EF4444" stroke="#DC2626" stroke-width="2"/>'
+                    '<path d="M 6 14 L 6 18 L 18 18 L 18 14 L 15 10 L 9 10 Z" fill="#FFFFFF" stroke="#1F2937" stroke-width="1.5"/>'
+                    '<circle cx="9" cy="18" r="2" fill="#1F2937"/>'
+                    '<circle cx="15" cy="18" r="2" fill="#1F2937"/>'
+                    '<path d="M 8 10 L 9 7 L 15 7 L 16 10" fill="#FEF3C7" stroke="#1F2937" stroke-width="1"/>'
+                    '<line x1="12" y1="7" x2="12" y2="10" stroke="#DC2626" stroke-width="2" stroke-linecap="round"/>'
+                    '<line x1="12" y1="5" x2="12" y2="3" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>'
+                    '<circle cx="12" cy="2" r="1" fill="#FFFFFF"/>'
                     '</svg>'
                 )
                 icon_svg_base64 = base64.b64encode(accident_svg.encode()).decode()
-                icon_size = [20, 20]
-                icon_anchor = [10, 20]
-                popup_anchor = [0, -20]
+                icon_size = [24, 24]
+                icon_anchor = [12, 24]
+                popup_anchor = [0, -24]
                 
             else:
-                # Other incidents - triangle warning sign
+                # Other incidents - yellow warning triangle with exclamation
                 other_svg = (
-                    '<svg width="20" height="18" viewBox="0 0 20 18" xmlns="http://www.w3.org/2000/svg">'
-                    '<path d="M 10 18 L 0 0 L 20 0 Z" fill="#FF9800" stroke="#FF6B6B" stroke-width="1.5"/>'
-                    '<path d="M 10 4 L 10 12" stroke="#000" stroke-width="2" stroke-linecap="round"/>'
-                    '<circle cx="10" cy="14" r="1" fill="#000"/>'
+                    '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
+                    '<path d="M 12 2 L 22 20 L 2 20 Z" fill="#FCD34D" stroke="#F59E0B" stroke-width="2"/>'
+                    '<path d="M 12 6 L 12 14" stroke="#92400E" stroke-width="2.5" stroke-linecap="round"/>'
+                    '<circle cx="12" cy="17" r="1.5" fill="#92400E"/>'
                     '</svg>'
                 )
                 icon_svg_base64 = base64.b64encode(other_svg.encode()).decode()
-                icon_size = [20, 18]
-                icon_anchor = [10, 0]
-                popup_anchor = [0, 18]
+                icon_size = [24, 24]
+                icon_anchor = [12, 24]
+                popup_anchor = [0, -24]
             
             incident_icon = {
                 "iconUrl": f"data:image/svg+xml;base64,{icon_svg_base64}",
@@ -2467,16 +2471,34 @@ def create_traffic_incidents_markers(incidents_data, faulty_lights_data=None):
                 
                 tooltip_html = f"🚦 Faulty Traffic Light Node ID: {node_id}"
                 
-                # Use orange color for faulty traffic lights
+                # Use traffic light icon for faulty traffic lights
+                faulty_light_svg = (
+                    '<svg width="20" height="24" viewBox="0 0 20 24" xmlns="http://www.w3.org/2000/svg">'
+                    '<rect x="6" y="2" width="8" height="18" fill="#1F2937" stroke="#374151" stroke-width="1.5" rx="1"/>'
+                    '<circle cx="10" cy="7" r="2.5" fill="#EF4444"/>'
+                    '<circle cx="10" cy="12" r="2.5" fill="#FCD34D"/>'
+                    '<circle cx="10" cy="17" r="2.5" fill="#10B981" fill-opacity="0.3"/>'
+                    '<rect x="8" y="20" width="4" height="2" fill="#1F2937" rx="0.5"/>'
+                    '<line x1="10" y1="7" x2="10" y2="7" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round"/>'
+                    '<line x1="10" y1="12" x2="10" y2="12" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round"/>'
+                    '</svg>'
+                )
+                icon_svg_base64 = base64.b64encode(faulty_light_svg.encode()).decode()
+                icon_size = [20, 24]
+                icon_anchor = [10, 24]
+                popup_anchor = [0, -24]
+                
+                faulty_light_icon = {
+                    "iconUrl": f"data:image/svg+xml;base64,{icon_svg_base64}",
+                    "iconSize": icon_size,
+                    "iconAnchor": icon_anchor,
+                    "popupAnchor": popup_anchor,
+                }
+                
                 markers.append(
-                    dl.CircleMarker(
-                        center=[latitude, longitude],
-                        radius=6,
-                        color="#FF8C00",  # Dark orange for faulty lights
-                        fill=True,
-                        fillColor="#FF8C00",
-                        fillOpacity=0.7,
-                        weight=2,
+                    dl.Marker(
+                        position=[latitude, longitude],
+                        icon=faulty_light_icon,
                         children=[
                             dl.Tooltip(tooltip_html),
                         ]
@@ -3208,7 +3230,8 @@ def register_transport_callbacks(app):
         [Output('traffic-incidents-markers', 'children'),
          Output('traffic-incidents-count-value', 'children'),
          Output('traffic-incidents-messages', 'children'),
-         Output('traffic-incidents-messages', 'style')],
+         Output('traffic-incidents-messages', 'style'),
+         Output('traffic-incidents-legend', 'style')],
         [Input('traffic-incidents-toggle-state', 'data'),
          Input('transport-interval', 'n_intervals')]
     )
@@ -3344,14 +3367,40 @@ def register_transport_callbacks(app):
                 "display": "block",
             }
 
+        # Legend style based on toggle state
+        if show_incidents:
+            legend_style = {
+                "position": "absolute",
+                "top": "0.625rem",
+                "right": "0.625rem",
+                "backgroundColor": "rgba(26, 42, 58, 0.9)",
+                "borderRadius": "0.5rem",
+                "padding": "0.625rem",
+                "zIndex": "1000",
+                "boxShadow": "0 0.125rem 0.5rem rgba(0, 0, 0, 0.3)",
+                "display": "block",
+            }
+        else:
+            legend_style = {
+                "position": "absolute",
+                "top": "0.625rem",
+                "right": "0.625rem",
+                "backgroundColor": "rgba(26, 42, 58, 0.9)",
+                "borderRadius": "0.5rem",
+                "padding": "0.625rem",
+                "zIndex": "1000",
+                "boxShadow": "0 0.125rem 0.5rem rgba(0, 0, 0, 0.3)",
+                "display": "none",
+            }
+
         # Only show markers if toggle is on
         if not show_incidents:
-            return [], count_value, messages_display, messages_style
+            return [], count_value, messages_display, messages_style, legend_style
 
         # Create markers
         markers = create_traffic_incidents_markers(incidents_data, faulty_lights_data)
 
-        return markers, count_value, messages_display, messages_style
+        return markers, count_value, messages_display, messages_style, legend_style
 
     # Callback for nearby transport page - taxi stands (within 300m)
     @app.callback(
