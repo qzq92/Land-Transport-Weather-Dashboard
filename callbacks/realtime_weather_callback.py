@@ -993,7 +993,7 @@ def format_lightning_readings(data):
     records = data['data'].get('records', [])
     if not records:
         return html.Div(
-            html.Span("0 locations", style={"color": "#999", "fontSize": "12px"}),
+            html.Span("0", style={"color": "#FFD700", "fontSize": "14px", "fontWeight": "600"}),
             style={
                 "padding": "6px 8px",
                 "backgroundColor": "#3a4a5a",
@@ -1017,8 +1017,8 @@ def format_lightning_readings(data):
 
     return html.Div(
         html.Span(
-            f"{lightning_count} location{'s' if lightning_count != 1 else ''} detected",
-            style={"color": "#fff", "fontSize": "14px", "fontWeight": "600"}
+            str(lightning_count),
+            style={"color": "#FFD700", "fontSize": "14px", "fontWeight": "600"}
         ),
         style={
             "padding": "6px 8px",
@@ -2013,7 +2013,7 @@ def register_realtime_weather_callbacks(app):
             button_style = {
                 "padding": "4px 8px",
                 "borderRadius": "4px",
-                "border": "2px solid #FF8C00",
+                "border": "2px solid #fff",
                 "backgroundColor": "#FF8C00",
                 "color": "#fff",
                 "cursor": "pointer",
@@ -2026,7 +2026,7 @@ def register_realtime_weather_callbacks(app):
         button_style = {
             "padding": "4px 8px",
             "borderRadius": "4px",
-            "border": "2px solid #FF8C00",
+            "border": "2px solid #fff",
             "backgroundColor": "transparent",
             "color": "#fff",
             "cursor": "pointer",

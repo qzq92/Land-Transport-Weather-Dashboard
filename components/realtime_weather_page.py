@@ -626,9 +626,9 @@ def realtime_weather_page():
                                                         style={
                                                             "padding": "4px 8px",
                                                             "borderRadius": "4px",
-                                                            "border": "2px solid #FF8C00",
+                                                            "border": "2px solid #fff",
                                                             "backgroundColor": "transparent",
-                                                            "color": "#FF8C00",
+                                                            "color": "#fff",
                                                             "cursor": "pointer",
                                                             "fontSize": "12px",
                                                             "fontWeight": "600",
