@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 # Load environment variables and logging
 load_dotenv(override=True)
 
+from conf.page_layout_config import MAIN_DASHBOARD_HEIGHT, get_content_container_style, STANDARD_GAP
+
 from components.banner_component import build_dashboard_banner
 from components.map_component import map_component
 from components.realtime_weather_page import realtime_weather_page
@@ -109,8 +111,8 @@ app.layout = html.Div(
                         html.Div(
                             id="mrt-lines-display",
                     style={"width": "100%"},
-                            children=[
-                                html.P("Loading MRT line status...", 
+                    children=[
+                        html.P("Loading MRT line status...", 
                                        style={"color": "#999", "margin": "0", "fontSize": "0.75rem"})
                             ]
                         )
@@ -176,11 +178,8 @@ app.layout = html.Div(
                         html.Div(
                             id="main-content-area",
                             style={
-                                "display": "flex",
-                                "width": "100%",
-                                "gap": "0.25rem",
+                                **get_content_container_style(gap=STANDARD_GAP, height=MAIN_DASHBOARD_HEIGHT),
                                 "padding": "0.25rem",
-                                "height": "calc(100vh - 6.25rem)",  # Adjusted for header only (search bar moved to map)
                                 "alignItems": "stretch",  # Ensure both containers have same height
                                 "boxSizing": "border-box",  # Ensure padding is included in width calculation
                             },
@@ -904,11 +903,12 @@ if __name__ == '__main__':
     else:
         print("Warning: Failed to initialize OneMap API token. Some features may not work.")
 
+    # Set app title
+    app.title = "SG Dashboard"
+    
     # Enable hot reloading to capture latest changes in code
     # If running locally in Anaconda env:
     if "conda-forge" in sys.version:
         app.run(debug=True, dev_tools_hot_reload=False)
     else:
         app.run(debug=True, dev_tools_hot_reload=False, host='0.0.0.0', port=8050)
-    # Set app title
-    app.title = "SG Dashboard"
