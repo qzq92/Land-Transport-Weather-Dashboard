@@ -19,7 +19,6 @@ All data are retrieved via API calls to data.gov.sg accessible [here](https://be
    - Taxi availability (Data.gov.sg Taxi Availability API)
    - Traffic cameras (Data.gov.sg Traffic Images API)
    - ERP gantry locations (LTA Gantry GeoJSON dataset via Data.gov.sg initiate-download API)
-   - Traffic speed bands (LTA DataMall TrafficSpeedBands v4 API)
    - Taxi stands (LTA DataMall TaxiStands API)
    - MRT/LRT service alerts (LTA DataMall TrainServiceAlerts API)
    - Faulty traffic lights (LTA DataMall FaultyTrafficLights API)
@@ -96,9 +95,6 @@ This analytics dashboard provides real-time information on:
 - **Taxi Availability**: Real-time taxi locations (4,500+ taxis) displayed as yellow markers on map
 - **Traffic Cameras**: CCTV camera locations with live feed popups showing traffic conditions
 - **ERP Gantries**: Electronic Road Pricing gantry locations displayed as red polylines on map
-- **Traffic Speed Bands**: Real-time traffic speed data displayed as color-coded polylines on map
-  - Speed bands range from 1 (0-9 km/h, red) to 8 (70+ km/h, green)
-  - Speed band definitions displayed in information panel
 - **Taxi Stands**: Taxi stand locations with detailed information (name, barrier-free access, ownership, type)
 - **MRT/LRT Line Operational Status**: Real-time status for all MRT and LRT lines
   - MRT lines displayed with official colors (NSL-red, EWL-green, CCL-yellow, DTL-blue, NEL-purple, TEL-brown)
@@ -116,7 +112,7 @@ This analytics dashboard provides real-time information on:
 
 ## Application Structure
 
-The dashboard consists of 5 main pages accessible via tabs with glossy black-to-silver gradient styling:
+The dashboard consists of 4 main pages accessible via tabs with glossy black-to-silver gradient styling:
 
 1. **🏠 Main Dashboard**: Overview with average PSI, meteorological alerts, traffic incidents, MRT/LRT service alerts, disease clusters, nearby facilities, and interactive map
    - **2-Hour Weather Forecast**: Toggle button on main page to show/hide 2-hour weather predictions with map markers
@@ -128,7 +124,7 @@ The dashboard consists of 5 main pages accessible via tabs with glossy black-to-
 3. **📊 Daily Health and Environmental Watch**: UV Index trends, comprehensive PSI pollutant data, Zika clusters, and Dengue clusters
    - **PSI Display Modes**: Toggle between map text boxes and detailed metrics table
    - **Zika/Dengue Clusters**: Toggle visibility of cluster polygons on map
-4. **🚦 Road & Transport**: Taxi availability, traffic cameras, ERP gantries, traffic speed bands, taxi stands, bus stops, and MRT/LRT operational status
+4. **🚦 Road & Transport**: Taxi availability, traffic cameras, ERP gantries, taxi stands, bus stops, and MRT/LRT operational status
    - **Bus Stop Interaction**: Click bus stops to view arrival times (zoom level 15+ required)
    - **Selection Persistence**: Selected bus stops remain active during map navigation
    - **Zoomable Map**: Supports zoom levels 10-19 for detailed exploration
@@ -201,9 +197,6 @@ The dashboard consists of 5 main pages accessible via tabs with glossy black-to-
   - Supports additional children (e.g., disclaimers) for context-specific information
 
 ## Known Limitations and Restrictions
-### Speed Band Visualization
-- **Speed band plotting requires zoomed-in view**: Due to the massive number of traffic speed band segments (>100,000) returned by the LTA DataMall API, plotting all segments at once can cause the web browser to hang or become unresponsive. To mitigate this, speed band visualization is only displayed when the map is zoomed in to a sufficient level, reducing the number of visible segments and ensuring smooth performance.
-
 ### Bus Stop Visualization
 - **Bus stop markers require zoom level 15+**: Bus stops are only displayed when zoomed in to level 15 or higher to optimize map performance and reduce visual clutter
 - **Viewport filtering**: Only bus stops visible in the current map viewport are rendered, improving performance when zoomed out
@@ -237,7 +230,6 @@ Please refer to the provided link for more information
   - Health clusters: Zika and Dengue cluster information via poll-download API
 * [LTA DataMall API Access](https://datamall.lta.gov.sg/content/datamall/en.html) - Transportation related data
   - Carpark availability: CarParkAvailabilityv2 API endpoint
-  - Traffic speed bands: TrafficSpeedBands v4 API endpoint
   - Taxi stands: TaxiStands API endpoint
   - Train service alerts: TrainServiceAlerts API endpoint
   - Faulty traffic lights: FaultyTrafficLights API endpoint
