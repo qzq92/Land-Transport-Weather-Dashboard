@@ -111,200 +111,222 @@ def transport_page():
                                     ),
                                 ]
                             ),
-                            # CCTV Traffic Cameras card
+                            # Camera metrics row: LTA Traffic Cameras and SPF Speed Camera
                             html.Div(
-                                id="cctv-card",
                                 style={
-                                    "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "0.5rem",
-                                    "padding": "0.625rem",
-                                    "display": "flex",
-                                    "flexDirection": "column",
+                                    "display": "grid",
+                                    "gridTemplateColumns": "1fr 1fr",
                                     "gap": "0.5rem",
+                                    "marginBottom": "0.5rem",
                                 },
                                 children=[
+                                    # CCTV Traffic Cameras card
                                     html.Div(
+                                        id="cctv-card",
                                         style={
+                                            "backgroundColor": "#4a5a6a",
+                                            "borderRadius": "0.5rem",
+                                            "padding": "0.625rem",
                                             "display": "flex",
-                                            "flexDirection": "row",
-                                            "alignItems": "center",
-                                            "justifyContent": "space-between",
+                                            "flexDirection": "column",
+                                            "gap": "0.5rem",
                                         },
                                         children=[
-                                            html.Span(
-                                                "📹 LTA Traffic Cameras",
-                                                style={
-                                                    "color": "#fff",
-                                                    "fontWeight": "600",
-                                                    "fontSize": "0.8125rem"
-                                                }
-                                            ),
                                             html.Div(
-                                                id="cctv-count-value",
                                                 style={
-                                                    "color": "#4CAF50",
-                                                    "fontSize": "1.125rem",
-                                                    "fontWeight": "700",
+                                                    "display": "flex",
+                                                    "flexDirection": "row",
+                                                    "alignItems": "center",
+                                                    "justifyContent": "space-between",
                                                 },
                                                 children=[
-                                                    html.Div(
-                                                        html.Span("--", style={"color": "#999"}),
+                                                    html.Span(
+                                                        "📹 LTA Traffic Cameras",
                                                         style={
-                                                            "backgroundColor": "rgb(58, 74, 90)",
-                                                            "padding": "0.25rem 0.5rem",
-                                                            "borderRadius": "0.25rem",
+                                                            "color": "#fff",
+                                                            "fontWeight": "600",
+                                                            "fontSize": "0.8125rem"
                                                         }
-                                                    )
+                                                    ),
+                                                    html.Div(
+                                                        id="cctv-count-value",
+                                                        style={
+                                                            "color": "#4CAF50",
+                                                            "fontSize": "1.125rem",
+                                                            "fontWeight": "700",
+                                                        },
+                                                        children=[
+                                                            html.Div(
+                                                                html.Span("--", style={"color": "#999"}),
+                                                                style={
+                                                                    "backgroundColor": "rgb(58, 74, 90)",
+                                                                    "padding": "0.25rem 0.5rem",
+                                                                    "borderRadius": "0.25rem",
+                                                                }
+                                                            )
+                                                        ]
+                                                    ),
+                                                ]
+                                            ),
+                                        ]
+                                    ),
+                                    # SPF Speed Camera card
+                                    html.Div(
+                                        id="speed-camera-card",
+                                        style={
+                                            "backgroundColor": "#4a5a6a",
+                                            "borderRadius": "0.5rem",
+                                            "padding": "0.625rem",
+                                            "display": "flex",
+                                            "flexDirection": "column",
+                                            "gap": "0.5rem",
+                                        },
+                                        children=[
+                                            html.Div(
+                                                style={
+                                                    "display": "flex",
+                                                    "flexDirection": "row",
+                                                    "alignItems": "center",
+                                                    "justifyContent": "space-between",
+                                                },
+                                                children=[
+                                                    html.Span(
+                                                        "📸 SPF Speed Camera",
+                                                        style={
+                                                            "color": "#fff",
+                                                            "fontWeight": "600",
+                                                            "fontSize": "0.8125rem"
+                                                        }
+                                                    ),
+                                                    html.Div(
+                                                        id="speed-camera-count-value",
+                                                        style={
+                                                            "color": "#A5D6A7",
+                                                            "fontSize": "1.125rem",
+                                                            "fontWeight": "700",
+                                                        },
+                                                        children=[
+                                                            html.Div(
+                                                                html.Span("--", style={"color": "#999"}),
+                                                                style={
+                                                                    "backgroundColor": "rgb(58, 74, 90)",
+                                                                    "padding": "0.25rem 0.5rem",
+                                                                    "borderRadius": "0.25rem",
+                                                                }
+                                                            )
+                                                        ]
+                                                    ),
                                                 ]
                                             ),
                                         ]
                                     ),
                                 ]
                             ),
-                            # SPF Speed Camera card
+                            # ERP and VMS metrics row: ERP Gantries and VMS Display boards
                             html.Div(
-                                id="speed-camera-card",
                                 style={
-                                    "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "0.5rem",
-                                    "padding": "0.625rem",
-                                    "display": "flex",
-                                    "flexDirection": "column",
+                                    "display": "grid",
+                                    "gridTemplateColumns": "1fr 1fr",
                                     "gap": "0.5rem",
+                                    "marginBottom": "0.5rem",
                                 },
                                 children=[
+                                    # ERP Gantry card
                                     html.Div(
+                                        id="erp-card",
                                         style={
+                                            "backgroundColor": "#4a5a6a",
+                                            "borderRadius": "0.5rem",
+                                            "padding": "0.625rem",
                                             "display": "flex",
-                                            "flexDirection": "row",
-                                            "alignItems": "center",
-                                            "justifyContent": "space-between",
+                                            "flexDirection": "column",
+                                            "gap": "0.5rem",
                                         },
                                         children=[
-                                            html.Span(
-                                                "📸 SPF Speed Camera",
-                                                style={
-                                                    "color": "#fff",
-                                                    "fontWeight": "600",
-                                                    "fontSize": "0.8125rem"
-                                                }
-                                            ),
                                             html.Div(
-                                                id="speed-camera-count-value",
                                                 style={
-                                                    "color": "#A5D6A7",
-                                                    "fontSize": "1.125rem",
-                                                    "fontWeight": "700",
+                                                    "display": "flex",
+                                                    "flexDirection": "row",
+                                                    "alignItems": "center",
+                                                    "justifyContent": "space-between",
                                                 },
                                                 children=[
-                                                    html.Div(
-                                                        html.Span("--", style={"color": "#999"}),
+                                                    html.Span(
+                                                        "🚧 ERP Gantries",
                                                         style={
-                                                            "backgroundColor": "rgb(58, 74, 90)",
-                                                            "padding": "0.25rem 0.5rem",
-                                                            "borderRadius": "0.25rem",
+                                                            "color": "#fff",
+                                                            "fontWeight": "600",
+                                                            "fontSize": "0.8125rem"
                                                         }
-                                                    )
+                                                    ),
+                                                    html.Div(
+                                                        id="erp-count-value",
+                                                        style={
+                                                            "color": "#FF6B6B",
+                                                            "fontSize": "1.125rem",
+                                                            "fontWeight": "700",
+                                                        },
+                                                        children=[
+                                                            html.Div(
+                                                                html.Span("--", style={"color": "#999"}),
+                                                                style={
+                                                                    "backgroundColor": "rgb(58, 74, 90)",
+                                                                    "padding": "0.25rem 0.5rem",
+                                                                    "borderRadius": "0.25rem",
+                                                                }
+                                                            )
+                                                        ]
+                                                    ),
                                                 ]
                                             ),
                                         ]
                                     ),
-                                ]
-                            ),
-                            # ERP Gantry card
-                            html.Div(
-                                id="erp-card",
-                                style={
-                                    "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "0.5rem",
-                                    "padding": "0.625rem",
-                                    "display": "flex",
-                                    "flexDirection": "column",
-                                    "gap": "0.5rem",
-                                },
-                                children=[
+                                    # VMS card
                                     html.Div(
+                                        id="vms-card",
                                         style={
+                                            "backgroundColor": "#4a5a6a",
+                                            "borderRadius": "0.5rem",
+                                            "padding": "0.625rem",
                                             "display": "flex",
-                                            "flexDirection": "row",
-                                            "alignItems": "center",
-                                            "justifyContent": "space-between",
+                                            "flexDirection": "column",
+                                            "gap": "0.5rem",
                                         },
                                         children=[
-                                            html.Span(
-                                                "🚧 ERP Gantries",
-                                                style={
-                                                    "color": "#fff",
-                                                    "fontWeight": "600",
-                                                    "fontSize": "0.8125rem"
-                                                }
-                                            ),
                                             html.Div(
-                                                id="erp-count-value",
                                                 style={
-                                                    "color": "#FF6B6B",
-                                                    "fontSize": "1.125rem",
-                                                    "fontWeight": "700",
+                                                    "display": "flex",
+                                                    "flexDirection": "row",
+                                                    "alignItems": "center",
+                                                    "justifyContent": "space-between",
                                                 },
                                                 children=[
-                                                    html.Div(
-                                                        html.Span("--", style={"color": "#999"}),
+                                                    html.Span(
+                                                        "📺 VMS Display boards",
                                                         style={
-                                                            "backgroundColor": "rgb(58, 74, 90)",
-                                                            "padding": "0.25rem 0.5rem",
-                                                            "borderRadius": "0.25rem",
+                                                            "color": "#fff",
+                                                            "fontWeight": "600",
+                                                            "fontSize": "0.8125rem"
                                                         }
-                                                    )
-                                                ]
-                                            ),
-                                        ]
-                                    ),
-                                ]
-                            ),
-                            # VMS card
-                            html.Div(
-                                id="vms-card",
-                                style={
-                                    "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "0.5rem",
-                                    "padding": "0.625rem",
-                                    "display": "flex",
-                                    "flexDirection": "column",
-                                    "gap": "0.5rem",
-                                },
-                                children=[
-                                    html.Div(
-                                        style={
-                                            "display": "flex",
-                                            "flexDirection": "row",
-                                            "alignItems": "center",
-                                            "justifyContent": "space-between",
-                                        },
-                                        children=[
-                                            html.Span(
-                                                "📺 VMS Display boards",
-                                                style={
-                                                    "color": "#fff",
-                                                    "fontWeight": "600",
-                                                    "fontSize": "0.8125rem"
-                                                }
-                                            ),
-                                            html.Div(
-                                                id="vms-count-value",
-                                                style={
-                                                    "color": "#C0C0C0",
-                                                    "fontSize": "1.125rem",
-                                                    "fontWeight": "700",
-                                                },
-                                                children=[
+                                                    ),
                                                     html.Div(
-                                                        html.Span("--", style={"color": "#999"}),
+                                                        id="vms-count-value",
                                                         style={
-                                                            "backgroundColor": "rgb(58, 74, 90)",
-                                                            "padding": "0.25rem 0.5rem",
-                                                            "borderRadius": "0.25rem",
-                                                        }
-                                                    )
+                                                            "color": "#C0C0C0",
+                                                            "fontSize": "1.125rem",
+                                                            "fontWeight": "700",
+                                                        },
+                                                        children=[
+                                                            html.Div(
+                                                                html.Span("--", style={"color": "#999"}),
+                                                                style={
+                                                                    "backgroundColor": "rgb(58, 74, 90)",
+                                                                    "padding": "0.25rem 0.5rem",
+                                                                    "borderRadius": "0.25rem",
+                                                                }
+                                                            )
+                                                        ]
+                                                    ),
                                                 ]
                                             ),
                                         ]
@@ -699,6 +721,183 @@ def transport_page():
                                             ),
                                         ]
                                     ),
+                                    # Traffic Incidents Legend overlay
+                                    html.Div(
+                                        id="traffic-incidents-legend",
+                                        style={
+                                            "position": "absolute",
+                                            "top": "0.625rem",
+                                            "right": "0.625rem",
+                                            "backgroundColor": "rgba(26, 42, 58, 0.9)",
+                                            "borderRadius": "0.5rem",
+                                            "padding": "0.625rem",
+                                            "zIndex": "1000",
+                                            "boxShadow": "0 0.125rem 0.5rem rgba(0, 0, 0, 0.3)",
+                                            "display": "none",  # Hidden by default, shown when traffic incidents toggle is on
+                                        },
+                                        children=[
+                                            html.Div(
+                                                style={
+                                                    "fontSize": "0.75rem",
+                                                    "fontWeight": "600",
+                                                    "color": "#fff",
+                                                    "marginBottom": "0.5rem",
+                                                    "borderBottom": "0.0625rem solid #4a5a6a",
+                                                    "paddingBottom": "0.25rem",
+                                                },
+                                                children="Traffic Incidents Legend"
+                                            ),
+                                            html.Div(
+                                                style={
+                                                    "display": "flex",
+                                                    "alignItems": "center",
+                                                    "marginBottom": "0.375rem",
+                                                },
+                                                children=[
+                                                    html.Div(
+                                                        style={
+                                                            "width": "1.5rem",
+                                                            "height": "1.5rem",
+                                                            "marginRight": "0.5rem",
+                                                            "display": "flex",
+                                                            "alignItems": "center",
+                                                            "justifyContent": "center",
+                                                        },
+                                                        children=html.Img(
+                                                            src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB4PSIyIiB5PSIyIiB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIGZpbGw9IiNEQzI2MjYiIHN0cm9rZT0iIzk5MUIxQiIgc3Ryb2tlLXdpZHRoPSIyIiByeD0iMiIvPjxsaW5lIHgxPSI2IiB5MT0iNiIgeDI9IjE4IiB5Mj0iMTgiIHN0cm9rZT0iI0ZGRkZGRiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iMTgiIHkxPSI2IiB4Mj0iNiIgeTI9IjE4IiBzdHJva2U9IiNGRkZGRkYiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHJlY3QgeD0iNCIgeT0iNCIgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2IiBmaWxsPSJub25lIiBzdHJva2U9IiNGRkZGRkYiIHN0cm9rZS13aWR0aD0iMS41IiByeD0iMSIvPjwvc3ZnPg==",
+                                                            style={"width": "1.5rem", "height": "1.5rem"}
+                                                        )
+                                                    ),
+                                                    html.Span(
+                                                        "Road Block",
+                                                        style={
+                                                            "color": "#fff",
+                                                            "fontSize": "0.6875rem",
+                                                        }
+                                                    ),
+                                                ]
+                                            ),
+                                            html.Div(
+                                                style={
+                                                    "display": "flex",
+                                                    "alignItems": "center",
+                                                    "marginBottom": "0.375rem",
+                                                },
+                                                children=[
+                                                    html.Div(
+                                                        style={
+                                                            "width": "1.25rem",
+                                                            "height": "1.75rem",
+                                                            "marginRight": "0.5rem",
+                                                            "display": "flex",
+                                                            "alignItems": "center",
+                                                            "justifyContent": "center",
+                                                        },
+                                                        children=html.Img(
+                                                            src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjgiIHZpZXdCb3g9IjAgMCAyMCAyOCIgZXhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTSAxMCAyIEwgMTggMjYgTCAyIDI2IFoiIGZpbGw9IiNGOTczMTYiIHN0cm9rZT0iI0VBNTgwQyIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48cGF0aCBkPSJNIDEwIDYgTCAxNiAyNCBMIDQgMjQgWiIgZmlsbD0iI0ZCOTIzQyIvPjxyZWN0IHg9IjYiIHk9IjEwIiB3aWR0aD0iOCIgaGVpZ2h0PSIyIiBmaWxsPSIjRkZGRkZGIiByeD0iMSIvPjxyZWN0IHg9IjYiIHk9IjE0IiB3aWR0aD0iOCIgaGVpZ2h0PSIyIiBmaWxsPSIjRkZGRkZGIiByeD0iMSIvPjxyZWN0IHg9IjYiIHk9IjE4IiB3aWR0aD0iOCIgaGVpZ2h0PSIyIiBmaWxsPSIjRkZGRkZGIiByeD0iMSIvPjxjaXJjbGUgY3g9IjEwIiBjeT0iMjgiIHI9IjIiIGZpbGw9IiMxRjI5MzciLz48L3N2Zz4=",
+                                                            style={"width": "1.25rem", "height": "1.75rem"}
+                                                        )
+                                                    ),
+                                                    html.Span(
+                                                        "Road Work",
+                                                        style={
+                                                            "color": "#fff",
+                                                            "fontSize": "0.6875rem",
+                                                        }
+                                                    ),
+                                                ]
+                                            ),
+                                            html.Div(
+                                                style={
+                                                    "display": "flex",
+                                                    "alignItems": "center",
+                                                    "marginBottom": "0.375rem",
+                                                },
+                                                children=[
+                                                    html.Div(
+                                                        style={
+                                                            "width": "1.5rem",
+                                                            "height": "1.5rem",
+                                                            "marginRight": "0.5rem",
+                                                            "display": "flex",
+                                                            "alignItems": "center",
+                                                            "justifyContent": "center",
+                                                        },
+                                                        children=html.Img(
+                                                            src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMSIgZmlsbD0iI0VGNjQ0NCIgc3Ryb2tlPSIjREMyNjI2IiBzdHJva2Utd2lkdGg9IjIiLz48cGF0aCBkPSJNIDYgMTQgTCA2IDE4IEwgMTggMTggTCAxOCAxNCBMIDE1IDEwIEwgOSAxMCBaIiBmaWxsPSIjRkZGRkZGIiBzdHJva2U9IiMxRjI5MzciIHN0cm9rZS13aWR0aD0iMS41Ii8+PGNpcmNsZSBjeD0iOSIgY3k9IjE4IiByPSIyIiBmaWxsPSIjMUYyOTM3Ii8+PGNpcmNsZSBjeD0iMTUiIGN5PSIxOCIgcj0iMiIgZmlsbD0iIzFGMjkzNyIvPjxwYXRoIGQ9Ik0gOCAxMCBMIDkgNyBMIDE1IDcgTCAxNiAxMCIgZmlsbD0iI0ZFRjNDNyIgc3Ryb2tlPSIjMUYyOTM3IiBzdHJva2Utd2lkdGg9IjEiLz48bGluZSB4MT0iMTIiIHkxPSI3IiB4Mj0iMTIiIHkyPSIxMCIgc3Ryb2tlPSIjREMyNjI2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxsaW5lIHgxPSIxMiIgeTE9IjUiIHgyPSIxMiIgeTI9IjMiIHN0cm9rZT0iI0ZGRkZGRiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiNGRkZGRkYiLz48L3N2Zz4=",
+                                                            style={"width": "1.5rem", "height": "1.5rem"}
+                                                        )
+                                                    ),
+                                                    html.Span(
+                                                        "Accident/Breakdown",
+                                                        style={
+                                                            "color": "#fff",
+                                                            "fontSize": "0.6875rem",
+                                                        }
+                                                    ),
+                                                ]
+                                            ),
+                                            html.Div(
+                                                style={
+                                                    "display": "flex",
+                                                    "alignItems": "center",
+                                                    "marginBottom": "0.375rem",
+                                                },
+                                                children=[
+                                                    html.Div(
+                                                        style={
+                                                            "width": "1.5rem",
+                                                            "height": "1.5rem",
+                                                            "marginRight": "0.5rem",
+                                                            "display": "flex",
+                                                            "alignItems": "center",
+                                                            "justifyContent": "center",
+                                                        },
+                                                        children=html.Img(
+                                                            src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNIDEyIDIgTCAyMiAyMCBMIDIgMjAgWiIgZmlsbD0iI0ZDRDM0RCIgc3Ryb2tlPSIjRjU5RTAwQiIgc3Ryb2tlLXdpZHRoPSIyIi8+PHBhdGggZD0iTSAxMiA2IEwgMTIgMTQiIHN0cm9rZT0iIzkyNDAwRSIgc3Ryb2tlLXdpZHRoPSIyLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTciIHI9IjEuNSIgZmlsbD0iIzkyNDAwRSIvPjwvc3ZnPg==",
+                                                            style={"width": "1.5rem", "height": "1.5rem"}
+                                                        )
+                                                    ),
+                                                    html.Span(
+                                                        "Other Incidents",
+                                                        style={
+                                                            "color": "#fff",
+                                                            "fontSize": "0.6875rem",
+                                                        }
+                                                    ),
+                                                ]
+                                            ),
+                                            html.Div(
+                                                style={
+                                                    "display": "flex",
+                                                    "alignItems": "center",
+                                                },
+                                                children=[
+                                                    html.Div(
+                                                        style={
+                                                            "width": "1.25rem",
+                                                            "height": "1.5rem",
+                                                            "marginRight": "0.5rem",
+                                                            "display": "flex",
+                                                            "alignItems": "center",
+                                                            "justifyContent": "center",
+                                                        },
+                                                        children=html.Img(
+                                                            src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyMCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB4PSI2IiB5PSIyIiB3aWR0aD0iOCIgaGVpZ2h0PSIxOCIgZmlsbD0iIzFGMjkzNyIgc3Ryb2tlPSIjMzc0MTUxIiBzdHJva2Utd2lkdGg9IjEuNSIgcng9IjEiLz48Y2lyY2xlIGN4PSIxMCIgY3k9IjciIHI9IjIuNSIgZmlsbD0iI0VGNjQ0NCIvPjxjaXJjbGUgY3g9IjEwIiBjeT0iMTIiIHI9IjIuNSIgZmlsbD0iI0ZDRDM0RCIvPjxjaXJjbGUgY3g9IjEwIiBjeT0iMTciIHI9IjIuNSIgZmlsbD0iIzEwQjk4MSIgZmlsbC1vcGFjaXR5PSIwLjMiLz48cmVjdCB4PSI4IiB5PSIyMCIgd2lkdGg9IjQiIGhlaWdodD0iMiIgZmlsbD0iIzFGMjkzNyIgcng9IjAuNSIvPjxsaW5lIHgxPSIxMCIgeTE9IjciIHgyPSIxMCIgeTI9IjciIHN0cm9rZT0iI0ZGRkZGRiIgc3Ryb2tlLXdpZHRoPSIxIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iMTAiIHkxPSIxMiIgeDI9IjEwIiB5Mj0iMTIiIHN0cm9rZT0iI0ZGRkZGRiIgc3Ryb2tlLXdpZHRoPSIxIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=",
+                                                            style={"width": "1.25rem", "height": "1.5rem"}
+                                                        )
+                                                    ),
+                                                    html.Span(
+                                                        "Faulty Traffic Lights",
+                                                        style={
+                                                            "color": "#fff",
+                                                            "fontSize": "0.6875rem",
+                                                        }
+                                                    ),
+                                                ]
+                                            ),
+                                        ]
+                                    ),
                                     # Bus Stop Zoom Message Overlay
                                     html.Div(
                                         id="bus-stop-zoom-message",
@@ -740,6 +939,59 @@ def transport_page():
                             "overflowY": "auto",
                         },
                         children=[
+                            # Train Service Alerts card
+                            html.Div(
+                                id="train-service-alerts-card",
+                                style={
+                                    "backgroundColor": "#4a5a6a",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
+                                    "display": "flex",
+                                    "flexDirection": "column",
+                                    "gap": "0.5rem",
+                                    "marginBottom": "0.9375rem",
+                                },
+                                children=[
+                                    html.Div(
+                                        style={
+                                            "display": "flex",
+                                            "flexDirection": "row",
+                                            "alignItems": "center",
+                                            "justifyContent": "space-between",
+                                        },
+                                        children=[
+                                            html.Span(
+                                                "🚇 Train Service Alerts",
+                                                style={
+                                                    "color": "#fff",
+                                                    "fontWeight": "600",
+                                                    "fontSize": "0.8125rem"
+                                                }
+                                            ),
+                                        ]
+                                    ),
+                                    html.Div(
+                                        id="train-service-alerts-content",
+                                        style={
+                                            "padding": "0.5rem",
+                                            "color": "#999",
+                                            "fontSize": "0.75rem",
+                                            "textAlign": "center",
+                                        },
+                                        children=[
+                                            html.P(
+                                                "All service running fine",
+                                                style={
+                                                    "margin": "0",
+                                                    "color": "#999",
+                                                    "fontSize": "0.75rem",
+                                                    "fontStyle": "italic",
+                                                }
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            ),
                             # Bus Arrival Information card
                             html.Div(
                                 id="bus-arrival-card",
@@ -814,6 +1066,9 @@ def transport_page():
                                         style={
                                             "maxHeight": "25rem",
                                             "overflowY": "auto",
+                                            "backgroundColor": "#3a4a5a",
+                                            "borderRadius": "0.25rem",
+                                            "padding": "0.5rem",
                                         },
                                         children=[
                                             html.P(
