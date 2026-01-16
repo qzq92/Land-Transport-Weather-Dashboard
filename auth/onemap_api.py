@@ -12,7 +12,6 @@ load_dotenv(override=True)
 
 # Token cache
 _token_cache: Optional[str] = None
-_token_expiry: float = 0.0
 _token_lock = False  # Simple flag to prevent concurrent token requests
 _original_api_key: Optional[str] = None  # Store original API key for token refresh
 
@@ -21,25 +20,16 @@ def get_onemap_token() -> Optional[str]:
     """
     Get a valid OneMap API access token, refreshing if necessary.
     
-    This function caches the token and automatically refreshes it when it expires.
-    The token is cached until expiry to minimize API calls.
-    
     Returns:
         Access token string, or None if token acquisition fails
     """
-    global _token_cache, _token_expiry, _token_lock
-    
-    # Check if we have a valid cached token (with 60 second buffer before expiry)
-    current_time = time.time()
-    if _token_cache and current_time < (_token_expiry - 60):
-        print("Received token_cache")
-        return _token_cache
+    global _token_cache, _token_lock
     
     # Prevent concurrent token requests
     if _token_lock:
         # Wait a bit and retry
         time.sleep(0.5)
-        if _token_cache and current_time < (_token_expiry - 60):
+        if _token_cache:
             print("Received token_cache from concurrent request")
             return _token_cache
         return None
@@ -92,23 +82,20 @@ def get_onemap_token() -> Optional[str]:
         response = requests.request(
             "POST",
             token_url,
-            json=payload
+            json=payload,
+            timeout=10
         )
         
         if response.status_code == 200:
             token_data = response.json()
             
-            # Extract token and expiry information
+            # Extract token
             access_token = token_data.get('access_token')
-            expiry_timestamp = token_data.get('expiry_timestamp')
 
-            #print(f"Access token: {access_token}")
-            #print(f"Expiry timestamp: {expiry_timestamp}")
-            
-            
             if access_token:
-                # Cache the token and calculate expiry time in unix seconds
+                # Cache the token
                 _token_cache = access_token
+                
                 # Save the access token to OS environment variable (not .env file)
                 # This sets it for the current process and all child processes
                 os.environ["ONEMAP_API_KEY"] = access_token
@@ -162,7 +149,6 @@ def clear_token_cache():
     Clear the cached token (useful for testing or forced refresh).
     Note: We keep _original_api_key so we can still refresh tokens.
     """
-    global _token_cache, _token_expiry
+    global _token_cache
     _token_cache = None
-    _token_expiry = 0.0
 
