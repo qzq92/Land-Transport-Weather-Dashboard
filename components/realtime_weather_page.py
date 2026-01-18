@@ -52,8 +52,8 @@ def realtime_weather_page():
                             "flex": "3",
                             "display": "flex",
                             "flexDirection": "column",
-                            "gap": "12px",
-                            "minWidth": "300px",
+                            "gap": "0.75rem",
+                            "minWidth": "18.75rem",
                         },
                         children=[
                             # Temperature readings card
@@ -61,11 +61,11 @@ def realtime_weather_page():
                                 id="temperature-readings-card",
                                 style={
                                     "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "8px",
-                                    "padding": "10px",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
-                                    "gap": "8px",
+                                    "gap": "0.5rem",
                                 },
                                 children=[
                                     html.Div(
@@ -81,7 +81,7 @@ def realtime_weather_page():
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
-                                                    "fontSize": "13px"
+                                                    "fontSize": "0.8125rem"
                                                 }
                                             ),
                                             html.Div(
@@ -89,7 +89,7 @@ def realtime_weather_page():
                                                 children=[
                                                     html.Span("Loading...", style={
                                                         "color": "#999",
-                                                        "fontSize": "12px"
+                                                        "fontSize": "0.75rem"
                                                     })
                                                 ],
                                             ),
@@ -100,9 +100,9 @@ def realtime_weather_page():
                                         style={
                                             "display": "none",
                                             "backgroundColor": "#3a4a5a",
-                                            "borderRadius": "5px",
-                                            "padding": "10px",
-                                            "maxHeight": "200px",
+                                            "borderRadius": "0.3125rem",
+                                            "padding": "0.625rem",
+                                            "maxHeight": "12.5rem",
                                             "overflowY": "auto",
                                         },
                                         children=[
@@ -122,11 +122,11 @@ def realtime_weather_page():
                                 id="rainfall-readings-card",
                                 style={
                                     "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "8px",
-                                    "padding": "10px",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
-                                    "gap": "8px",
+                                    "gap": "0.5rem",
                                 },
                                 children=[
                                     html.Div(
@@ -142,7 +142,7 @@ def realtime_weather_page():
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
-                                                    "fontSize": "13px"
+                                                    "fontSize": "0.8125rem"
                                                 }
                                             ),
                                             html.Div(
@@ -150,7 +150,7 @@ def realtime_weather_page():
                                                 children=[
                                                     html.Span("Loading...", style={
                                                         "color": "#999",
-                                                        "fontSize": "12px"
+                                                        "fontSize": "0.75rem"
                                                     })
                                                 ],
                                             ),
@@ -161,9 +161,9 @@ def realtime_weather_page():
                                         style={
                                             "display": "none",
                                             "backgroundColor": "#3a4a5a",
-                                            "borderRadius": "5px",
-                                            "padding": "10px",
-                                            "maxHeight": "200px",
+                                            "borderRadius": "0.3125rem",
+                                            "padding": "0.625rem",
+                                            "maxHeight": "12.5rem",
                                             "overflowY": "auto",
                                         },
                                         children=[
@@ -183,11 +183,11 @@ def realtime_weather_page():
                                 id="humidity-readings-card",
                                 style={
                                     "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "8px",
-                                    "padding": "10px",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
-                                    "gap": "8px",
+                                    "gap": "0.5rem",
                                 },
                                 children=[
                                     html.Div(
@@ -203,7 +203,7 @@ def realtime_weather_page():
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
-                                                    "fontSize": "13px"
+                                                    "fontSize": "0.8125rem"
                                                 }
                                             ),
                                             html.Div(
@@ -211,7 +211,7 @@ def realtime_weather_page():
                                                 children=[
                                                     html.Span("Loading...", style={
                                                         "color": "#999",
-                                                        "fontSize": "12px"
+                                                        "fontSize": "0.75rem"
                                                     })
                                                 ],
                                             ),
@@ -222,9 +222,9 @@ def realtime_weather_page():
                                         style={
                                             "display": "none",
                                             "backgroundColor": "#3a4a5a",
-                                            "borderRadius": "5px",
-                                            "padding": "10px",
-                                            "maxHeight": "200px",
+                                            "borderRadius": "0.3125rem",
+                                            "padding": "0.625rem",
+                                            "maxHeight": "12.5rem",
                                             "overflowY": "auto",
                                         },
                                         children=[
@@ -244,11 +244,11 @@ def realtime_weather_page():
                                 id="wind-readings-card",
                                 style={
                                     "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "8px",
-                                    "padding": "10px",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
-                                    "gap": "8px",
+                                    "gap": "0.5rem",
                                 },
                                 children=[
                                     html.Div(
@@ -264,7 +264,7 @@ def realtime_weather_page():
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
-                                                    "fontSize": "13px"
+                                                    "fontSize": "0.8125rem"
                                                 }
                                             ),
                                             html.Div(
@@ -272,7 +272,7 @@ def realtime_weather_page():
                                                 children=[
                                                     html.Span("Loading...", style={
                                                         "color": "#999",
-                                                        "fontSize": "12px"
+                                                        "fontSize": "0.75rem"
                                                     })
                                                 ],
                                             ),
@@ -283,9 +283,9 @@ def realtime_weather_page():
                                         style={
                                             "display": "none",
                                             "backgroundColor": "#3a4a5a",
-                                            "borderRadius": "5px",
-                                            "padding": "10px",
-                                            "maxHeight": "200px",
+                                            "borderRadius": "0.3125rem",
+                                            "padding": "0.625rem",
+                                            "maxHeight": "12.5rem",
                                             "overflowY": "auto",
                                         },
                                         children=[
@@ -305,11 +305,11 @@ def realtime_weather_page():
                                 id="lightning-readings-card",
                                 style={
                                     "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "8px",
-                                    "padding": "10px",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
-                                    "gap": "8px",
+                                    "gap": "0.5rem",
                                 },
                                 children=[
                                     html.Div(
@@ -325,7 +325,7 @@ def realtime_weather_page():
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
-                                                    "fontSize": "13px"
+                                                    "fontSize": "0.8125rem"
                                                 }
                                             ),
                                             html.Div(
@@ -333,7 +333,7 @@ def realtime_weather_page():
                                                 children=[
                                                     html.Span("Loading...", style={
                                                         "color": "#999",
-                                                        "fontSize": "12px"
+                                                        "fontSize": "0.75rem"
                                                     })
                                                 ],
                                             ),
@@ -344,9 +344,9 @@ def realtime_weather_page():
                                         style={
                                             "display": "none",
                                             "backgroundColor": "#3a4a5a",
-                                            "borderRadius": "5px",
-                                            "padding": "10px",
-                                            "maxHeight": "200px",
+                                            "borderRadius": "0.3125rem",
+                                            "padding": "0.625rem",
+                                            "maxHeight": "12.5rem",
                                             "overflowY": "auto",
                                         },
                                         children=[
@@ -366,11 +366,11 @@ def realtime_weather_page():
                                 id="flood-readings-card",
                                 style={
                                     "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "8px",
-                                    "padding": "10px",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
-                                    "gap": "8px",
+                                    "gap": "0.5rem",
                                 },
                                 children=[
                                     html.Div(
@@ -386,7 +386,7 @@ def realtime_weather_page():
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
-                                                    "fontSize": "13px"
+                                                    "fontSize": "0.8125rem"
                                                 }
                                             ),
                                             html.Div(
@@ -394,7 +394,7 @@ def realtime_weather_page():
                                                 children=[
                                                     html.Span("Loading...", style={
                                                         "color": "#999",
-                                                        "fontSize": "12px"
+                                                        "fontSize": "0.75rem"
                                                     })
                                                 ],
                                             ),
@@ -405,9 +405,9 @@ def realtime_weather_page():
                                         style={
                                             "display": "none",
                                             "backgroundColor": "#3a4a5a",
-                                            "borderRadius": "5px",
-                                            "padding": "10px",
-                                            "maxHeight": "200px",
+                                            "borderRadius": "0.3125rem",
+                                            "padding": "0.625rem",
+                                            "maxHeight": "12.5rem",
                                             "overflowY": "auto",
                                         },
                                         children=[
@@ -427,11 +427,11 @@ def realtime_weather_page():
                                 id="wbgt-readings-card",
                                 style={
                                     "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "8px",
-                                    "padding": "10px",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
-                                    "gap": "8px",
+                                    "gap": "0.5rem",
                                 },
                                 children=[
                                     html.Div(
@@ -447,7 +447,7 @@ def realtime_weather_page():
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
-                                                    "fontSize": "13px"
+                                                    "fontSize": "0.8125rem"
                                                 }
                                             ),
                                             html.Div(
@@ -455,7 +455,7 @@ def realtime_weather_page():
                                                 children=[
                                                     html.Span("Loading...", style={
                                                         "color": "#999",
-                                                        "fontSize": "12px"
+                                                        "fontSize": "0.75rem"
                                                     })
                                                 ],
                                             ),
@@ -466,9 +466,9 @@ def realtime_weather_page():
                                         style={
                                             "display": "none",
                                             "backgroundColor": "#3a4a5a",
-                                            "borderRadius": "5px",
-                                            "padding": "10px",
-                                            "maxHeight": "200px",
+                                            "borderRadius": "0.3125rem",
+                                            "padding": "0.625rem",
+                                            "maxHeight": "12.5rem",
                                             "overflowY": "auto",
                                         },
                                         children=[
@@ -520,7 +520,7 @@ def realtime_weather_page():
                                                 style={
                                                     "display": "flex",
                                                     "alignItems": "center",
-                                                    "gap": "8px",
+                                                    "gap": "0.5rem",
                                                     "flexWrap": "wrap",
                                                 },
                                                 children=[
@@ -535,7 +535,7 @@ def realtime_weather_page():
                                                             "backgroundColor": "transparent",
                                                             "color": "#FF9800",
                                                             "cursor": "pointer",
-                                                            "fontSize": "12px",
+                                                            "fontSize": "0.75rem",
                                                             "fontWeight": "600",
                                                         }
                                                     ),
@@ -550,7 +550,7 @@ def realtime_weather_page():
                                                             "backgroundColor": "transparent",
                                                             "color": "#2196F3",
                                                             "cursor": "pointer",
-                                                            "fontSize": "12px",
+                                                            "fontSize": "0.75rem",
                                                             "fontWeight": "600",
                                                         }
                                                     ),
@@ -565,7 +565,7 @@ def realtime_weather_page():
                                                             "backgroundColor": "transparent",
                                                             "color": "#00BCD4",
                                                             "cursor": "pointer",
-                                                            "fontSize": "12px",
+                                                            "fontSize": "0.75rem",
                                                             "fontWeight": "600",
                                                         }
                                                     ),
@@ -580,7 +580,7 @@ def realtime_weather_page():
                                                             "backgroundColor": "transparent",
                                                             "color": "#4CAF50",
                                                             "cursor": "pointer",
-                                                            "fontSize": "12px",
+                                                            "fontSize": "0.75rem",
                                                             "fontWeight": "600",
                                                         }
                                                     ),
@@ -595,7 +595,7 @@ def realtime_weather_page():
                                                             "backgroundColor": "transparent",
                                                             "color": "#FFD700",
                                                             "cursor": "pointer",
-                                                            "fontSize": "12px",
+                                                            "fontSize": "0.75rem",
                                                             "fontWeight": "600",
                                                         }
                                                     ),
@@ -610,7 +610,7 @@ def realtime_weather_page():
                                                             "backgroundColor": "transparent",
                                                             "color": "#ff6b6b",
                                                             "cursor": "pointer",
-                                                            "fontSize": "12px",
+                                                            "fontSize": "0.75rem",
                                                             "fontWeight": "600",
                                                         }
                                                     ),
@@ -625,7 +625,7 @@ def realtime_weather_page():
                                                             "backgroundColor": "transparent",
                                                             "color": "#fff",
                                                             "cursor": "pointer",
-                                                            "fontSize": "12px",
+                                                            "fontSize": "0.75rem",
                                                             "fontWeight": "600",
                                                         }
                                                     ),

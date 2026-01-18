@@ -2,30 +2,30 @@ from dash import html, dcc
 
 # Glossy tab styling
 TAB_STYLE = {
-    "padding": "0.75rem 1.5rem",
+    "padding": "0.375rem 0.875rem",
     "background": "linear-gradient(180deg, #1a1a1a 0%, #808080 100%)",
     "border": "none",
-    "borderRadius": "0.5rem",
+    "borderRadius": "0.375rem",
     "color": "#ffffff",
     "fontWeight": "500",
-    "fontSize": "0.875rem",
+    "fontSize": "0.75rem",
     "cursor": "pointer",
     "transition": "all 0.3s ease",
-    "marginRight": "0.5rem",
+    "marginRight": "0.375rem",
     "boxShadow": "0 0.125rem 0.25rem rgba(0, 0, 0, 0.3)",
 }
 
 TAB_SELECTED_STYLE = {
-    "padding": "0.75rem 1.5rem",
+    "padding": "0.375rem 0.875rem",
     "background": "linear-gradient(180deg, #667eea 0%, #764ba2 100%)",
     "border": "none",
-    "borderRadius": "0.5rem",
+    "borderRadius": "0.375rem",
     "color": "#ffffff",
     "fontWeight": "600",
-    "fontSize": "0.875rem",
+    "fontSize": "0.75rem",
     "boxShadow": "0 0.25rem 0.9375rem rgba(102, 126, 234, 0.4)",
     "cursor": "pointer",
-    "marginRight": "0.5rem",
+    "marginRight": "0.375rem",
 }
 
 
@@ -60,7 +60,7 @@ def build_dashboard_banner():
                             selected_style=TAB_SELECTED_STYLE,
                         ),
                         dcc.Tab(
-                            label="🚦 Road & Transport",
+                            label="🚦 Road & Transport Information",
                             value="transport",
                             style=TAB_STYLE,
                             selected_style=TAB_SELECTED_STYLE,
@@ -82,7 +82,7 @@ def build_dashboard_banner():
                     "display": "flex",
                     "justifyContent": "center",
                     "alignItems": "center",
-                    "padding": "0.625rem 0",
+                    "padding": "0.375rem 0",
                 }
             ),
         ],

@@ -495,7 +495,7 @@ def transport_page():
                                         style={
                                             "backgroundColor": "transparent",
                                             "border": "0.125rem solid #FFD700",
-                                            "borderRadius": "4px",
+                                            "borderRadius": "0.25rem",
                                             "color": "#FFD700",
                                             "cursor": "pointer",
                                             "padding": "0.25rem 0.625rem",
@@ -510,7 +510,7 @@ def transport_page():
                                         style={
                                             "backgroundColor": "transparent",
                                             "border": "0.125rem solid #4CAF50",
-                                            "borderRadius": "4px",
+                                            "borderRadius": "0.25rem",
                                             "color": "#4CAF50",
                                             "cursor": "pointer",
                                             "padding": "0.25rem 0.625rem",
@@ -525,7 +525,7 @@ def transport_page():
                                         style={
                                             "backgroundColor": "transparent",
                                             "border": "0.125rem solid #FF6B6B",
-                                            "borderRadius": "4px",
+                                            "borderRadius": "0.25rem",
                                             "color": "#FF6B6B",
                                             "cursor": "pointer",
                                             "padding": "0.25rem 0.625rem",
@@ -540,7 +540,7 @@ def transport_page():
                                         style={
                                             "backgroundColor": "transparent",
                                             "border": "0.125rem solid #FF9800",
-                                            "borderRadius": "4px",
+                                            "borderRadius": "0.25rem",
                                             "color": "#FF9800",
                                             "cursor": "pointer",
                                             "padding": "0.25rem 0.625rem",
@@ -555,7 +555,7 @@ def transport_page():
                                         style={
                                             "backgroundColor": "transparent",
                                             "border": "0.125rem solid #C0C0C0",
-                                            "borderRadius": "4px",
+                                            "borderRadius": "0.25rem",
                                             "color": "#C0C0C0",
                                             "cursor": "pointer",
                                             "padding": "0.25rem 0.625rem",
@@ -570,7 +570,7 @@ def transport_page():
                                         style={
                                             "backgroundColor": "transparent",
                                             "border": "0.125rem solid #81C784",
-                                            "borderRadius": "4px",
+                                            "borderRadius": "0.25rem",
                                             "color": "#81C784",
                                             "cursor": "pointer",
                                             "padding": "0.25rem 0.625rem",
@@ -585,7 +585,7 @@ def transport_page():
                                         style={
                                             "backgroundColor": "transparent",
                                             "border": "0.125rem solid #4169E1",
-                                            "borderRadius": "4px",
+                                            "borderRadius": "0.25rem",
                                             "color": "#4169E1",
                                             "cursor": "pointer",
                                             "padding": "0.25rem 0.625rem",
@@ -903,7 +903,7 @@ def transport_page():
                                             "backgroundColor": "rgba(0, 0, 0, 0.8)",
                                             "color": "#fbbf24",
                                             "padding": "1rem 2rem",
-                                            "borderRadius": "8px",
+                                            "borderRadius": "0.5rem",
                                             "zIndex": "1000",
                                             "textAlign": "center",
                                             "display": "none",
@@ -919,7 +919,7 @@ def transport_page():
                     ),
                     # Right side: MRT Line Operational Details
                     html.Div(
-                        id="mrt-operational-details-panel",
+                        id="train-advisory-bus-arrival-service-search-panel",
                         style={
                             "flex": "1",
                             "minWidth": "18.75rem",
@@ -938,11 +938,13 @@ def transport_page():
                                 style={
                                     "backgroundColor": "#4a5a6a",
                                     "borderRadius": "0.5rem",
-                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
                                     "gap": "0.5rem",
                                     "marginBottom": "0.9375rem",
+                                    "flex": "3",
+                                    "minHeight": "0",
+                                    "overflow": "hidden",
                                 },
                                 children=[
                                     html.Div(
@@ -991,11 +993,13 @@ def transport_page():
                                 style={
                                     "backgroundColor": "#4a5a6a",
                                     "borderRadius": "0.5rem",
-                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
                                     "gap": "0.5rem",
                                     "marginBottom": "0.9375rem",
+                                    "flex": "3",
+                                    "minHeight": "0",
+                                    "overflow": "hidden",
                                 },
                                 children=[
                                     html.Div(
@@ -1026,10 +1030,9 @@ def transport_page():
                                             dcc.Input(
                                                 id="bus-stop-search-input",
                                                 type="text",
-                                                placeholder="Enter 5-digit bus stop code",
+                                                placeholder="Enter 5-digit bus stop code/click on bus stop location on map",
                                                 style={
                                                     "flex": "1",
-                                                    "padding": "0.375rem 0.5rem",
                                                     "borderRadius": "0.25rem",
                                                     "border": "0.0625rem solid #5a6a7a",
                                                     "backgroundColor": "rgb(58, 74, 90)",
@@ -1062,19 +1065,9 @@ def transport_page():
                                             "backgroundColor": "#3a4a5a",
                                             "borderRadius": "0.25rem",
                                             "padding": "0.5rem",
+                                            "display": "none",
                                         },
-                                        children=[
-                                            html.P(
-                                                "Click on a bus stop marker or search to view bus arrival times",
-                                                style={
-                                                    "color": "#999",
-                                                    "textAlign": "center",
-                                                    "fontSize": "0.75rem",
-                                                    "fontStyle": "italic",
-                                                    "margin": "0.5rem 0",
-                                                }
-                                            )
-                                        ]
+                                        children=[]
                                     ),
                                 ]
                             ),
@@ -1084,11 +1077,13 @@ def transport_page():
                                 style={
                                     "backgroundColor": "#4a5a6a",
                                     "borderRadius": "0.5rem",
-                                    "padding": "0.625rem",
                                     "display": "flex",
                                     "flexDirection": "column",
                                     "gap": "0.5rem",
                                     "marginBottom": "0.9375rem",
+                                    "flex": "4",
+                                    "minHeight": "0",
+                                    "overflow": "hidden",
                                 },
                                 children=[
                                     html.Div(
@@ -1123,7 +1118,7 @@ def transport_page():
                                                 style={
                                                     "flex": "1",
                                                     "padding": "0.375rem 0.5rem",
-                                                    "borderRadius": "4px",
+                                                    "borderRadius": "0.25rem",
                                                     "border": "0.0625rem solid #5a6a7a",
                                                     "backgroundColor": "rgb(58, 74, 90)",
                                                     "color": "#fff",
@@ -1139,7 +1134,7 @@ def transport_page():
                                                     "backgroundColor": "#4169E1",
                                                     "color": "#fff",
                                                     "border": "none",
-                                                    "borderRadius": "4px",
+                                                    "borderRadius": "0.25rem",
                                                     "cursor": "pointer",
                                                     "fontSize": "0.75rem",
                                                     "fontWeight": "600",
