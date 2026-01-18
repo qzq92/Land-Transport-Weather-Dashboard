@@ -1716,24 +1716,19 @@ def register_weather_indices_callbacks(app):
         return format_main_page_taxi_count(data)
 
     @app.callback(
-        Output('dengue-count-content', 'children'),
+        Output('disease-clusters-indicator', 'children'),
         Input('interval-component', 'n_intervals')
     )
-    def update_main_page_dengue_count(_n_intervals):
-        """Update Dengue cluster count display on main page."""
-        future = fetch_dengue_cluster_data_async()
-        data = future.result(timeout=30)
-        return format_main_page_dengue_count(data)
-
-    @app.callback(
-        Output('zika-count-content', 'children'),
-        Input('interval-component', 'n_intervals')
-    )
-    def update_main_page_zika_count(_n_intervals):
-        """Update Zika cluster count display on main page."""
-        future = fetch_zika_cluster_data_async()
-        data = future.result(timeout=30)
-        return format_main_page_zika_count(data)
+    def update_main_page_disease_clusters(_n_intervals):
+        """Update disease clusters display on main page with responsive layout."""
+        # Fetch both dengue and zika data
+        future_dengue = fetch_dengue_cluster_data_async()
+        future_zika = fetch_zika_cluster_data_async()
+        
+        dengue_data = future_dengue.result(timeout=30)
+        zika_data = future_zika.result(timeout=30)
+        
+        return format_main_page_disease_clusters(dengue_data, zika_data)
 
     @app.callback(
         Output('main-psi-markers', 'children'),
@@ -1884,6 +1879,99 @@ def format_main_page_zika_count(data):
     )
     zika_card.children[0].children[1].children = [create_metric_value_display(str(cluster_count), color="#ff0000")]
     return zika_card
+
+
+def format_main_page_disease_clusters(dengue_data, zika_data):
+    """
+    Format disease clusters (Dengue and Zika) for main page display with responsive layout.
+    
+    Args:
+        dengue_data: API response with Dengue cluster data (FeatureCollection format)
+        zika_data: API response with Zika cluster data (FeatureCollection format)
+    
+    Returns:
+        HTML Div with disease cluster counts in responsive grid layout
+    """
+    from components.metric_card import create_metric_card
+    
+    # Helper function to count clusters from data
+    def count_clusters(data):
+        if not data:
+            return 0
+        features = []
+        if isinstance(data, dict):
+            if 'features' in data:
+                features = data['features']
+            elif 'data' in data and 'records' in data['data']:
+                features = data['data']['records']
+            elif 'records' in data:
+                features = data['records']
+            elif 'result' in data and 'records' in data['result']:
+                features = data['result']['records']
+        return len(features) if features else 0
+    
+    # Count clusters for each type
+    dengue_count = count_clusters(dengue_data)
+    zika_count = count_clusters(zika_data)
+    
+    # Create metric cards for types with count > 0
+    metric_cards = []
+    
+    if dengue_count > 0:
+        dengue_card = create_metric_card(
+            card_id="dengue-cluster-card",
+            label="🦟 Dengue",
+            value_id="dengue-count-value",
+            initial_value=str(dengue_count)
+        )
+        dengue_card.children[0].children[1].children = [create_metric_value_display(str(dengue_count), color="#ff0000")]
+        metric_cards.append(dengue_card)
+    
+    if zika_count > 0:
+        zika_card = create_metric_card(
+            card_id="zika-cluster-card",
+            label="🦠 Zika",
+            value_id="zika-count-value",
+            initial_value=str(zika_count)
+        )
+        zika_card.children[0].children[1].children = [create_metric_value_display(str(zika_count), color="#ff0000")]
+        metric_cards.append(zika_card)
+    
+    # If no clusters, show a message
+    if not metric_cards:
+        return html.Div(
+            html.P(
+                "No active disease clusters",
+                style={
+                    "fontSize": "0.75rem",
+                    "color": "#999",
+                    "textAlign": "center",
+                    "margin": "0",
+                    "fontStyle": "italic",
+                }
+            )
+        )
+    
+    # Determine number of distinct disease types
+    total_types = len(metric_cards)
+    
+    # Set grid layout based on number of types
+    if total_types == 2:
+        # 2 types: 2-column display
+        grid_columns = "repeat(2, 1fr)"
+    else:
+        # 1 type: 1 full column display
+        grid_columns = "1fr"
+    
+    # Return container with metric cards in responsive grid layout
+    return html.Div(
+        metric_cards,
+        style={
+            "display": "grid",
+            "gridTemplateColumns": grid_columns,
+            "gap": "0.5rem",
+        }
+    )
 
 
 def format_main_page_dengue_count(data):

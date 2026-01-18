@@ -1733,12 +1733,26 @@ def format_traffic_incidents_indicator(data, faulty_lights_data=None):
             )
         )
     
-    # Return container with metric cards in 3-column grid layout
+    # Determine number of distinct incident types (including faulty traffic lights)
+    total_incident_types = len(metric_cards)
+    
+    # Set grid layout based on number of incident types
+    if total_incident_types >= 3:
+        # 3+ incident types: 3-column display
+        grid_columns = "repeat(3, 1fr)"
+    elif total_incident_types == 2:
+        # 2 incident types: 2-column display
+        grid_columns = "repeat(2, 1fr)"
+    else:
+        # 1 incident type: 1 full column display
+        grid_columns = "1fr"
+    
+    # Return container with metric cards in responsive grid layout
     return html.Div(
         metric_cards,
         style={
             "display": "grid",
-            "gridTemplateColumns": "repeat(3, 1fr)",
+            "gridTemplateColumns": grid_columns,
             "gap": "0.5rem",
         }
     )

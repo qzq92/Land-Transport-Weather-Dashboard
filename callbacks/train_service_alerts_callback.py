@@ -6,6 +6,7 @@ import os
 from collections import defaultdict
 from dash import Input, Output, html
 from utils.async_fetcher import fetch_url_2min_cached, _executor
+from conf.mrt_line_config import MRT_LINES, LRT_LINES, ALL_TRAIN_LINES, LINE_INFO_MAP
 
 
 TRAIN_SERVICE_ALERTS_URL = "https://datamall2.mytransport.sg/ltaodataservice/TrainServiceAlerts"
@@ -63,88 +64,39 @@ def format_train_service_alerts(data):
     Returns:
         HTML elements for displaying the alerts
     """
-    if not data:
+    if not data or not isinstance(data, dict):
         return html.P("Unable to fetch train service alerts", style={
             "color": "#999",
             "fontSize": "0.75rem"
         })
     
-    # Check status attribute - could be at top level or in value array
-    status = None
+    # Get the value object if it exists (new format)
+    inner_data = data.get("value", data) if isinstance(data.get("value"), dict) else data
     
-    # First check if status is at top level
-    if "Status" in data:
-        status = data.get("Status")
-    elif "status" in data:
-        status = data.get("status")
-    # Otherwise check in value array
-    elif "value" in data:
-        alerts = data.get("value", [])
-        if alerts and isinstance(alerts, list) and len(alerts) > 0:
-            # Check first alert for status
-            first_alert = alerts[0]
-            if isinstance(first_alert, dict):
-                status = first_alert.get("Status", first_alert.get("status"))
+    # Get status from inner data
+    status = inner_data.get("Status", inner_data.get("status", 1))
     
-    # If status is 1, all services are operational
+    # Get messages from inner data
+    messages = inner_data.get("Message", inner_data.get("message", []))
+    
+    # If status is 1, check for messages
     if status == 1:
+        if messages and len(messages) > 0:
+            return html.P("Refer a Road & Transport tab for further advisory/information", style={
+                "color": "#4CAF50",
+                "fontSize": "0.75rem",
+                "fontWeight": "600"
+            })
+            
         return html.P("All train services are operational", style={
             "color": "#4CAF50",
             "fontSize": "0.75rem",
             "fontWeight": "600"
         })
     
-    # If status is 2, extract line, direction, and stations
-    if status == 2:
-        # Extract from top level or from value array
-        line = data.get("Line", data.get("line", ""))
-        direction = data.get("Direction", data.get("direction", ""))
-        stations = data.get("Stations", data.get("stations", ""))
-        
-        # If not at top level, check value array
-        if not line and "value" in data:
-            alerts = data.get("value", [])
-            if alerts and isinstance(alerts, list) and len(alerts) > 0:
-                first_alert = alerts[0]
-                if isinstance(first_alert, dict):
-                    line = first_alert.get("Line", first_alert.get("line", ""))
-                    direction = first_alert.get("Direction", first_alert.get("direction", ""))
-                    stations = first_alert.get("Stations", first_alert.get("stations", ""))
-        
-        # Format the alert
-        alert_text_parts = []
-        if line:
-            alert_text_parts.append(f"Line: {line}")
-        if direction:
-            alert_text_parts.append(f"Direction: {direction}")
-        if stations:
-            alert_text_parts.append(f"Stations: {stations}")
-        
-        if alert_text_parts:
-            alert_text = " | ".join(alert_text_parts)
-            return html.Div(
-                style={
-                    "padding": "0.5rem",
-                    "backgroundColor": "#3a4a5a",
-                    "borderRadius": "4px",
-                    "borderLeft": "3px solid #ff4444"
-                },
-                children=[
-                    html.P(
-                        alert_text,
-                        style={
-                            "color": "#ff6666",
-                            "fontSize": "0.75rem",
-                            "margin": "0",
-                            "fontWeight": "500"
-                        }
-                    )
-                ]
-            )
-    
-    # Default case: indicating unable to retrieve alerts
-    return html.P("Unknown service status from source API", style={
-        "color": "#808080",
+    # If status is not 1, show referral message in red
+    return html.P("Refer a Road & Transport tab for further advisory/information", style={
+        "color": "#ff4444",
         "fontSize": "0.75rem",
         "fontWeight": "600"
     })
@@ -161,47 +113,56 @@ def format_mrt_line_operational_details(data):
     Returns:
         HTML elements displaying operational status for each MRT line
     """
-    # Singapore MRT lines with official colors
-    mrt_lines = [
-        {"code": "NSL", "name": "North South Line", "color": "#E31937"},
-        {"code": "EWL", "name": "East West Line", "color": "#009645"},
-        {"code": "CCL", "name": "Circle Line", "color": "#FF8C00"},
-        {"code": "DTL", "name": "Downtown Line", "color": "#005EC4"},
-        {"code": "NEL", "name": "North East Line", "color": "#9900AA"},
-        {"code": "TEL", "name": "Thomson-East Coast Line", "color": "#9D5B25"},
-    ]
-    
-    # LRT lines (all share grey color)
-    lrt_lines = [
-        {"code": "PGL", "name": "Punggol LRT", "color": "#808080"},
-        {"code": "SKL", "name": "Sengkang LRT", "color": "#808080"},
-        {"code": "BPL", "name": "Bukit Panjang LRT", "color": "#808080"},
-    ]
-    
-    # Extract alerts from API response
-    alerts = []
-    if data and isinstance(data, dict):
-        if "value" in data:
-            alerts = data.get("value", [])
-        elif isinstance(data, list):
-            alerts = data
+    # Use MRT and LRT lines from config
+    mrt_lines = MRT_LINES
+    lrt_lines = LRT_LINES
     
     # Create a mapping of all lines with their status and details
     line_status_map = {}
-    for alert in alerts:
-        if isinstance(alert, dict):
-            line = alert.get("Line", alert.get("line", ""))
-            status = alert.get("Status", alert.get("status", 1))
+    
+    # Get the value object if it exists (new format)
+    inner_data = data.get("value", data) if isinstance(data, dict) and isinstance(data.get("value"), dict) else (data if isinstance(data, dict) else {})
+    
+    # 1. Get status from inner data
+    status = inner_data.get("Status", inner_data.get("status", 1))
+    
+    # 2. Check AffectedSegments for status != 1 (disruptions)
+    segments = inner_data.get("AffectedSegments", inner_data.get("affected_segments", []))
+    for segment in segments:
+        if isinstance(segment, dict):
+            line = segment.get("Line", segment.get("line", ""))
             if line:
                 line_upper = line.upper()
-                # Store status and details for each line
-                # If multiple alerts for same line, keep the one with status != 1 (prioritize disruptions)
-                if line_upper not in line_status_map or status != 1:
-                    line_status_map[line_upper] = {
-                        "status": status,
-                        "direction": alert.get("Direction", alert.get("direction", "")),
-                        "stations": alert.get("Stations", alert.get("stations", ""))
-                    }
+                line_status_map[line_upper] = {
+                    "status": status,
+                    "direction": segment.get("Direction", segment.get("direction", "")),
+                    "stations": segment.get("Stations", segment.get("stations", "")),
+                    "has_message": False
+                }
+
+    # 3. Check Message list for advisories
+    messages = inner_data.get("Message", inner_data.get("message", []))
+    for msg_obj in messages:
+        if isinstance(msg_obj, dict):
+            content = msg_obj.get("Content", msg_obj.get("content", ""))
+            if content:
+                # Search for line codes in the message content
+                for line_info in ALL_TRAIN_LINES:
+                    code = line_info["code"]
+                    # Match if -CODE- or CODE surrounded by space/start/end
+                    upper_content = content.upper()
+                    if (f"-{code}-" in upper_content or 
+                        f" {code} " in upper_content or 
+                        upper_content.endswith(f" {code}") or
+                        upper_content.startswith(f"{code} ")):
+                        line_upper = code.upper()
+                        if line_upper not in line_status_map:
+                            line_status_map[line_upper] = {
+                                "status": status,
+                                "has_message": True
+                            }
+                        else:
+                            line_status_map[line_upper]["has_message"] = True
     
     # Helper function to create line status display
     def create_line_status_display(line_info, line_status_dict):
@@ -209,32 +170,32 @@ def format_mrt_line_operational_details(data):
         line_name = line_info["name"]
         line_color = line_info["color"]
         
-        # Get status for this line (check exact match first, then partial match)
-        line_status_info = None
-        if line_code in line_status_dict:
-            line_status_info = line_status_dict[line_code]
-        else:
-            # Check for partial match (e.g., "NSL" in "NSL1", "NSL2")
-            for line_key, status_info in line_status_dict.items():
-                if line_code in line_key or line_key in line_code:
-                    line_status_info = status_info
-                    break
+        # Get status for this line
+        line_status_info = line_status_dict.get(line_code)
         
-        # Determine status: Normal only if status == 1, otherwise show referral message
+        # Determine status display
         if line_status_info:
             status_value = line_status_info.get("status", 1)
+            has_message = line_status_info.get("has_message", False)
+            
             if status_value == 1:
-                # Normal service
-                border_color = line_color
-                detail_text = "Normal"
-                detail_text_color = "#4CAF50"
+                if has_message:
+                    # Normal service with message (Normal*)
+                    border_color = "#ff4444"
+                    detail_text = "Normal*"
+                    detail_text_color = "#4CAF50"
+                else:
+                    # Normal service
+                    border_color = line_color
+                    detail_text = "Normal"
+                    detail_text_color = "#4CAF50"
             else:
                 # Disrupted/Delays (status != 1) - show referral message
                 border_color = "#ff4444"
-                detail_text = "Refer to Road & Transport tab for more information"
+                detail_text = "Refer a Road & Transport tab for further advisory/information"
                 detail_text_color = "#ff4444"
         else:
-            # No alert data for this line - assume normal (status 1)
+            # No alert data for this line - assume normal
             border_color = line_color
             detail_text = "Normal"
             detail_text_color = "#4CAF50"
@@ -348,64 +309,52 @@ def format_transport_page_train_service_alerts(data):
             }
         )
     
-    # Singapore MRT lines with official colors and names
-    mrt_lines = [
-        {"code": "NSL", "name": "North South Line", "color": "#E31937"},
-        {"code": "EWL", "name": "East West Line", "color": "#009645"},
-        {"code": "CCL", "name": "Circle Line", "color": "#FF8C00"},
-        {"code": "DTL", "name": "Downtown Line", "color": "#005EC4"},
-        {"code": "NEL", "name": "North East Line", "color": "#9900AA"},
-        {"code": "TEL", "name": "Thomson-East Coast Line", "color": "#9D5B25"},
-    ]
+    # Use line info from config
+    line_info_map = LINE_INFO_MAP
     
-    # LRT lines
-    lrt_lines = [
-        {"code": "PGL", "name": "Punggol LRT", "color": "#808080"},
-        {"code": "SKL", "name": "Sengkang LRT", "color": "#808080"},
-        {"code": "BPL", "name": "Bukit Panjang LRT", "color": "#808080"},
-    ]
+    print("DATA:", data)
+    # Group disrupted alerts or alerts with messages by line code
+    # Focus on the Message list as requested
+    line_messages_map = defaultdict(list)
+    general_messages = []
     
-    all_lines = mrt_lines + lrt_lines
+    # Get the value object if it exists (new format)
+    inner_data = data.get("value", data) if isinstance(data, dict) and isinstance(data.get("value"), dict) else (data if isinstance(data, dict) else {})
     
-    # Extract alerts from API response
-    alerts = []
-    if data and isinstance(data, dict):
-        if "value" in data:
-            alerts = data.get("value", [])
-        elif isinstance(data, list):
-            alerts = data
+    # Get status and messages from inner data
+    status = inner_data.get("Status", inner_data.get("status", 1))
+    messages = inner_data.get("Message", inner_data.get("message", []))
     
-    # Create a mapping of line codes to line info
-    line_info_map = {line["code"]: line for line in all_lines}
-    
-    # Group disrupted alerts by line code (status != 1)
-    disrupted_lines_by_code = defaultdict(list)
-    for alert in alerts:
-        if isinstance(alert, dict):
-            line = alert.get("Line", alert.get("line", ""))
-            status = alert.get("Status", alert.get("status", 1))
-            if line and status != 1:
-                line_upper = line.upper()
-                # Find matching line info
-                line_info = None
-                for line_code, info in line_info_map.items():
-                    if line_code in line_upper or line_upper in line_code:
-                        line_info = info
-                        break
+    for msg_obj in messages:
+        if isinstance(msg_obj, dict):
+            content = msg_obj.get("Content", msg_obj.get("content", ""))
+            if content:
+                found_line = False
+                upper_content = content.upper()
+                for line_code in line_info_map.keys():
+                    # Line code will be prefix/suffixed with -
+                    if f"-{line_code}-" in upper_content:
+                        line_messages_map[line_code].append(content)
+                        found_line = True
                 
-                if line_info:
-                    direction = alert.get("Direction", alert.get("direction", ""))
-                    message = alert.get("Message", alert.get("message", ""))
-                    
-                    disrupted_lines_by_code[line_info["code"]].append({
-                        "line_name": line_info["name"],
-                        "line_color": line_info["color"],
-                        "direction": direction,
-                        "message": message,
-                    })
+                if not found_line:
+                    general_messages.append(content)
     
-    # If no disrupted lines, show all operational message
-    if not disrupted_lines_by_code:
+    # Also check AffectedSegments for disruptions if Status != 1
+    if status != 1:
+        segments = inner_data.get("AffectedSegments", inner_data.get("affected_segments", []))
+        for segment in segments:
+            if isinstance(segment, dict):
+                line = segment.get("Line", segment.get("line", ""))
+                if line:
+                    line_upper = line.upper()
+                    # Add disruption info to messages if not already there
+                    disruption_info = f"Status: {status} | Direction: {segment.get('Direction', '')} | Stations: {segment.get('Stations', '')}"
+                    if disruption_info not in line_messages_map[line_upper]:
+                        line_messages_map[line_upper].insert(0, disruption_info)
+
+    # If no messages and status is 1, show all operational message
+    if not line_messages_map and not general_messages and status == 1:
         return html.P(
             "All train services are operational",
             style={
@@ -417,87 +366,23 @@ def format_transport_page_train_service_alerts(data):
             }
         )
     
-    # Create parent containers for each line with child rows for each alert
+    # Create parent containers for each line
     line_containers = []
-    for line_code, alerts_list in disrupted_lines_by_code.items():
-        # Get line info from first alert (all alerts for same line have same info)
-        line_name = alerts_list[0]["line_name"]
-        line_color = alerts_list[0]["line_color"]
+    
+    # 1. Process line-specific messages
+    for line_code, content_list in line_messages_map.items():
+        line_info = line_info_map.get(line_code)
+        if not line_info: continue
         
-        # Create child rows for each alert in this line
-        alert_rows = []
-        for alert_data in alerts_list:
-            direction = alert_data["direction"]
-            message = alert_data["message"]
-            
-            # Create direction header text
-            direction_text = ""
-            if direction:
-                direction_text = f"towards {direction}"
-            
-            # Create nested message container
-            message_content = message if message else "Service disruption - please check for updates"
-            
-            # Create alert row children
-            alert_row_children = []
-            
-            # Add direction header if available
-            if direction_text:
-                alert_row_children.append(
-                    html.Div(
-                        style={
-                            "display": "flex",
-                            "alignItems": "center",
-                            "gap": "0.5rem",
-                        },
-                        children=[
-                            html.Span(
-                                direction_text,
-                                style={
-                                    "color": "#fff",
-                                    "fontWeight": "600",
-                                    "fontSize": "0.75rem",
-                                }
-                            ),
-                        ]
-                    )
-                )
-            
-            # Always add message container
-            alert_row_children.append(
-                html.Div(
-                    style={
-                        "padding": "0.5rem",
-                        "backgroundColor": "#2c3e50",
-                        "borderRadius": "0.25rem",
-                        "borderLeft": "2px solid #ff4444",
-                    },
-                    children=[
-                        html.P(
-                            message_content,
-                            style={
-                                "color": "#ff6666",
-                                "fontSize": "0.75rem",
-                                "margin": "0",
-                                "lineHeight": "1.4",
-                            }
-                        )
-                    ]
-                )
-            )
-            
-            # Create alert row
-            alert_row = html.Div(
-                style={
-                    "display": "flex",
-                    "flexDirection": "column",
-                    "gap": "0.5rem",
-                },
-                children=alert_row_children
-            )
-            alert_rows.append(alert_row)
+        line_name = line_info["name"]
+        line_color = line_info["color"]
         
-        # Create parent container for this line
+        # Create bulleted list of content
+        bullet_points = [
+            html.Li(content, style={"marginBottom": "0.5rem"}) 
+            for content in content_list
+        ]
+        
         line_container = html.Div(
             style={
                 "padding": "0.75rem",
@@ -507,39 +392,77 @@ def format_transport_page_train_service_alerts(data):
                 "marginBottom": "0.75rem",
                 "display": "flex",
                 "flexDirection": "column",
-                "gap": "0.75rem",
+                "gap": "0.5rem",
             },
             children=[
-                # Line header
-                html.Div(
+                html.Span(
+                    f"{line_name} ({line_code})",
                     style={
-                        "display": "flex",
-                        "alignItems": "center",
-                        "gap": "0.5rem",
-                    },
-                    children=[
-                        html.Span(
-                            f"{line_name} ({line_code})",
-                            style={
-                                "color": line_color,
-                                "fontWeight": "bold",
-                                "fontSize": "0.8125rem",
-                            }
-                        ),
-                    ]
+                        "color": line_color,
+                        "fontWeight": "bold",
+                        "fontSize": "0.8125rem",
+                    }
                 ),
-                # Alerts container with all alert rows
-                html.Div(
+                html.Ul(
+                    children=bullet_points,
                     style={
-                        "display": "flex",
-                        "flexDirection": "column",
-                        "gap": "0.5rem",
-                    },
-                    children=alert_rows
-                ),
+                        "color": "#ff6666" if status != 1 else "#fff",
+                        "fontSize": "0.75rem",
+                        "margin": "0",
+                        "paddingLeft": "1.2rem",
+                        "lineHeight": "1.4",
+                    }
+                )
             ]
         )
         line_containers.append(line_container)
+    
+    # 2. Process general messages
+    if general_messages:
+        bullet_points = [
+            html.Li(content, style={"marginBottom": "0.5rem"}) 
+            for content in general_messages
+        ]
+        general_container = html.Div(
+            style={
+                "padding": "0.75rem",
+                "backgroundColor": "#3a4a5a",
+                "borderRadius": "0.5rem",
+                "borderLeft": "4px solid #808080",
+                "marginBottom": "0.75rem",
+                "display": "flex",
+                "flexDirection": "column",
+                "gap": "0.5rem",
+            },
+            children=[
+                html.Span(
+                    "General Train Service Advisory",
+                    style={
+                        "color": "#fff",
+                        "fontWeight": "bold",
+                        "fontSize": "0.8125rem",
+                    }
+                ),
+                html.Ul(
+                    children=bullet_points,
+                    style={
+                        "color": "#fff",
+                        "fontSize": "0.75rem",
+                        "margin": "0",
+                        "paddingLeft": "1.2rem",
+                        "lineHeight": "1.4",
+                    }
+                )
+            ]
+        )
+        line_containers.append(general_container)
+    
+    # If still no containers (should not happen if we passed the check above)
+    if not line_containers:
+        return html.P(
+            "No advisories at the moment",
+            style={"color": "#999", "fontSize": "0.75rem", "textAlign": "center"}
+        )
     
     return html.Div(
         children=line_containers,
@@ -636,19 +559,18 @@ def register_train_service_alerts_callbacks(app):
             # Check if there are disrupted lines to determine background color
             has_alerts = False
             if data and isinstance(data, dict):
-                alerts = []
-                if "value" in data:
-                    alerts = data.get("value", [])
-                elif isinstance(data, list):
-                    alerts = data
+                # Get the value object if it exists (new format)
+                inner_data = data.get("value", data) if isinstance(data.get("value"), dict) else data
                 
-                # Check if any alert has status != 1
-                for alert in alerts:
-                    if isinstance(alert, dict):
-                        status = alert.get("Status", alert.get("status", 1))
-                        if status != 1:
-                            has_alerts = True
-                            break
+                # Check status
+                status = inner_data.get("Status", inner_data.get("status", 1))
+                if status != 1:
+                    has_alerts = True
+                else:
+                    # If status is 1, check if there are any messages
+                    messages = inner_data.get("Message", inner_data.get("message", []))
+                    if messages and len(messages) > 0:
+                        has_alerts = True
             
             # Set background color based on whether there are alerts
             if has_alerts:
