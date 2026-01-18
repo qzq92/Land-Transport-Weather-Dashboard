@@ -9,8 +9,8 @@ PAGE_PADDING = "0.5rem"
 # Standard page height calculation (accounts for header/banner)
 PAGE_HEIGHT = "calc(100vh - 7.5rem)"
 
-# Main dashboard height (different header height)
-MAIN_DASHBOARD_HEIGHT = "calc(100vh - 6.25rem)"
+# Main dashboard height (same as other tabs)
+MAIN_DASHBOARD_HEIGHT = "calc(100vh - 7.5rem)"
 
 # Content container base style - full width, no maxWidth constraint, no centering
 def get_content_container_style(gap="0.5rem", height="calc(100% - 3.125rem)"):
