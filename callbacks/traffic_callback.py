@@ -266,11 +266,37 @@ def register_camera_feed_callbacks(app):
             except Exception as e:
                 print(f"Error fetching image for camera 4713: {e}")
 
-            # Get metadata text
-            meta_2701 = format_metadata_text(metadata_dict, "2701")
-            meta_4713 = format_metadata_text(metadata_dict, "4713")
+            # Extract timestamps and locations for captions
+            timestamp_2701 = ""
+            timestamp_4713 = ""
+            
+            if metadata_dict.get("2701"):
+                timestamp = metadata_dict["2701"].get('timestamp', '')
+                if timestamp and timestamp != 'N/A':
+                    try:
+                        if isinstance(timestamp, str):
+                            parsed_datetime = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                            formatted_time = parsed_datetime.strftime("%Y-%m-%d %H:%M:%S")
+                            timestamp_2701 = f"{formatted_time} (Causeway)"
+                        else:
+                            timestamp_2701 = f"{str(timestamp)} (Causeway)"
+                    except (ValueError, AttributeError):
+                        timestamp_2701 = f"{str(timestamp)} (Causeway)" if timestamp else ""
+            
+            if metadata_dict.get("4713"):
+                timestamp = metadata_dict["4713"].get('timestamp', '')
+                if timestamp and timestamp != 'N/A':
+                    try:
+                        if isinstance(timestamp, str):
+                            parsed_datetime = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                            formatted_time = parsed_datetime.strftime("%Y-%m-%d %H:%M:%S")
+                            timestamp_4713 = f"{formatted_time} (Second Link)"
+                        else:
+                            timestamp_4713 = f"{str(timestamp)} (Second Link)"
+                    except (ValueError, AttributeError):
+                        timestamp_4713 = f"{str(timestamp)} (Second Link)" if timestamp else ""
 
-            # Create image containers or text placeholders
+            # Create image containers
             if img_2701:
                 container_2701 = html.Img(
                     src=img_2701,
@@ -278,6 +304,7 @@ def register_camera_feed_callbacks(app):
                         "width": "100%",
                         "height": "100%",
                         "objectFit": "cover",
+                        "display": "block",
                     }
                 )
             else:
@@ -290,12 +317,14 @@ def register_camera_feed_callbacks(app):
                         "width": "100%",
                         "height": "100%",
                         "objectFit": "cover",
+                        "display": "block",
                     }
                 )
             else:
                 container_4713 = no_image_text
 
-            return container_2701, container_4713, meta_2701, meta_4713
+            # Return images and timestamps as captions
+            return container_2701, container_4713, timestamp_2701, timestamp_4713
         except Exception as error:
             print(f"Error updating camera feeds: {error}")
             import traceback

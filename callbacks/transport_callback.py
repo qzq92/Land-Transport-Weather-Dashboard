@@ -1421,9 +1421,9 @@ def create_bus_stops_markers(bus_stops_data: Optional[Dict[str, Any]]) -> List[d
             
             # Create clickable circle marker using DivMarker with a button
             marker_html = (
-                f'<div style="position:relative;width:10px;height:10px;'
+                f'<div style="position:relative;width:0.625rem;height:0.625rem;'
                 f'border-radius:50%;background-color:#4169E1;'
-                f'border:2px solid #4169E1;opacity:0.7;cursor:pointer;">'
+                f'border:0.125rem solid #4169E1;opacity:0.7;cursor:pointer;">'
                 f'</div>'
             )
             
@@ -2198,7 +2198,7 @@ def create_ev_charging_markers(ev_data):
             else:
                 for i, cp in enumerate(charging_points):
                     if i > 0:
-                        tooltip_content.append(html.Hr(style={"margin": "5px 0"}))
+                        tooltip_content.append(html.Hr(style={"margin": "0.3125rem 0"}))
                         
                     cp_status_raw = cp.get('status') or cp.get('Status', '')
                     if cp_status_raw == '1':
@@ -2266,7 +2266,7 @@ def create_ev_charging_markers(ev_data):
                     position=[lat, lon],
                     icon=ev_charger_icon,
                     children=[
-                        dl.Tooltip(html.Div(tooltip_content, style={"fontSize": "11px", "maxWidth": "250px"})),
+                        dl.Tooltip(html.Div(tooltip_content, style={"fontSize": "0.6875rem", "maxWidth": "15.625rem"})),
                     ]
                 )
             )
@@ -2693,7 +2693,7 @@ def format_traffic_incidents_count_display(incidents_data, faulty_lights_data=No
                 incident_items,
                 style={
                     "overflowY": "auto",
-                    "maxHeight": "200px",
+                    "maxHeight": "12.5rem",
                 }
             ),
         ],
@@ -2905,18 +2905,18 @@ def create_nearby_taxi_stands_markers(nearby_taxi_stands: list) -> list:
 
             # Create marker HTML with taxi icon and label badge (similar to bus stops)
             marker_html = (
-                f'<div style="width:32px;height:32px;background:#FFA500;'
-                f'border-radius:50%;border:3px solid #fff;'
-                f'box-shadow:0 2px 8px rgba(255,165,0,0.6);'
+                f'<div style="width:2rem;height:2rem;background:#FFA500;'
+                f'border-radius:50%;border:0.1875rem solid #fff;'
+                f'box-shadow:0 0.125rem 0.5rem rgba(255,165,0,0.6);'
                 f'cursor:pointer;display:flex;align-items:center;'
-                f'justify-content:center;font-size:14px;color:#fff;'
+                f'justify-content:center;font-size:0.875rem;color:#fff;'
                 f'font-weight:bold;position:relative;">'
-                f'<span style="font-size:16px;">🚕</span>'
-                f'<div style="position:absolute;top:-8px;right:-8px;'
-                f'background:#FF5722;color:#fff;width:20px;height:20px;'
-                f'border-radius:50%;border:2px solid #fff;'
+                f'<span style="font-size:1rem;">🚕</span>'
+                f'<div style="position:absolute;top:-0.5rem;right:-0.5rem;'
+                f'background:#FF5722;color:#fff;width:1.25rem;height:1.25rem;'
+                f'border-radius:50%;border:0.125rem solid #fff;'
                 f'display:flex;align-items:center;justify-content:center;'
-                f'font-size:12px;font-weight:bold;">{label}</div>'
+                f'font-size:0.75rem;font-weight:bold;">{label}</div>'
                 f'</div>'
             )
             
@@ -3327,8 +3327,8 @@ def register_transport_callbacks(app):
                         }
                     ),
                     style={
-                        "padding": "4px 0",
-                        "borderBottom": "1px solid rgba(255, 255, 255, 0.1)",
+                        "padding": "0.25rem 0",
+                        "borderBottom": "0.0625rem solid rgba(255, 255, 255, 0.1)",
                     }
                 )
             )
@@ -3354,8 +3354,8 @@ def register_transport_callbacks(app):
                         }
                     ),
                     style={
-                        "padding": "4px 0",
-                        "borderBottom": "1px solid rgba(255, 255, 255, 0.1)",
+                        "padding": "0.25rem 0",
+                        "borderBottom": "0.0625rem solid rgba(255, 255, 255, 0.1)",
                     }
                 )
             )

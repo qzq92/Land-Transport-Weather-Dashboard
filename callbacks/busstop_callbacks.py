@@ -145,18 +145,18 @@ def create_bus_stop_markers(bus_stops):
 
         # Create marker HTML with label
         marker_html = (
-            f'<div style="width:32px;height:32px;background:#4CAF50;'
-            f'border-radius:50%;border:3px solid #fff;'
-            f'box-shadow:0 2px 8px rgba(76,175,80,0.6);'
+            f'<div style="width:2rem;height:2rem;background:#4CAF50;'
+            f'border-radius:50%;border:0.1875rem solid #fff;'
+            f'box-shadow:0 0.125rem 0.5rem rgba(76,175,80,0.6);'
             f'cursor:pointer;display:flex;align-items:center;'
-            f'justify-content:center;font-size:14px;color:#fff;'
+            f'justify-content:center;font-size:0.875rem;color:#fff;'
             f'font-weight:bold;position:relative;">'
-            f'<span style="font-size:16px;">🚌</span>'
-            f'<div style="position:absolute;top:-8px;right:-8px;'
-            f'background:#FF5722;color:#fff;width:20px;height:20px;'
-            f'border-radius:50%;border:2px solid #fff;'
+            f'<span style="font-size:1rem;">🚌</span>'
+            f'<div style="position:absolute;top:-0.5rem;right:-0.5rem;'
+            f'background:#FF5722;color:#fff;width:1.25rem;height:1.25rem;'
+            f'border-radius:50%;border:0.125rem solid #fff;'
             f'display:flex;align-items:center;justify-content:center;'
-            f'font-size:12px;font-weight:bold;">{label}</div>'
+            f'font-size:0.75rem;font-weight:bold;">{label}</div>'
             f'</div>'
         )
 
@@ -203,7 +203,7 @@ def register_busstop_callbacks(app):
                 style={
                     "textAlign": "center",
                     "color": "#999",
-                    "fontSize": "14px",
+                    "fontSize": "0.875rem",
                     "fontStyle": "italic",
                     "padding": "0.5rem"
                 }
@@ -220,7 +220,7 @@ def register_busstop_callbacks(app):
                 style={
                     "textAlign": "center",
                     "color": "#ff6b6b",
-                    "fontSize": "14px",
+                    "fontSize": "0.875rem",
                     "padding": "0.5rem"
                 }
             ), []
@@ -238,7 +238,7 @@ def register_busstop_callbacks(app):
                 style={
                     "textAlign": "center",
                     "color": "#999",
-                    "fontSize": "14px",
+                    "fontSize": "0.875rem",
                     "fontStyle": "italic",
                     "padding": "0.5rem"
                 }
@@ -277,16 +277,16 @@ def register_busstop_callbacks(app):
                                     label,
                                     style={
                                         "display": "inline-block",
-                                        "width": "24px",
-                                        "height": "24px",
-                                        "lineHeight": "24px",
+                                        "width": "1.5rem",
+                                        "height": "1.5rem",
+                                        "lineHeight": "1.5rem",
                                         "textAlign": "center",
                                         "backgroundColor": "#FF5722",
                                         "color": "#fff",
                                         "borderRadius": "50%",
-                                        "fontSize": "12px",
+                                        "fontSize": "0.75rem",
                                         "fontWeight": "bold",
-                                        "marginRight": "8px",
+                                        "marginRight": "0.5rem",
                                         "verticalAlign": "middle"
                                     }
                                 ),
@@ -294,14 +294,14 @@ def register_busstop_callbacks(app):
                                     display_name,
                                     style={
                                         "fontWeight": "600",
-                                        "fontSize": "14px",
+                                        "fontSize": "0.875rem",
                                         "color": "#fff",
                                         "verticalAlign": "middle"
                                     }
                                 )
                             ],
                             style={
-                                "marginBottom": "4px",
+                                "marginBottom": "0.25rem",
                                 "display": "flex",
                                 "alignItems": "center"
                             }
@@ -484,7 +484,7 @@ def register_busstop_callbacks(app):
                                             name,
                                             style={
                                                 "fontWeight": "600",
-                                                "fontSize": "14px",
+                                                "fontSize": "0.875rem",
                                                 "color": "#fff",
                                                 "marginBottom": "4px"
                                             }

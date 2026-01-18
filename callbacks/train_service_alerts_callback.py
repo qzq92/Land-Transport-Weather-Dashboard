@@ -3,6 +3,7 @@ Callback functions for handling train service alerts from LTA DataMall API.
 Reference: https://datamall2.mytransport.sg/ltaodataservice/TrainServiceAlerts
 """
 import os
+import re
 from collections import defaultdict
 from dash import Input, Output, html
 from utils.async_fetcher import fetch_url_2min_cached, _executor
@@ -82,7 +83,7 @@ def format_train_service_alerts(data):
     # If status is 1, check for messages
     if status == 1:
         if messages and len(messages) > 0:
-            return html.P("Refer a Road & Transport tab for further advisory/information", style={
+            return html.P("Refer a Road & Transport Information tab for further advisory/information", style={
                 "color": "#4CAF50",
                 "fontSize": "0.75rem",
                 "fontWeight": "600"
@@ -95,7 +96,7 @@ def format_train_service_alerts(data):
         })
     
     # If status is not 1, show referral message in red
-    return html.P("Refer a Road & Transport tab for further advisory/information", style={
+    return html.P("Refer a Road & Transport Information tab for further advisory/information", style={
         "color": "#ff4444",
         "fontSize": "0.75rem",
         "fontWeight": "600"
@@ -181,22 +182,18 @@ def format_mrt_line_operational_details(data):
             if status_value == 1:
                 if has_message:
                     # Normal service with message (Normal*)
-                    border_color = "#ff4444"
                     detail_text = "Normal*"
                     detail_text_color = "#4CAF50"
                 else:
                     # Normal service
-                    border_color = line_color
                     detail_text = "Normal"
                     detail_text_color = "#4CAF50"
             else:
                 # Disrupted/Delays (status != 1) - show referral message
-                border_color = "#ff4444"
-                detail_text = "Refer a Road & Transport tab for further advisory/information"
+                detail_text = "Refer a Road & Transport Information tab for further advisory/information"
                 detail_text_color = "#ff4444"
         else:
             # No alert data for this line - assume normal
-            border_color = line_color
             detail_text = "Normal"
             detail_text_color = "#4CAF50"
         
@@ -204,28 +201,37 @@ def format_mrt_line_operational_details(data):
             style={
                 "padding": "0.25rem 0.5rem",
                 "backgroundColor": "#2c3e50",
-                "borderRadius": "0.25rem",
-                "borderLeft": f"3px solid {border_color}",
+                "borderRadius": "0.5rem",
                 "display": "flex",
                 "alignItems": "center",
-                "gap": "0.5rem",
+                "gap": "0.75rem",
                 "minWidth": "fit-content",
+                "boxShadow": "0 0.125rem 0.25rem rgba(0, 0, 0, 0.3)",
+                "transition": "all 0.2s ease",
             },
             children=[
+                # Pill badge with line name and code
                 html.Span(
                     f"{line_name} ({line_code})",
                     style={
-                        "color": line_color,
+                        "backgroundColor": line_color,
+                        "color": "#ffffff",
                         "fontWeight": "bold",
-                        "fontSize": "0.75rem",
+                        "fontSize": "0.625rem",
+                        "padding": "0.25rem 0.625rem",
+                        "borderRadius": "1rem",
+                        "whiteSpace": "nowrap",
+                        "boxShadow": "0 0.0625rem 0.125rem rgba(0, 0, 0, 0.2)",
                     }
                 ),
+                # Status indicator (colored text)
                 html.Span(
                     detail_text,
                     style={
                         "color": detail_text_color,
-                        "fontSize": "0.65rem",
+                        "fontSize": "0.625rem",
                         "fontWeight": "bold",
+                        "marginLeft": "auto",
                     }
                 ),
             ]
@@ -289,7 +295,7 @@ def format_mrt_line_operational_details(data):
 
 def format_transport_page_train_service_alerts(data):
     """
-    Format train service alerts for display on Road & Transport tab.
+    Format train service alerts for display on Road & Transport Information tab.
     Shows only lines with status != 1, displaying line name with abbreviation,
     direction, and message.
     
@@ -328,17 +334,43 @@ def format_transport_page_train_service_alerts(data):
     for msg_obj in messages:
         if isinstance(msg_obj, dict):
             content = msg_obj.get("Content", msg_obj.get("content", ""))
+            created_date = msg_obj.get("CreatedDate", msg_obj.get("createdDate", msg_obj.get("created_date", "")))
+            
             if content:
+                # Extract text after line abbreviation pattern (e.g., "-CCL-")
+                processed_content = content
                 found_line = False
                 upper_content = content.upper()
+                
                 for line_code in line_info_map.keys():
                     # Line code will be prefix/suffixed with -
-                    if f"-{line_code}-" in upper_content:
-                        line_messages_map[line_code].append(content)
+                    pattern = f"-{line_code}-"
+                    if pattern in upper_content:
+                        # Find the position after the pattern
+                        pattern_idx = upper_content.find(pattern)
+                        if pattern_idx != -1:
+                            # Extract text after the pattern (including the pattern itself)
+                            # Pattern is like "-CCL-", we want everything after it
+                            after_pattern = content[pattern_idx + len(pattern):].strip()
+                            processed_content = after_pattern
+                        
+                        # Prepend CreatedDate if available
+                        if created_date:
+                            formatted_message = f"{created_date} {processed_content}"
+                        else:
+                            formatted_message = processed_content
+                        
+                        line_messages_map[line_code].append(formatted_message)
                         found_line = True
+                        break
                 
                 if not found_line:
-                    general_messages.append(content)
+                    # For general messages, also prepend CreatedDate if available
+                    if created_date:
+                        formatted_message = f"{created_date} {content}"
+                    else:
+                        formatted_message = content
+                    general_messages.append(formatted_message)
     
     # Also check AffectedSegments for disruptions if Status != 1
     if status != 1:
@@ -366,110 +398,153 @@ def format_transport_page_train_service_alerts(data):
             }
         )
     
-    # Create parent containers for each line
-    line_containers = []
+    # Collect all messages with line information for table display
+    table_rows = []
+    
+    # Helper function to parse datetime and message from formatted content
+    def parse_datetime_and_message(content):
+        """
+        Parse datetime and message from content.
+        Expected format: "2026-01-07 05:30:12 Planned train service adjustments..."
+        Returns: (datetime_str, message_str)
+        """
+        # Pattern to match datetime: YYYY-MM-DD HH:MM:SS
+        datetime_pattern = r'^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+(.+)$'
+        match = re.match(datetime_pattern, content)
+        if match:
+            datetime_str = match.group(1)
+            message_str = match.group(2)
+            return datetime_str, message_str
+        # If no datetime found, return empty datetime and full content as message
+        return "", content
     
     # 1. Process line-specific messages
     for line_code, content_list in line_messages_map.items():
         line_info = line_info_map.get(line_code)
-        if not line_info: continue
+        if not line_info:
+            continue
         
         line_name = line_info["name"]
         line_color = line_info["color"]
         
-        # Create bulleted list of content
-        bullet_points = [
-            html.Li(content, style={"marginBottom": "0.5rem"}) 
-            for content in content_list
-        ]
-        
-        line_container = html.Div(
-            style={
-                "padding": "0.75rem",
-                "backgroundColor": "#3a4a5a",
-                "borderRadius": "0.5rem",
-                "borderLeft": f"4px solid {line_color}",
-                "marginBottom": "0.75rem",
-                "display": "flex",
-                "flexDirection": "column",
-                "gap": "0.5rem",
-            },
-            children=[
-                html.Span(
-                    f"{line_name} ({line_code})",
-                    style={
-                        "color": line_color,
-                        "fontWeight": "bold",
-                        "fontSize": "0.8125rem",
-                    }
-                ),
-                html.Ul(
-                    children=bullet_points,
-                    style={
-                        "color": "#ff6666" if status != 1 else "#fff",
-                        "fontSize": "0.75rem",
-                        "margin": "0",
-                        "paddingLeft": "1.2rem",
-                        "lineHeight": "1.4",
-                    }
-                )
-            ]
-        )
-        line_containers.append(line_container)
+        # Add each message as a table row
+        for content in content_list:
+            published_time, advisory_message = parse_datetime_and_message(content)
+            table_rows.append({
+                "line": f"{line_name} ({line_code})",
+                "line_color": line_color,
+                "published_time": published_time,
+                "message": advisory_message
+            })
     
     # 2. Process general messages
-    if general_messages:
-        bullet_points = [
-            html.Li(content, style={"marginBottom": "0.5rem"}) 
-            for content in general_messages
-        ]
-        general_container = html.Div(
-            style={
-                "padding": "0.75rem",
-                "backgroundColor": "#3a4a5a",
-                "borderRadius": "0.5rem",
-                "borderLeft": "4px solid #808080",
-                "marginBottom": "0.75rem",
-                "display": "flex",
-                "flexDirection": "column",
-                "gap": "0.5rem",
-            },
-            children=[
-                html.Span(
-                    "General Train Service Advisory",
-                    style={
-                        "color": "#fff",
-                        "fontWeight": "bold",
-                        "fontSize": "0.8125rem",
-                    }
-                ),
-                html.Ul(
-                    children=bullet_points,
-                    style={
-                        "color": "#fff",
-                        "fontSize": "0.75rem",
-                        "margin": "0",
-                        "paddingLeft": "1.2rem",
-                        "lineHeight": "1.4",
-                    }
-                )
-            ]
-        )
-        line_containers.append(general_container)
+    for content in general_messages:
+        published_time, advisory_message = parse_datetime_and_message(content)
+        table_rows.append({
+            "line": "General",
+            "line_color": "#808080",
+            "published_time": published_time,
+            "message": advisory_message
+        })
     
-    # If still no containers (should not happen if we passed the check above)
-    if not line_containers:
+    # If no messages, show message
+    if not table_rows:
         return html.P(
             "No advisories at the moment",
             style={"color": "#999", "fontSize": "0.75rem", "textAlign": "center"}
         )
     
-    return html.Div(
-        children=line_containers,
+    # Limit to top 5 entries
+    table_rows = table_rows[:5]
+    
+    # Create table structure with 3 columns
+    table_header = html.Thead(
+        html.Tr([
+            html.Th("Line", style={
+                "padding": "0.5rem",
+                "backgroundColor": "#2c3e50",
+                "color": "#fff",
+                "fontSize": "0.75rem",
+                "fontWeight": "600",
+                "textAlign": "left",
+                "borderBottom": "0.125rem solid #4a5a6a",
+                "width": "20%"
+            }),
+            html.Th("Published Date and Time", style={
+                "padding": "0.5rem",
+                "backgroundColor": "#2c3e50",
+                "color": "#fff",
+                "fontSize": "0.75rem",
+                "fontWeight": "600",
+                "textAlign": "left",
+                "borderBottom": "0.125rem solid #4a5a6a",
+                "width": "20%"
+            }),
+            html.Th("Alerts/Advisory", style={
+                "padding": "0.5rem",
+                "backgroundColor": "#2c3e50",
+                "color": "#fff",
+                "fontSize": "0.75rem",
+                "fontWeight": "600",
+                "textAlign": "left",
+                "borderBottom": "0.125rem solid #4a5a6a",
+                "width": "60%"
+            })
+        ])
+    )
+    
+    # Create table body rows
+    table_body_rows = []
+    for row_data in table_rows:
+        table_body_rows.append(
+            html.Tr([
+                html.Td(
+                    row_data["line"],
+                    style={
+                        "padding": "0.5rem",
+                        "color": row_data["line_color"],
+                        "fontSize": "0.75rem",
+                        "fontWeight": "600",
+                        "verticalAlign": "top",
+                        "borderBottom": "0.0625rem solid #4a5a6a",
+                    }
+                ),
+                html.Td(
+                    row_data["published_time"] if row_data["published_time"] else "-",
+                    style={
+                        "padding": "0.5rem",
+                        "color": "#ccc",
+                        "fontSize": "0.75rem",
+                        "verticalAlign": "top",
+                        "borderBottom": "0.0625rem solid #4a5a6a",
+                        "whiteSpace": "nowrap",
+                    }
+                ),
+                html.Td(
+                    row_data["message"],
+                    style={
+                        "padding": "0.5rem",
+                        "color": "#fff",
+                        "fontSize": "0.75rem",
+                        "verticalAlign": "top",
+                        "borderBottom": "0.0625rem solid #4a5a6a",
+                        "lineHeight": "1.4",
+                    }
+                )
+            ])
+        )
+    
+    table_body = html.Tbody(table_body_rows)
+    
+    # Return table
+    return html.Table(
+        [table_header, table_body],
         style={
-            "display": "flex",
-            "flexDirection": "column",
-            "gap": "0.5rem",
+            "width": "100%",
+            "borderCollapse": "collapse",
+            "backgroundColor": "#3a4a5a",
+            "borderRadius": "0.25rem",
+            "overflow": "hidden",
         }
     )
 
@@ -540,7 +615,7 @@ def register_train_service_alerts_callbacks(app):
     )
     def update_transport_page_train_service_alerts(_n_intervals):
         """
-        Update train service alerts display on Road & Transport tab.
+        Update train service alerts display on Road & Transport Information tab.
         Shows disrupted lines with details.
         
         Args:

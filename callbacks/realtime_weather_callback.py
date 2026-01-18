@@ -90,7 +90,7 @@ def _create_reading_div(name, display_value, color):
             html.Span(
                 name,
                 style={
-                    "fontSize": "11px",
+                    "fontSize": "0.6875rem",
                     "color": "#ccc",
                     "flex": "1",
                     "overflow": "hidden",
@@ -101,10 +101,10 @@ def _create_reading_div(name, display_value, color):
             html.Span(
                 display_value,
                 style={
-                    "fontSize": "12px",
+                    "fontSize": "0.75rem",
                     "fontWeight": "600",
                     "color": color,
-                    "marginLeft": "8px",
+                    "marginLeft": "0.5rem",
                     "whiteSpace": "nowrap",
                 }
             ),
@@ -113,10 +113,10 @@ def _create_reading_div(name, display_value, color):
             "display": "flex",
             "alignItems": "center",
             "justifyContent": "space-between",
-            "padding": "4px 8px",
+            "padding": "0.25rem 0.5rem",
             "backgroundColor": "#3a4a5a",
-            "borderRadius": "4px",
-            "marginBottom": "4px",
+            "borderRadius": "0.25rem",
+            "marginBottom": "0.25rem",
         }
     )
 
@@ -140,9 +140,9 @@ def _build_grid_content(reading_divs, timestamp):
             html.Div(
                 f"Updated: {timestamp}",
                 style={
-                    "fontSize": "10px",
+                    "fontSize": "0.625rem",
                     "color": "#888",
-                    "marginTop": "5px",
+                    "marginTop": "0.3125rem",
                     "textAlign": "right",
                     "fontStyle": "italic",
                     "flexShrink": "0",
@@ -181,9 +181,9 @@ def format_readings_grid(data, unit, color):
         return html.Div(
             html.Span("Error loading data", style={"color": "#ff6b6b", "fontSize": "12px"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -192,9 +192,9 @@ def format_readings_grid(data, unit, color):
         return html.Div(
             html.Span("No data available", style={"color": "#888", "fontSize": "12px"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -209,9 +209,9 @@ def format_readings_grid(data, unit, color):
         return html.Div(
             html.Span("No readings available", style={"color": "#888", "fontSize": "12px"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -229,9 +229,9 @@ def format_readings_grid(data, unit, color):
         return html.Div(
             html.Span("No valid readings", style={"color": "#888", "fontSize": "12px"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -240,14 +240,14 @@ def format_readings_grid(data, unit, color):
 
     return html.Div(
             html.Span(formatted_avg, style={
-                "fontSize": "14px",
+                "fontSize": "0.875rem",
                 "fontWeight": "600",
                 "color": color,
             }),
         style={
             "padding": "6px 8px",
             "backgroundColor": "#3a4a5a",
-            "borderRadius": "4px",
+            "borderRadius": "0.25rem",
         }
     )
 
@@ -338,16 +338,16 @@ def _create_wind_speed_legend():
         legend_items.append(
             html.Div(
                 [
-                    html.Span(icon, style={"fontSize": "20px", "marginRight": "10px"}),
-                    html.Span(desc_text, style={"fontSize": "13px", "color": "#ddd", "fontWeight": "500"})
+                    html.Span(icon, style={"fontSize": "1.25rem", "marginRight": "0.625rem"}),
+                    html.Span(desc_text, style={"fontSize": "0.8125rem", "color": "#ddd", "fontWeight": "500"})
                 ],
                 style={
                     "display": "flex",
                     "alignItems": "center",
-                    "padding": "8px 12px",
-                    "marginBottom": "6px",
+                    "padding": "0.5rem 0.75rem",
+                    "marginBottom": "0.375rem",
                     "backgroundColor": "#2a3a4a",
-                    "borderRadius": "4px",
+                    "borderRadius": "0.25rem",
                 }
             )
         )
@@ -357,13 +357,13 @@ def _create_wind_speed_legend():
             html.Div(
                 "Wind Speed Legend",
                 style={
-                    "fontSize": "16px",
+                    "fontSize": "1rem",
                     "fontWeight": "700",
                     "color": "#4CAF50",
-                    "marginBottom": "12px",
+                    "marginBottom": "0.75rem",
                     "textAlign": "center",
-                    "paddingBottom": "8px",
-                    "borderBottom": "2px solid #4CAF50",
+                    "paddingBottom": "0.5rem",
+                    "borderBottom": "0.125rem solid #4CAF50",
                 }
             ),
             html.Div(
@@ -371,16 +371,16 @@ def _create_wind_speed_legend():
                 style={
                     "display": "flex",
                     "flexDirection": "column",
-                    "gap": "4px",
+                    "gap": "0.25rem",
                 }
             )
         ],
         style={
-            "padding": "16px",
+            "padding": "1rem",
             "backgroundColor": "#4a5a6a",
-            "borderRadius": "8px",
-            "border": "2px solid #4CAF50",
-            "boxShadow": "0 2px 8px rgba(76, 175, 80, 0.2)",
+            "borderRadius": "0.5rem",
+            "border": "0.125rem solid #4CAF50",
+            "boxShadow": "0 0.125rem 0.5rem rgba(76, 175, 80, 0.2)",
         }
     )
 
@@ -399,9 +399,9 @@ def format_wind_readings(speed_data):
         return html.Div(
             html.Span("Error loading data", style={"color": "#ff6b6b", "fontSize": "12px"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -410,9 +410,9 @@ def format_wind_readings(speed_data):
         return html.Div(
             html.Span("No data available", style={"color": "#888", "fontSize": "12px"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -422,9 +422,9 @@ def format_wind_readings(speed_data):
         return html.Div(
             html.Span("No readings available", style={"color": "#888", "fontSize": "12px"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -443,9 +443,9 @@ def format_wind_readings(speed_data):
         return html.Div(
             html.Span("No valid readings", style={"color": "#888", "fontSize": "12px"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -455,14 +455,14 @@ def format_wind_readings(speed_data):
 
     return html.Div(
             html.Span(formatted_avg, style={
-                "fontSize": "14px",
+                "fontSize": "0.875rem",
                 "fontWeight": "600",
             "color": "#4CAF50",
             }),
         style={
             "padding": "6px 8px",
             "backgroundColor": "#3a4a5a",
-            "borderRadius": "4px",
+            "borderRadius": "0.25rem",
         }
     )
 
@@ -483,9 +483,9 @@ def _create_marker(position, bg_color, tooltip_text, marker_id):
     lat, lon = position
     # Pin marker with colored circle
     marker_html = (
-        f'<div style="width:14px;height:14px;background:{bg_color};'
-        f'border-radius:50%;border:2px solid #fff;'
-        f'box-shadow:0 2px 5px rgba(0,0,0,0.4);cursor:pointer;"></div>'
+        f'<div style="width:0.875rem;height:0.875rem;background:{bg_color};'
+        f'border-radius:50%;border:0.125rem solid #fff;'
+        f'box-shadow:0 0.125rem 0.3125rem rgba(0,0,0,0.4);cursor:pointer;"></div>'
     )
     return dl.DivMarker(
         id=marker_id,
@@ -941,9 +941,9 @@ def format_lightning_readings(data):
         return html.Div(
             html.Span("Error loading data", style={"color": "#ff6b6b", "fontSize": "12px"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -952,9 +952,9 @@ def format_lightning_readings(data):
         return html.Div(
             html.Span("0", style={"color": "#FFD700", "fontSize": "14px", "fontWeight": "600"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -980,7 +980,7 @@ def format_lightning_readings(data):
         style={
             "padding": "6px 8px",
             "backgroundColor": "#3a4a5a",
-            "borderRadius": "4px",
+            "borderRadius": "0.25rem",
         }
     )
 
@@ -995,9 +995,9 @@ def format_wbgt_average(data):
         return html.Div(
             html.Span("Error loading data", style={"color": "#ff6b6b", "fontSize": "12px"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -1006,9 +1006,9 @@ def format_wbgt_average(data):
         return html.Div(
             html.Span("Error loading data", style={"color": "#ff6b6b", "fontSize": "12px"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -1017,9 +1017,9 @@ def format_wbgt_average(data):
         return html.Div(
             html.Span("No data available", style={"color": "#888", "fontSize": "12px"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -1031,9 +1031,9 @@ def format_wbgt_average(data):
         return html.Div(
             html.Span("No readings available", style={"color": "#888", "fontSize": "12px"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -1051,9 +1051,9 @@ def format_wbgt_average(data):
         return html.Div(
             html.Span("No valid readings", style={"color": "#888", "fontSize": "12px"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -1062,14 +1062,14 @@ def format_wbgt_average(data):
 
     return html.Div(
             html.Span(formatted_avg, style={
-                "fontSize": "14px",
+                "fontSize": "0.875rem",
                 "fontWeight": "600",
             "color": "#fff",
             }),
         style={
             "padding": "6px 8px",
             "backgroundColor": "#3a4a5a",
-            "borderRadius": "4px",
+            "borderRadius": "0.25rem",
         }
     )
 
@@ -1083,9 +1083,9 @@ def format_flood_readings(data):
         return html.Div(
             html.Span("Error loading data", style={"color": "#ff6b6b", "fontSize": "12px"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -1094,9 +1094,9 @@ def format_flood_readings(data):
         return html.Div(
             html.Span("No alerts", style={"color": "#999", "fontSize": "12px"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -1109,9 +1109,9 @@ def format_flood_readings(data):
         return html.Div(
             html.Span("No alerts", style={"color": "#999", "fontSize": "12px"}),
             style={
-                "padding": "6px 8px",
+                "padding": "0.375rem 0.5rem",
                 "backgroundColor": "#3a4a5a",
-                "borderRadius": "4px",
+                "borderRadius": "0.25rem",
             }
         )
 
@@ -1124,7 +1124,7 @@ def format_flood_readings(data):
         style={
             "padding": "6px 8px",
             "backgroundColor": "#3a4a5a",
-            "borderRadius": "4px",
+            "borderRadius": "0.25rem",
             "borderLeft": "3px solid #ff6b6b",
         }
     )
@@ -1169,15 +1169,15 @@ def format_lightning_indicator(data):
                 html.Div(
                     [
                         html.Span("⚡ Error loading lightning data", style={
-                            "fontSize": "11px",
+                            "fontSize": "0.6875rem",
                             "color": "#ff6b6b",
                             "fontWeight": "600",
                         }),
                     ],
                     style={
-                        "padding": "6px 8px",
+                        "padding": "0.375rem 0.5rem",
                         "backgroundColor": "#3a4a5a",
-                        "borderRadius": "4px",
+                        "borderRadius": "0.25rem",
                         "borderLeft": "3px solid #ff6b6b",
                     }
                 )
@@ -1284,15 +1284,15 @@ def format_flood_indicator(data):
                 html.Div(
                     [
                         html.Span("🌊 No flooding notice at the moment", style={
-                            "fontSize": "11px",
+                            "fontSize": "0.6875rem",
                             "color": "#888",
                             "fontWeight": "600",
                         }),
                     ],
                     style={
-                        "padding": "6px 8px",
+                        "padding": "0.375rem 0.5rem",
                         "backgroundColor": "#3a4a5a",
-                        "borderRadius": "4px",
+                        "borderRadius": "0.25rem",
                         "borderLeft": "3px solid #888",
                     }
                 )
@@ -1416,7 +1416,7 @@ def format_faulty_traffic_lights_indicator(data):
                 html.P(
                     "Error",
                     style={
-                        "fontSize": "12px",
+                        "fontSize": "0.75rem",
                         "color": "#ff6b6b",
                         "textAlign": "center",
                         "margin": "0",
@@ -1452,7 +1452,7 @@ def format_faulty_traffic_lights_indicator(data):
                 html.P(
                     "0",
                     style={
-                        "fontSize": "12px",
+                        "fontSize": "0.75rem",
                         "color": "#888",
                         "textAlign": "center",
                         "margin": "0",
@@ -1483,7 +1483,7 @@ def format_faulty_traffic_lights_indicator(data):
             html.P(
                 str(faulty_count),
                 style={
-                    "fontSize": "12px",
+                    "fontSize": "0.75rem",
                     "color": "#FF9800",
                     "textAlign": "center",
                     "margin": "0",
@@ -1506,7 +1506,7 @@ def format_traffic_incidents_indicator(data, faulty_lights_data=None):
                 html.P(
                     "Error",
                     style={
-                        "fontSize": "12px",
+                        "fontSize": "0.75rem",
                         "color": "#ff6b6b",
                         "textAlign": "center",
                         "margin": "0",
@@ -2038,8 +2038,8 @@ def register_realtime_weather_callbacks(app):
                     "borderRadius": "5px", "padding": "10px", "maxHeight": "200px", "overflowY": "auto"}
             text = "Hide WBGT sensor locations"
             button_style = {
-                "padding": "4px 8px",
-                "borderRadius": "4px",
+                "padding": "0.25rem 0.5rem",
+                "borderRadius": "0.25rem",
                 "border": "2px solid #fff",
                 "backgroundColor": "#FF8C00",
                 "color": "#fff",
@@ -2051,8 +2051,8 @@ def register_realtime_weather_callbacks(app):
         style = {"display": "none"}
         text = "Show WBGT sensor locations"
         button_style = {
-            "padding": "4px 8px",
-            "borderRadius": "4px",
+            "padding": "0.25rem 0.5rem",
+            "borderRadius": "0.25rem",
             "border": "2px solid #fff",
             "backgroundColor": "transparent",
             "color": "#fff",
@@ -2302,13 +2302,13 @@ def register_realtime_weather_callbacks(app):
                         html.Div(
                             [
                                 html.Span(reading['type'], style={
-                                    "fontSize": "11px",
+                                    "fontSize": "0.6875rem",
                                     "color": reading['color'],
                                     "fontWeight": "600",
                                     "marginRight": "8px",
                                 }),
                                 html.Span(reading['location'], style={
-                                    "fontSize": "11px",
+                                    "fontSize": "0.6875rem",
                                     "color": "#ccc",
                                 }),
                             ],
@@ -2316,7 +2316,7 @@ def register_realtime_weather_callbacks(app):
                         ),
                         html.Div(
                             html.Span(reading['value'], style={
-                                "fontSize": "12px",
+                                "fontSize": "0.75rem",
                                 "fontWeight": "600",
                                 "color": reading['color'],
                                 "marginLeft": "20px",
@@ -2324,9 +2324,9 @@ def register_realtime_weather_callbacks(app):
                         ),
                     ],
                     style={
-                        "padding": "6px 8px",
+                        "padding": "0.375rem 0.5rem",
                         "backgroundColor": "#2a3a4a",
-                        "borderRadius": "4px",
+                        "borderRadius": "0.25rem",
                         "marginBottom": "6px",
                         "borderLeft": f"3px solid {reading['color']}",
                     }
@@ -2546,7 +2546,7 @@ def _get_btn_styles(active_type):
         is_active = btn_type == active_type
         return {
             "padding": "4px 10px",
-            "borderRadius": "4px",
+            "borderRadius": "0.25rem",
             "border": f"2px solid {color}",
             "backgroundColor": color if is_active else "transparent",
             "color": "#fff" if is_active else color,

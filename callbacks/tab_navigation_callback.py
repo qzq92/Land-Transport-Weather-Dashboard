@@ -43,28 +43,28 @@ def register_tab_navigation_callback(app):
             realtime_style = {
                 "display": "block",
                 "padding": "0.5rem",
-                "height": "calc(100vh - 120px)",
+                "height": "calc(100vh - 7.5rem)",
                 "width": "100%",
             }
         elif tab_value == 'weather-indices':
             indices_style = {
                 "display": "block",
                 "padding": "0.5rem",
-                "height": "calc(100vh - 120px)",
+                "height": "calc(100vh - 7.5rem)",
                 "width": "100%",
             }
         elif tab_value == 'transport':
             transport_style = {
                 "display": "block",
                 "padding": "0.5rem",
-                "height": "calc(100vh - 120px)",
+                "height": "calc(100vh - 7.5rem)",
                 "width": "100%",
             }
         elif tab_value == 'nearby-transport':
             nearby_transport_style = {
                 "display": "block",
                 "padding": "0.5rem",
-                "height": "calc(100vh - 120px)",
+                "height": "calc(100vh - 7.5rem)",
                 "width": "100%",
             }
         else:
@@ -74,7 +74,7 @@ def register_tab_navigation_callback(app):
                 "width": "100%",
                 "gap": "0.5rem",
                 "padding": "0.25rem 0.5rem",
-                "height": "calc(100vh - 100px)",
+                "height": "calc(100vh - 7.5rem)",
                 "alignItems": "stretch",
             }
             # Keep search bar section hidden (placeholder for callback compatibility)

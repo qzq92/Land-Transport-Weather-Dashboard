@@ -391,8 +391,8 @@ def format_uv_display(data):
             html.Div(
                 style={
                     "backgroundColor": "#3a4a5a",
-                    "borderRadius": "6px",
-                    "padding": "5px",
+                    "borderRadius": "0.375rem",
+                    "padding": "0.3125rem",
                     "overflow": "hidden",
                 },
                 children=[uv_chart]
@@ -402,8 +402,8 @@ def format_uv_display(data):
                 style={
                     "textAlign": "center",
                     "color": "#888",
-                    "fontSize": "11px",
-                    "marginTop": "10px",
+                    "fontSize": "0.6875rem",
+                    "marginTop": "0.625rem",
                     "fontStyle": "italic",
                 }
             ),
@@ -419,13 +419,13 @@ def _build_pollutant_row_html(pollutant_key, pollutant_name, value):
     if pollutant_key == "psi_twenty_four_hourly":
         color, category = get_psi_category(value)
         return (
-            f'<div style="margin: 2px 0;">'
+            f'<div style="margin: 0.125rem 0;">'
             f'{pollutant_name}: '
             f'<span style="color:{color};font-weight:bold;">{value}</span> '
             f'({category})'
             f'</div>'
         )
-    return f'<div style="margin: 2px 0;">{pollutant_name}: {value_with_unit}</div>'
+    return f'<div style="margin: 0.125rem 0;">{pollutant_name}: {value_with_unit}</div>'
 
 
 def _create_single_psi_marker(region_info, readings, pollutants):
@@ -474,20 +474,20 @@ def _create_single_psi_marker(region_info, readings, pollutants):
     # Build left column (PM pollutants) as bulleted list
     # Only color-code the numeric value, not the entire line
     pm_list_items = "".join([
-        f'<li style="margin: 2px 0; font-size: 10px; color: #fff;">'
+        f'<li style="margin: 0.125rem 0; font-size: 0.625rem; color: #fff;">'
         f'{name}: <span style="color: {color if color else "#fff"}; '
         f'font-weight: bold;">{val}</span>'
         f'{f" {unit}" if unit else ""}</li>'
         for name, val, unit, color in pm_pollutants
     ])
-    ul_style = 'margin: 0; padding-left: 18px; list-style-type: disc;'
+    ul_style = 'margin: 0; padding-left: 1.125rem; list-style-type: disc;'
     pm_column = (f'<ul style="{ul_style}">{pm_list_items}</ul>'
                  if pm_pollutants else f'<ul style="{ul_style}"></ul>')
 
     # Build right column (other pollutants) as bulleted list
     # Only color-code the numeric value, not the entire line
     other_list_items = "".join([
-        f'<li style="margin: 2px 0; font-size: 10px; color: #fff;">'
+        f'<li style="margin: 0.125rem 0; font-size: 0.625rem; color: #fff;">'
         f'{name}: <span style="color: {color if color else "#fff"}; '
         f'font-weight: bold;">{val}</span>'
         f'{f" {unit}" if unit else ""}</li>'
@@ -500,25 +500,25 @@ def _create_single_psi_marker(region_info, readings, pollutants):
     text_box_html = f'''
         <div style="
             background-color: rgba(74, 90, 106, 0.95);
-            border: 2px solid #60a5fa;
-            border-radius: 8px;
-            padding: 8px 10px;
-            min-width: 200px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 0.125rem solid #60a5fa;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.625rem;
+            min-width: 12.5rem;
+            box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.3);
         ">
             <div style="
                 font-weight: bold;
-                font-size: 11px;
+                font-size: 0.6875rem;
                 color: #60a5fa;
-                margin-bottom: 6px;
+                margin-bottom: 0.375rem;
                 text-align: center;
-                border-bottom: 1px solid #60a5fa;
-                padding-bottom: 3px;
+                border-bottom: 0.0625rem solid #60a5fa;
+                padding-bottom: 0.1875rem;
             ">{psi_title}</div>
             <div style="
                 display: flex;
-                gap: 12px;
-                font-size: 10px;
+                gap: 0.75rem;
+                font-size: 0.625rem;
                 color: #fff;
                 line-height: 1.4;
             ">
@@ -563,16 +563,16 @@ def create_simple_psi_marker(region_info, readings):
     text_box_html = f'''
         <div style="
             background-color: rgba(74, 90, 106, 0.95);
-            border: 2px solid {psi_color};
-            border-radius: 8px;
-            padding: 8px 10px;
-            min-width: 120px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 0.125rem solid {psi_color};
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.625rem;
+            min-width: 7.5rem;
+            box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.3);
             text-align: center;
         ">
             <div style="
                 font-weight: bold;
-                font-size: 12px;
+                font-size: 0.75rem;
                 color: #fff;
                 line-height: 1.4;
             ">{psi_text}</div>
@@ -674,7 +674,7 @@ def format_psi_display(data):
     header_row = html.Div(
         style={
             "display": "grid",
-            "gridTemplateColumns": "70px repeat(7, 1fr)",
+            "gridTemplateColumns": "4.375rem repeat(7, 1fr)",
             "gap": "0",
             "padding": "0.5rem",
             "backgroundColor": "#2a3a4a",
@@ -710,7 +710,7 @@ def format_psi_display(data):
             html.Div(
                 region.capitalize(),
                 style={
-                    "fontSize": "10px",
+                    "fontSize": "0.625rem",
                     "color": "#ccc",
                     "textAlign": "center",
                     "fontWeight": "600"
@@ -738,7 +738,7 @@ def format_psi_display(data):
                     html.Div(
                         display_value,
                         style={
-                            "fontSize": "10px",
+                            "fontSize": "0.625rem",
                             "color": color,
                             "textAlign": "center",
                             "fontWeight": "bold"
@@ -750,7 +750,7 @@ def format_psi_display(data):
                     html.Div(
                         "-",
                         style={
-                            "fontSize": "10px",
+                            "fontSize": "0.625rem",
                             "color": "#666",
                             "textAlign": "center"
                         }
@@ -794,7 +794,7 @@ def format_psi_display(data):
             html.Div(
                 style={
                     "display": "grid",
-                    "gridTemplateColumns": "70px repeat(7, 1fr)",
+                    "gridTemplateColumns": "4.375rem repeat(7, 1fr)",
                     "gap": "0",
                     "padding": "0.5rem",
                     "backgroundColor": "#3a4a5a",
@@ -845,30 +845,30 @@ def _create_wbgt_row(name, wbgt, heat_stress):
             "alignItems": "center",
             "padding": "4px 8px",
             "backgroundColor": "#3a4a5a",
-            "borderRadius": "4px",
+            "borderRadius": "0.25rem",
             "marginBottom": "4px",
         },
         children=[
             html.Span(
                 name,
                 style={
-                    "fontSize": "11px",
+                    "fontSize": "0.6875rem",
                     "color": "#ccc",
                     "flex": "1",
                     "overflow": "hidden",
                     "textOverflow": "ellipsis",
                     "whiteSpace": "nowrap",
-                    "marginRight": "10px",
+                    "marginRight": "0.625rem",
                 }
             ),
             html.Span(
-                style={"display": "flex", "alignItems": "center", "gap": "8px"},
+                style={"display": "flex", "alignItems": "center", "gap": "0.5rem"},
                 children=[
                     html.Span(
                         heat_stress,
                         style={
                             "color": color,
-                            "fontSize": "11px",
+                            "fontSize": "0.6875rem",
                             "fontWeight": "500",
                         }
                     ),
@@ -877,8 +877,8 @@ def _create_wbgt_row(name, wbgt, heat_stress):
                         style={
                             "color": "#fff",
                             "fontWeight": "600",
-                            "fontSize": "12px",
-                            "minWidth": "50px",
+                            "fontSize": "0.75rem",
+                            "minWidth": "3.125rem",
                             "textAlign": "right",
                         }
                     ),
@@ -956,8 +956,8 @@ def format_wbgt_display(data):
                 style={
                     "textAlign": "center",
                     "color": "#888",
-                    "fontSize": "11px",
-                    "marginTop": "10px",
+                    "fontSize": "0.6875rem",
+                    "marginTop": "0.625rem",
                     "fontStyle": "italic",
                     "flexShrink": "0",
                 }
@@ -1005,11 +1005,11 @@ def _create_single_wbgt_marker(reading):
             "html": f'''
                 <div style="
                     background-color: {color};
-                    width: 14px;
-                    height: 14px;
+                    width: 0.875rem;
+                    height: 0.875rem;
                     border-radius: 50%;
-                    border: 2px solid white;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                    border: 0.125rem solid white;
+                    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.3);
                 "></div>
             ''',
             "iconSize": [14, 14],
@@ -2038,7 +2038,7 @@ def format_main_page_taxi_count(data):
             style={
                 "textAlign": "center",
                 "color": "#ff6b6b",
-                "fontSize": "12px"
+                "fontSize": "0.75rem"
             }
         )
     
@@ -2049,7 +2049,7 @@ def format_main_page_taxi_count(data):
             style={
                 "textAlign": "center",
                 "color": "#999",
-                "fontSize": "12px"
+                "fontSize": "0.75rem"
             }
         )
     
@@ -2064,12 +2064,12 @@ def format_main_page_taxi_count(data):
                 [
                     html.Span(
                         "🚕",
-                        style={"fontSize": "24px", "marginRight": "8px"}
+                        style={"fontSize": "1.5rem", "marginRight": "0.5rem"}
                     ),
                     html.Span(
                         f"{taxi_count:,}",
                         style={
-                            "fontSize": "28px",
+                            "fontSize": "1.75rem",
                             "fontWeight": "bold",
                             "color": "#FFD700",
                         }
@@ -2174,7 +2174,7 @@ def _get_toggle_style(active):
         return {
             "backgroundColor": "#f18b00",
             "border": "1px solid #f18b00",
-            "borderRadius": "4px",
+            "borderRadius": "0.25rem",
             "color": "#fff",
             "cursor": "pointer",
             "padding": "4px 8px",
