@@ -142,9 +142,9 @@ def format_train_service_alerts(data):
                 ]
             )
     
-    # Default: show operational if status not found or unexpected
-    return html.P("All train services are operational", style={
-        "color": "#4CAF50",
+    # Default case: indicating unable to retrieve alerts
+    return html.P("Unknown service status from source API", style={
+        "color": "#808080",
         "fontSize": "0.75rem",
         "fontWeight": "600"
     })
