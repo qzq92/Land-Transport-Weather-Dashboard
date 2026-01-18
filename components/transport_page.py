@@ -954,7 +954,7 @@ def transport_page():
                                         },
                                         children=[
                                             html.Span(
-                                                "🚇 Train Service Alerts",
+                                                "🚇 Train Service Alerts/Advisory",
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
