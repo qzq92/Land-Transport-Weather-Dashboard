@@ -10,6 +10,7 @@ load_dotenv(override=True)
 from conf.page_layout_config import MAIN_DASHBOARD_HEIGHT, get_content_container_style, STANDARD_GAP
 
 from components.banner_component import build_dashboard_banner
+from components.mrt_line_status_banner import build_mrt_line_status_banner
 from components.map_component import map_component
 from components.realtime_weather_page import realtime_weather_page
 from components.weather_indices_page import weather_indices_page
@@ -66,87 +67,45 @@ register_tab_navigation_callback(app)
 # Dashboard app layout ------------------------------------------------------#
 app.layout = html.Div(
     id="root",
+    style={
+        "display": "flex",
+        "flexDirection": "column",
+        "minHeight": "100vh",
+        "overflowY": "auto",
+        "overflowX": "hidden",
+    },
     children=[
         # Header/Banner -------------------------------------------------#
         html.Div(
             id="header",
+            style={
+                "flex": "0 0 auto",
+                "minHeight": "0",
+            },
             children=[
-                build_dashboard_banner(),
+                html.Div(
+                    id="banner",
+                    className="banner",
+                    style={
+                        "height": "100%",
+                        "display": "flex",
+                        "justifyContent": "space-between",
+                        "alignItems": "center",
+                        "padding": "0 0.875rem",
+                        "background": "linear-gradient(180deg, #1a202c 0%, #2d3748 100%)",
+                        "borderBottom": "0.0625rem solid #4a5568",
+                    },
+                    children=build_dashboard_banner().children,
+                ),
             ],
         ),
         # Rail Operational Status Banner --------------------------------#
         html.Div(
-            id="rail-status-banner",
+            build_mrt_line_status_banner(),
             style={
-                "backgroundColor": "#1a2a3a",
-                "padding": "0.375rem 1.25rem",
-                "borderBottom": "0.0625rem solid #4a5a6a",
-                "width": "100%",
-                "display": "flex",
-                "flexDirection": "row",
-                "alignItems": "flex-start",
-                "justifyContent": "space-between",
-                "minHeight": "2rem",
-                "gap": "1rem",
-            },
-            children=[
-                # Left column: MRT Lines (70% width)
-                html.Div(
-                    style={
-                        "flex": "7",
-                        "display": "flex",
-                        "flexDirection": "column",
-                        "gap": "0.5rem",
-                    },
-                    children=[
-                        html.Span(
-                            "MRT Lines Service Statuses:",
-                            style={
-                                "color": "#fff",
-                                "fontWeight": "600",
-                                "fontSize": "0.8125rem",
-                                "whiteSpace": "nowrap",
-                            }
-                        ),
-                        html.Div(
-                            id="mrt-lines-display",
-                    style={"width": "100%"},
-                    children=[
-                        html.P("Loading MRT line status...", 
-                                       style={"color": "#999", "margin": "0", "fontSize": "0.75rem"})
-                            ]
-                        )
-                    ]
-                ),
-                # Right column: LRT Lines (30% width)
-                html.Div(
-                    style={
-                        "flex": "3",
-                        "display": "flex",
-                        "flexDirection": "column",
-                        "gap": "0.5rem",
-                    },
-                    children=[
-                        html.Span(
-                            "LRT Lines Service Statuses:",
-                            style={
-                                "color": "#fff",
-                                "fontWeight": "600",
-                                "fontSize": "0.8125rem",
-                                "whiteSpace": "nowrap",
-                            }
-                        ),
-                        html.Div(
-                            id="lrt-lines-display",
-                            style={"width": "100%"},
-                            children=[
-                                html.P("Loading LRT line status...", 
-                                       style={"color": "#999", "margin": "0", "fontSize": "0.75rem"})
-                            ]
-                        )
-                    ]
-                )
-            ]
+                "flex": "0 0 auto",
+                "minHeight": "0",
+            }
         ),
         # Hidden search bar section div (for tab navigation callback compatibility)
                 html.Div(
@@ -157,6 +116,12 @@ app.layout = html.Div(
         # App Container ------------------------------------------#
         html.Div(
             id="app-container",
+            style={
+                "flex": "1 1 auto",
+                "minHeight": "0",
+                "display": "flex",
+                "flexDirection": "column",
+            },
             children=[
                 # Realtime weather page (hidden by default)
                 realtime_weather_page(),
@@ -208,14 +173,14 @@ app.layout = html.Div(
                                         "flexWrap": "nowrap",
                                     },
                                     children=[
-                                        html.H4(
-                                            "Land Checkpoints",
+                                        html.H5(
+                                            "Land Checkpoints Traffic",
                                             style={
                                                 "textAlign": "center",
-                                                "margin": "0.3125rem 0",
+                                                "margin": "0.2rem 0",
                                                 "color": "#fff",
                                                 "fontWeight": "700",
-                                                "fontSize": "1.125rem"
+                                                "fontSize": "1rem"
                                             }
                                         ),
                                         html.Div(
@@ -239,7 +204,6 @@ app.layout = html.Div(
                                                     id="camera-2701-metadata",
                                                     style={
                                                         "textAlign": "center",
-                                                        "padding": "0.3125rem 0",
                                                         "fontSize": "0.75rem",
                                                         "color": "#ccc",
                                                     }
@@ -247,7 +211,6 @@ app.layout = html.Div(
                                             ],
                                             style={
                                                 "flex": "1",
-                                                "padding": "0.625rem",
                                                 "display": "flex",
                                                 "flexDirection": "column",
                                                 "minHeight": "0",
@@ -274,7 +237,6 @@ app.layout = html.Div(
                                                     id="camera-4713-metadata",
                                                     style={
                                                         "textAlign": "center",
-                                                        "padding": "0.3125rem 0",
                                                         "fontSize": "0.75rem",
                                                         "color": "#ccc",
                                                     }
@@ -282,7 +244,6 @@ app.layout = html.Div(
                                             ],
                                             style={
                                                 "flex": "1",
-                                                "padding": "0.625rem",
                                                 "display": "flex",
                                                 "flexDirection": "column",
                                                 "minHeight": "0",
@@ -798,26 +759,6 @@ app.layout = html.Div(
                             ]
                         ),
                     ]
-                ),
-                # Footer with plotly|dash logo
-                html.Div(
-                    id="footer",
-                    style={
-                        "display": "flex",
-                        "justifyContent": "flex-end",
-                        "padding": "0.625rem 1.25rem",
-                        "width": "100%",
-                    },
-                    children=[
-                        html.A(
-                            html.Img(
-                                id="plotly-logo",
-                                src=r"../assets/dash-logo.png",
-                                style={"height": "1.875rem"},
-                            ),
-                            href="https://plotly.com/dash/",
-                        ),
-                    ],
                 ),
             ]
         ),
