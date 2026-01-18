@@ -46,6 +46,9 @@ This analytics dashboard provides real-time information on:
   - **Next 24-Hour Forecast**: Temperature, humidity, wind, and rain forecast
 - **Traffic incident/ traffic light issues**: Traffic incidents and faulty traffic lights displayed in a grid format
 - **MRT/LRT service alerts**: Real-time train service status and disruptions
+  - Line status displayed with colored pill badges showing line name and abbreviation
+  - Status indicators shown as colored text (green for Normal, red for disruptions)
+  - "Normal*" indicator when service is normal but advisory messages exist
 - **Active Disease Clusters**: 
   - **Dengue clusters**: Count displayed in red-themed container
   - **Zika clusters**: Count displayed in red-themed container
@@ -55,6 +58,8 @@ This analytics dashboard provides real-time information on:
   - **🌦️ Show 2H Forecast**: Toggle 2-hour weather forecast markers on map
 - **Nearby Facilities**: Top 5 nearest MRT stations, bus stops, and HDB carparks with availability
 - **Traffic Cameras**: Live CCTV feeds from land checkpoints
+  - Images display with full resolution (no cropping)
+  - Timestamp and location shown as captions below each image
 - **Standardized Card Design**: All right panel containers use consistent card-like design with headers and collapsible content
 - **Layout**: Optimized 3:5:2 column ratio (left panel : map : right panel) with minimal gaps
 
@@ -96,15 +101,18 @@ This analytics dashboard provides real-time information on:
 - **Toggle Controls**: All toggle buttons (PSI display mode, Zika clusters, Dengue clusters) positioned above map
 - **Layout**: Optimized 2:6:2 ratio (indices panel : map : legend)
 
-### Road & Transport Page
+### Road & Transport Information Page
 - **Taxi Availability**: Real-time taxi locations (4,500+ taxis) displayed as yellow markers on map
 - **Traffic Cameras**: CCTV camera locations with live feed popups showing traffic conditions
 - **ERP Gantries**: Electronic Road Pricing gantry locations displayed as red polylines on map
 - **Taxi Stands**: Taxi stand locations with detailed information (name, barrier-free access, ownership, type)
 - **MRT/LRT Line Operational Status**: Real-time status for all MRT and LRT lines
+  - Line status displayed with colored pill badges (line color background, white text)
   - MRT lines displayed with official colors (NSL-red, EWL-green, CCL-yellow, DTL-blue, NEL-purple, TEL-brown)
   - LRT lines (Punggol, Sengkang, Bukit Panjang) displayed in grey
-  - Operational status and disruption details for each line
+  - Status indicators shown as colored text outside the pill badge
+  - "Normal*" indicator when service is normal but advisory messages exist
+  - Train service advisories displayed in table format (top 5 entries) with line, published time, and message columns
 - **Bus Stops**: Interactive bus stop markers with arrival time information
   - Bus stops displayed as clickable markers (visible at zoom level 15+)
   - Clicking a bus stop displays arrival times in side panel and highlights the stop on map
@@ -129,7 +137,7 @@ The dashboard consists of 4 main pages accessible via tabs with glossy black-to-
 3. **📊 Daily Health and Environmental Watch**: UV Index trends, comprehensive PSI pollutant data, Zika clusters, and Dengue clusters
    - **PSI Display Modes**: Toggle between map text boxes and detailed metrics table
    - **Zika/Dengue Clusters**: Toggle visibility of cluster polygons on map
-4. **🚦 Road & Transport**: Taxi availability, traffic cameras, ERP gantries, taxi stands, bus stops, and MRT/LRT operational status
+4. **🚦 Road & Transport Information**: Taxi availability, traffic cameras, ERP gantries, taxi stands, bus stops, and MRT/LRT operational status
    - **Bus Stop Interaction**: Click bus stops to view arrival times (zoom level 15+ required)
    - **Selection Persistence**: Selected bus stops remain active during map navigation
    - **Zoomable Map**: Supports zoom levels 10-19 for detailed exploration
@@ -191,16 +199,27 @@ The dashboard consists of 4 main pages accessible via tabs with glossy black-to-
   - Pollutant color categories table with thresholds and source attribution
   - Legends fill vertical space of parent containers using flexbox
 - **Live Camera Feeds**: Embedded traffic camera images in map popups
-- **Responsive Styling**: All measurements use `rem` units for scalability across different screen sizes
+- **Responsive Styling**: 
+  - All measurements use `rem` units for consistent scaling across different screen sizes
+  - Responsive column layouts for traffic incidents and disease clusters based on data availability
+  - Traffic incidents: 3-column display for 3+ types, 2-column for 2 types, 1-column for 1 type
+  - Disease clusters: 2-column display for 2 types (Dengue and Zika), 1-column for 1 type
 - **Modern UI Design**:
   - Glossy navigation tabs with black-to-silver linear gradient (top to bottom)
   - Active tabs feature vibrant gradient colors (purple-blue gradient)
+  - Compact header design with reduced padding and font sizes
   - Consistent styling across all interactive elements
   - White text on dark backgrounds for improved readability
+  - Vertically scrollable layout to accommodate all content
+  - Consistent page heights across all tabs (main dashboard matches other tab heights)
 - **Standardized Metric Cards**: Reusable metric card component used across main dashboard, weather metrics, and transport pages
   - Consistent design pattern for all metric displays
   - Unified styling for count/value displays
   - Supports additional children (e.g., disclaimers) for context-specific information
+- **Reusable Components**:
+  - MRT/LRT line status banner component for consistent display across pages
+  - Centralized line configuration (colors, names, abbreviations) in `conf/mrt_line_config.py`
+  - Modular component structure for easier maintenance and updates
 
 ## Known Limitations and Restrictions
 ### Bus Stop Visualization
@@ -223,7 +242,7 @@ All sample screenshots are stored in `assets/img` with `.jpg` extensions for cla
 ![Daily Health and Environmental Watch](assets/img/daily_health_env_watch.jpg)
 *UV index trends, PSI details, and cluster overlays.*
 
-### Road & Transport Page
+### Road & Transport Information Page
 ![Road and Transport](assets/img/road_transport.jpg)
 *Traffic, taxi, and transport layers on the map.*
 
