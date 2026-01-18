@@ -788,30 +788,7 @@ app.layout = html.Div(
                                                         "minHeight": "0",
                                                     },
                                                     children=[
-                                                        # Disease clusters in 2-column grid layout
-                                                        html.Div(
-                                                            style={
-                                                                "display": "grid",
-                                                                "gridTemplateColumns": "repeat(2, 1fr)",
-                                                                "gap": "0.5rem",
-                                                            },
-                                                            children=[
-                                                                # Dengue cluster count
-                                                                html.Div(
-                                                                    id="dengue-count-content",
-                                                                    children=[
-                                                                        html.P("Loading...", style={"textAlign": "center", "color": "#ccc", "fontSize": "0.75rem"})
-                                                                    ],
-                                                                ),
-                                                                # Zika cluster count
-                                                                html.Div(
-                                                                    id="zika-count-content",
-                                                                    children=[
-                                                                        html.P("Loading...", style={"textAlign": "center", "color": "#ccc", "fontSize": "0.75rem"})
-                                                                    ],
-                                                                ),
-                                                            ]
-                                                        ),
+                                                        html.P("Loading...", style={"textAlign": "center", "color": "#ccc", "fontSize": "0.75rem"})
                                                     ]
                                                 ),
                                             ]
