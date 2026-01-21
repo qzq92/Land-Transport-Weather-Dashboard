@@ -1029,7 +1029,7 @@ def transport_page():
                                             dcc.Input(
                                                 id="bus-stop-search-input",
                                                 type="text",
-                                                placeholder="Enter bus stop code/click on bus stop location on map (after enabling bus stop location toggle)",
+                                                placeholder="Enter bus stop code or click on map",
                                                 style={
                                                     "flex": "1",
                                                     "borderRadius": "0.25rem",
