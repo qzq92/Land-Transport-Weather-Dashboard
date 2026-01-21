@@ -278,30 +278,31 @@ Please refer to the provided link for more information
   - Nearby transport facilities (bus stops, MRT stations)
   - Map tiles for visualization (Night theme)
 * [Data.gov.sg Initiate-Download API](https://api-open.data.gov.sg/v1/public/api/datasets/) - Dataset downloads:
-  - HDB Carpark Information: Dataset ID `d_23f946fa557947f93a8043bbef41dd09`
-  - Speed Camera Locations: Dataset ID `d_983804de2bc016f53e44031d85d1ec8a`
-  - ERP Gantry Locations: Dataset ID `d_753090823cc9920ac41efaa6530c5893`
-* [Data.gov.sg Poll-Download API](https://api-open.data.gov.sg/v1/public/api/datasets/) - Health cluster data:
-  - Zika Clusters: Dataset ID `d_a3c783f11d79ff7feb8856f762ccf2c5`
-  - Dengue Clusters: Dataset ID `d_dbfabf16158d1b0e1c420627c0819168`
+  - HDB Carpark Information
+  - Speed Camera Locations
+  - ERP Gantry Locations
+* [Data.gov.sg Poll-Download API](https://api-open.data.gov.sg/v1/public/api/datasets/) - Health cluster data includes the following:
+  - Zika Clusters
+  - Dengue Clusters
 
 ## Requirements
 
 ### Python Dependencies
 
-We suggest you to create an Anaconda environment using the requirements.yml file provided, and install all of the required dependencies listed within. In your Terminal/Command Prompt:
+#### Recommended: Using uv Package Manager
+
+We recommend using [uv](https://github.com/astral-sh/uv) for fast and reliable dependency management. You may refer to https://docs.astral.sh/uv/getting-started/installation/#standalone-installer for the steps in installing uv.
+
+After cloning the repository, set up the environment:
 
 ```bash
 git clone https://github.com/plotly/Dash-sample-analytics-dashboard-concept.git
 cd Dash-sample-analytics-dashboard-concept
-conda create -f requirements.txt
+uv sync
 ```
 
-If you prefer to install all of the required packages in your own Anaconda environment, simply activate your own Anaconda environment and execute the following command with your activated environment:
+This will create a virtual environment (`.venv`) and install all dependencies. Note that `.venv` is in `.gitignore`, so each user needs to run `uv sync` after cloning.
 
-```bash
-pip install -r requirements.txt
-```
 
 ### Key Dependencies
 
@@ -327,8 +328,9 @@ Create a `.env` file in the root directory with the following API keys:
 # Data.gov.sg API key (required for weather, PSI, taxi, traffic camera, and health cluster data)
 DATA_GOV_API=your_data_gov_api_key_here
 
-# OneMap API key (required for location search and nearby facilities)
-ONEMAP_API_KEY=your_onemap_api_key_here
+# OneMap credentials (required for location search, nearby facilities, and mapbase functionalities)
+ONEMAP_EMAIL=your_onemap_email_here
+ONEMAP_EMAIL_PASSWORD=your_onemap_password_here
 
 # LTA DataMall API key (required for carpark availability)
 LTA_API_KEY=your_lta_api_key_here
@@ -338,27 +340,65 @@ LTA_API_KEY=your_lta_api_key_here
 
 1. **Data.gov.sg API Key**: 
    - Sign up at [Data.gov.sg](https://beta.data.gov.sg/)
-   - Navigate to your account settings to generate an API key
+   - Follow the steps in [How to request an API key](https://guide.data.gov.sg/developer-guide/api-overview/how-to-request-an-api-key) to request an API key for higher rate limits
+   - Log in to the dashboard, click "Create API Key", and choose between **Developer** (for testing) or **Production** (for operational use) keys
+   - **Important**: Copy and store your API key securely - you won't be able to view it again after creation
    - Required for: Weather data, PSI, UV Index, WBGT, taxi availability, traffic cameras, Zika/Dengue clusters
 
-2. **OneMap API Key**:
-   - Register at [OneMap](https://www.onemap.gov.sg/)
-   - Generate an API key from your account dashboard
-   - Required for: Location search, nearby bus stops, MRT stations
+2. **OneMap Credentials**:
+   - Register an account at [OneMap Registration](https://www.onemap.gov.sg/apidocs/register)
+   - You will need to provide a username (email) and password during registration
+   - After registration, you can generate an API key from your account dashboard
+   - **Note**: The application uses your OneMap username (email) and password for authentication with mapbase functionalities
+   - Required for: Location search, nearby bus stops, MRT stations, and map tile services
 
 3. **LTA DataMall API Key**:
-   - Register at [LTA DataMall](https://datamall.lta.gov.sg/content/datamall/en.html)
-   - Generate an API key from your account dashboard
-   - Required for: Real-time carpark availability (CarParkAvailabilityv2 API)
+   - Request API access at [LTA DataMall Request Form](https://datamall.lta.gov.sg/content/datamall/en/request-for-api.html)
+   - Fill in the application form with your details and intended usage
+   - The API key will be sent to your email after approval
+   - Required for: Real-time carpark availability (CarParkAvailabilityv2 API), train service alerts, faulty traffic lights, and taxi stands data
 
 ## Using this application
 
 ### Local Development
 
-Run this app locally by:
+#### Running with uv (Recommended)
+
+After cloning the repository, create a .env file with the following environment variables
 ```
+ONEMAP_EMAIL=<Onemap email>
+ONEMAP_EMAIL_PASSWORD=<Onemap password>
+DATA_GOV_API=<Data.gov.sg API KEY>
+LTA_API_KEY=<Your LTA API KEY>
+```
+sync dependencies and run the app:
+
+```bash
+# Sync dependencies (creates .venv and installs packages)
+uv sync
+
+# Activate the virtual environment
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Run the app
+python app.py
+
+# Or run directly with uv (no activation needed)
+uv run app.py
+```
+
+**Note**: Since `.venv` is in `.gitignore`, you must run `uv sync` after cloning the repository to create the virtual environment and install dependencies.
+
+Open http://0.0.0.0:8050/ in your browser, you will see an interactive dashboard.
+
+#### Running with pip or Anaconda
+
+If you installed dependencies with pip or Anaconda:
+
+```bash
 python app.py
 ```
+
 Open http://0.0.0.0:8050/ in your browser, you will see an interactive dashboard.
 
 ### Plotly Cloud Deployment
@@ -381,7 +421,8 @@ The application is fully configured for Plotly Cloud deployment. See [DEPLOYMENT
 
 3. **Set Environment Variables** (in Plotly Cloud app settings):
    - `DATA_GOV_API` - Your Data.gov.sg API key
-   - `ONEMAP_API_KEY` - Your OneMap API key
+   - `ONEMAP_EMAIL` - Your OneMap account email (username)
+   - `ONEMAP_EMAIL_PASSWORD` - Your OneMap account password
    - `LTA_API_KEY` - Your LTA DataMall API key
 
 4. **Deploy:**
@@ -390,7 +431,7 @@ The application is fully configured for Plotly Cloud deployment. See [DEPLOYMENT
    - App will be live at `https://your-app-name.plotly.com`
 
 **Configuration:**
-- ✅ `gunicorn` included in `requirements.txt`
+- ✅ `gunicorn` included in `pyproject.toml`
 - ✅ `server = app.server` exposed for WSGI compatibility
 - ✅ `app.run()` only executes locally (`if __name__ == "__main__"`)
 - ✅ All API calls use async `@run_in_thread` pattern
