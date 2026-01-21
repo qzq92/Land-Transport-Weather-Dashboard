@@ -1,5 +1,5 @@
 model_weights/
-venv
+.venv
 *.pyc
 .DS_Store
 .env
