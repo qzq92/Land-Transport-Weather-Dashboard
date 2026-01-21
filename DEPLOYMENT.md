@@ -19,7 +19,6 @@ This guide will help you deploy this Dash application to Plotly Cloud.
 ### ✅ Environment Variables
 You'll need to set these in Plotly Cloud:
 - `DATA_GOV_API` - Your Data.gov.sg API key
-- `ONEMAP_API_KEY` - Your OneMap API key  
 - `LTA_API_KEY` - Your LTA DataMall API key
 
 ### ✅ Files to Exclude
@@ -56,7 +55,6 @@ git push origin main
 
 ```
 DATA_GOV_API=your_data_gov_api_key_here
-ONEMAP_API_KEY=your_onemap_api_key_here
 LTA_API_KEY=your_lta_api_key_here
 ```
 
