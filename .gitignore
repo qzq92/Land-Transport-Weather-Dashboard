@@ -1,5 +1,6 @@
 model_weights/
 .venv
+uv.lock
 *.pyc
 .DS_Store
 .env
