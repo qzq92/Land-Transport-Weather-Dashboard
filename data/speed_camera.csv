@@ -1,0 +1,92 @@
+type_of_speed_camera,location,location_latitude,location_longitude
+Fixed Speed Camera,Ayer Rajah Expressway towards City,1.298237,103.781679
+Fixed Speed Camera,Ayer Rajah Expressway towards Jurong,1.298219,103.781724
+Fixed Speed Camera,Boon Lay Way towards Commonwealth Avenue West,1.344737,103.725491
+Fixed Speed Camera,Boon Lay Way towards Jalan Boon Lay,1.344746,103.725518
+Fixed Speed Camera,Bukit Batok Road towards Chua Chu Kang Road,1.360937,103.740669
+Fixed Speed Camera,Bukit Batok Road towards Jurong Town Hall Road,1.360935,103.740684
+Fixed Speed Camera,Bukit Timah Expressway towards Pan Island Expressway,1.382324,103.775486
+Fixed Speed Camera,Bukit Timah Expressway towards Woodlands,1.382225,103.775522
+Fixed Speed Camera,Holland Road towards Napier Road,1.307201,103.811668
+Fixed Speed Camera,Holland Road towards Ulu Pandan Road,1.307221,103.811638
+Fixed Speed Camera,Loyang Avenue towards Tampines Avenue 7,1.37313,103.97397
+Fixed Speed Camera,Pan Island Expressway towards East Coast Parkway,1.336981,103.808953
+Fixed Speed Camera,Pan Island Expressway towards Tuas,1.336982,103.808945
+Fixed Speed Camera,Seletar Expressway towards Bukit Timah Expressway,1.408307,103.808113
+Fixed Speed Camera,Seletar Expressway towards Central Expressway,1.408199,103.808149
+Fixed Speed Camera,Upper Thomson Road towards Lornie Road,1.386883,103.820352
+Fixed Speed Camera,Upper Thomson Road towards Sembawang Road,1.386865,103.820397
+Fixed Speed Camera,Yishun Avenue 1 towards Lentor Avenue,1.413896,103.841316
+Fixed Speed Camera,Yishun Avenue 2 towards Lentor Avenue,1.415298,103.832285
+Fixed Speed Camera,Yishun Avenue 2 towards Sembawang Road,1.415325,103.832312
+Fixed Speed Camera,Kallang-Paya Lebar Expressway 2.3 Km towards Tampines Expressway,1.3185,103.87494
+Fixed Speed Camera,Kallang-Paya Lebar Expressway 4.3 Km towards Tampines Expressway,1.32992,103.88486
+Fixed Speed Camera,Kallang-Paya Lebar Expressway 7.0 Km towards Tampines Expressway,1.34634,103.89845
+Fixed Speed Camera,Kallang-Paya Lebar Expressway 1.3 Km towards East Coast Parkway,1.31057,103.87557
+Fixed Speed Camera,Kallang-Paya Lebar Expressway 4.7 Km towards East Coast Parkway,1.33159,103.88673
+Fixed Speed Camera,Kallang-Paya Lebar Expressway 7.4 Km towards East Coast Parkway,1.34872,103.89861
+Fixed Speed Camera,Marina Coastal Expressway 3.6 Km towards Kallang-Paya Lebar Expressway,1.27931,103.87229
+Fixed Speed Camera,Marina Coastal Expressway 3.6 Km towards Kallang-Paya Lebar Expressway,1.2791,103.87248
+Fixed Speed Camera,Marina Coastal Expressway 2.8 Km towards Ayer Rajah Expressway,1.27447,103.86595
+Fixed Speed Camera,Marina Coastal Expressway 2.8 Km towards Ayer Rajah Expressway,1.27466,103.86582
+Fixed Speed Camera,Marina Coastal Expressway 4.3 Km towards Ayer Rajah Expressway,1.28212,103.87658
+Fixed Speed Camera,Marina Coastal Expressway 4.3 Km towards Ayer Rajah Expressway,1.28236,103.87639
+Fixed Speed Camera,Marina Coastal Expressway 5.8 Km towards Ayer Rajah Expressway,1.29409,103.87581
+Mobile Speed Camera,Aviation Park Road towards Nicoll Drive,1.36299,104.020575
+Mobile Speed Camera,Lim Chu Kang Road towards Neo Tiew Road,1.392157,103.698591
+Mobile Speed Camera,Punggol Central towards Pasir Ris Industrial Drive 1,1.399077,103.911693
+Mobile Speed Camera,Seletar Link towards Seletar North Link,1.407429,103.884916
+Mobile Speed Camera,Yishun Avenue 1 towards Yishun Avenue 8,1.41181,103.83412
+Police Speed Laser Cameras,Ang Mo Kio Avenue 1 towards Boundary Road,1.364893,103.840427
+Police Speed Laser Cameras,Ang Mo Kio Avenue 1 towards Upper Thomson Road,1.364797,103.840386
+Police Speed Laser Cameras,Ang Mo Kio Avenue 5 towards Buangkok Green,1.378538,103.865862
+Police Speed Laser Cameras,Ang Mo Kio Avenue 5 towards Yio Chu Kang Road,1.378424,103.865873
+Police Speed Laser Cameras,Ayer Rajah Expressway towards Marina Coastal Expressway,1.322237,103.670623
+Police Speed Laser Cameras,Ayer Rajah Expressway towards Tuas Checkpoint,1.322071,103.670653
+Police Speed Laser Cameras,Braddell Road towards Bartley Road,1.343771,103.850753
+Police Speed Laser Cameras,Braddell Road towards Lornie Road,1.343664,103.850738
+Police Speed Laser Cameras,Bukit Timah Expressway towards Pan Island Expressway,1.35675,103.783577
+Police Speed Laser Cameras,Bukit Timah Expressway towards Woodlands Checkpoint,1.356611,103.783417
+Police Speed Laser Cameras,Central Expressway towards Ayer Rajah Expressway,1.361775,103.85885
+Police Speed Laser Cameras,Central Expressway towards Seletar Expressway,1.361849,103.858654
+Police Speed Laser Cameras,Clementi Avenue 6 towards Ayer Rajah Expressway,1.320817,103.763858
+Police Speed Laser Cameras,Clementi Avenue 6 towards Pan Island Expressway,1.320837,103.763787
+Police Speed Laser Cameras,Commonwealth Avenue West towards Boon Lay Way,1.311444,103.77834
+Police Speed Laser Cameras,Commonwealth Avenue West towards Commonwealth Avenue,1.311672,103.778534
+Police Speed Laser Cameras,East Coast Parkway towards Airport Boulevard,1.30394,103.918695
+Police Speed Laser Cameras,East Coast Parkway towards Marina Coastal Expressway,1.303753,103.918745
+Police Speed Laser Cameras,Jalan Buroh towards Pioneer Road,1.314275,103.712791
+Police Speed Laser Cameras,Kranji Expressway towards Bukit Timah Expressway,1.388056,103.743196
+Police Speed Laser Cameras,Kranji Expressway towards Pan Island Expressway,1.387951,103.743281
+Police Speed Laser Cameras,Lentor Avenue towards Ang Mo Kio Avenue 6,1.39222,103.837231
+Police Speed Laser Cameras,Lentor Avenue towards Yishun Avenue 2,1.39212,103.837165
+Police Speed Laser Cameras,Lornie Road towards Adam Road,1.34036,103.832183
+Police Speed Laser Cameras,Lornie Road towards Braddell Road,1.340429,103.832194
+Police Speed Laser Cameras,Mandai Road towards Mandai Ave,1.4126695,103.7888087
+Police Speed Laser Cameras,Mandai Road towards Woodlands Road,1.4125147,103.7895678
+Police Speed Laser Cameras,Nicoll Highway towards Esplanade Drive,1.300587,103.863147
+Police Speed Laser Cameras,Nicoll Highway towards Guillemard Road,1.300676,103.863101
+Police Speed Laser Cameras,Pan Island Expressway towards Airport Boulevard,1.325413,103.902418
+Police Speed Laser Cameras,Pan Island Expressway towards Airport Boulevard,1.329774,103.844474
+Police Speed Laser Cameras,Pan Island Expressway towards Airport Boulevard,1.342998,103.686401
+Police Speed Laser Cameras,Pan Island Expressway towards Tuas Road,1.325253,103.902452
+Police Speed Laser Cameras,Pan Island Expressway towards Tuas Road,1.329592,103.84447
+Police Speed Laser Cameras,Pan Island Expressway towards Tuas Road,1.342824,103.686534
+Police Speed Laser Cameras,Tampines Avenue 10 towards Bartley Road East,1.353589,103.928005
+Police Speed Laser Cameras,Tampines Avenue 10 towards Tampines Expressway,1.353661,103.927844
+Police Speed Laser Cameras,Tampines Avenue 5 towards Simei Avenue,1.348435,103.942033
+Police Speed Laser Cameras,Tampines Avenue 5 towards Tampines Industrial Avenue 3,1.348413,103.941928
+Police Speed Laser Cameras,Tampines Expressway towards Pan Island Expressway,1.391623,103.909522
+Police Speed Laser Cameras,Tampines Expressway towards Pan Island Expressway,1.401224,103.872369
+Police Speed Laser Cameras,Tampines Expressway towards Seletar Expressway,1.39151,103.909364
+Police Speed Laser Cameras,Tampines Expressway towards Seletar Expressway,1.401071,103.872368
+Police Speed Laser Cameras,Upper Bukit Timah Road towards Jalan Anak Bukit,1.344884,103.774748
+Police Speed Laser Cameras,Upper Thomson Road towards Lornie Road,1.363822,103.828125
+Police Speed Laser Cameras,Upper Thomson Road towards Sembawang Road,1.363833,103.827952
+Police Speed Laser Cameras,West Coast Highway towards Jalan Buroh,1.289245,103.773392
+Police Speed Laser Cameras,West Coast Highway towards Jalan Buroh,1.301656,103.762136
+Police Speed Laser Cameras,West Coast Highway towards Pasir Panjang Road,1.289383,103.773434
+Police Speed Laser Cameras,West Coast Highway towards Pasir Panjang Road,1.301713,103.762249
+Police Speed Laser Cameras,Woodlands Avenue 12 towards Woodlands Avenue 10,1.436309,103.806888
+Police Speed Laser Cameras,Woodlands Avenue 2 towards Riverside Road,1.430453,103.787296
+Police Speed Laser Cameras,Woodlands Avenue 2 towards Seletar Expressway,1.43043,103.787411
