@@ -457,24 +457,14 @@ def format_transport_page_train_service_alerts(data):
     # Limit to top 5 entries
     table_rows = table_rows[:5]
     
-    # Create table structure with 3 columns
+    # Create table structure with 2 columns
     table_header = html.Thead(
         html.Tr([
             html.Th("Line", style={
                 "padding": "0.5rem",
                 "backgroundColor": "#2c3e50",
                 "color": "#fff",
-                "fontSize": "0.75rem",
-                "fontWeight": "600",
-                "textAlign": "left",
-                "borderBottom": "0.125rem solid #4a5a6a",
-                "width": "20%"
-            }),
-            html.Th("Published Date and Time", style={
-                "padding": "0.5rem",
-                "backgroundColor": "#2c3e50",
-                "color": "#fff",
-                "fontSize": "0.75rem",
+                "fontSize": "0.625rem",
                 "fontWeight": "600",
                 "textAlign": "left",
                 "borderBottom": "0.125rem solid #4a5a6a",
@@ -484,11 +474,11 @@ def format_transport_page_train_service_alerts(data):
                 "padding": "0.5rem",
                 "backgroundColor": "#2c3e50",
                 "color": "#fff",
-                "fontSize": "0.75rem",
+                "fontSize": "0.625rem",
                 "fontWeight": "600",
                 "textAlign": "left",
                 "borderBottom": "0.125rem solid #4a5a6a",
-                "width": "60%"
+                "width": "80%"
             })
         ])
     )
@@ -496,6 +486,11 @@ def format_transport_page_train_service_alerts(data):
     # Create table body rows
     table_body_rows = []
     for row_data in table_rows:
+        # Combine published time with message in brackets
+        message_with_time = row_data["message"]
+        if row_data["published_time"]:
+            message_with_time = f"[{row_data['published_time']}] {row_data['message']}"
+        
         table_body_rows.append(
             html.Tr([
                 html.Td(
@@ -510,18 +505,7 @@ def format_transport_page_train_service_alerts(data):
                     }
                 ),
                 html.Td(
-                    row_data["published_time"] if row_data["published_time"] else "-",
-                    style={
-                        "padding": "0.5rem",
-                        "color": "#ccc",
-                        "fontSize": "0.75rem",
-                        "verticalAlign": "top",
-                        "borderBottom": "0.0625rem solid #4a5a6a",
-                        "whiteSpace": "nowrap",
-                    }
-                ),
-                html.Td(
-                    row_data["message"],
+                    message_with_time,
                     style={
                         "padding": "0.5rem",
                         "color": "#fff",
@@ -536,7 +520,7 @@ def format_transport_page_train_service_alerts(data):
     
     table_body = html.Tbody(table_body_rows)
     
-    # Return table
+    # Create table
     return html.Table(
         [table_header, table_body],
         style={
@@ -544,7 +528,7 @@ def format_transport_page_train_service_alerts(data):
             "borderCollapse": "collapse",
             "backgroundColor": "#3a4a5a",
             "borderRadius": "0.25rem",
-            "overflow": "hidden",
+            "overflow": "hidden"
         }
     )
 
@@ -650,18 +634,18 @@ def register_train_service_alerts_callbacks(app):
             # Set background color based on whether there are alerts
             if has_alerts:
                 content_style = {
-                    "padding": "0.5rem",
+                    "padding": "0.25rem",
                     "color": "#999",
-                    "fontSize": "0.75rem",
+                    "fontSize": "0.5rem",
                     "textAlign": "center",
                     "backgroundColor": "#3a4a5a",
                     "borderRadius": "0.25rem",
                 }
             else:
                 content_style = {
-                    "padding": "0.5rem",
+                    "padding": "0.25rem",
                     "color": "#999",
-                    "fontSize": "0.75rem",
+                    "fontSize": "0.5rem",
                     "textAlign": "center",
                 }
             

@@ -1813,16 +1813,6 @@ def load_speed_camera_data() -> pd.DataFrame:
             "gap": "0.5rem",
         },
         children=[
-            html.Div(
-                f"Service {service_no} - {len(directions)} direction(s)",
-                style={
-                    "color": "#fff",
-                    "fontWeight": "bold",
-                    "fontSize": "0.8125rem",
-                    "marginBottom": "0.5rem",
-                    "textAlign": "center",
-                }
-            ),
             *result_items
         ]
     )

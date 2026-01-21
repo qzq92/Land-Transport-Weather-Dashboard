@@ -928,7 +928,7 @@ def transport_page():
                             "padding": "0.9375rem",
                             "display": "flex",
                             "flexDirection": "column",
-                            "gap": "0.9375rem",
+                            "gap": "0.75rem",
                             "overflowY": "auto",
                         },
                         children=[
@@ -942,7 +942,7 @@ def transport_page():
                                     "flexDirection": "column",
                                     "gap": "0.5rem",
                                     "marginBottom": "0.9375rem",
-                                    "flex": "3",
+                                    "flex": "4",
                                     "minHeight": "0",
                                     "overflow": "hidden",
                                 },
@@ -968,10 +968,15 @@ def transport_page():
                                     html.Div(
                                         id="train-service-alerts-content",
                                         style={
-                                            "padding": "0.5rem",
+                                            "padding": "0.25rem",
                                             "color": "#999",
-                                            "fontSize": "0.75rem",
+                                            "fontSize": "0.5rem",
                                             "textAlign": "center",
+                                            "maxHeight": "15rem",
+                                            "overflowY": "auto",
+                                            "overflowX": "hidden",
+                                            "display": "flex",
+                                            "flexDirection": "column",
                                         },
                                         children=[
                                             html.P(
@@ -979,7 +984,7 @@ def transport_page():
                                                 style={
                                                     "margin": "0",
                                                     "color": "#999",
-                                                    "fontSize": "0.75rem",
+                                                    "fontSize": "0.5rem",
                                                     "fontStyle": "italic",
                                                 }
                                             )
@@ -1008,29 +1013,23 @@ def transport_page():
                                             "flexDirection": "row",
                                             "alignItems": "center",
                                             "justifyContent": "space-between",
-                                        },
-                                        children=[
-                                            html.Span(
-                                                "🚌 Bus Arrival Information for Busstops",
-                                                style={
-                                                    "color": "#fff",
-                                                    "fontWeight": "600",
-                                                    "fontSize": "0.8125rem"
-                                                }
-                                            ),
-                                        ]
-                                    ),
-                                    html.Div(
-                                        style={
-                                            "display": "flex",
                                             "gap": "0.5rem",
                                             "marginBottom": "0.5rem",
                                         },
                                         children=[
+                                            html.Span(
+                                                "🚌 Arrival Timings For Stops",
+                                                style={
+                                                    "color": "#fff",
+                                                    "fontWeight": "600",
+                                                    "fontSize": "0.8125rem",
+                                                    "whiteSpace": "nowrap",
+                                                }
+                                            ),
                                             dcc.Input(
                                                 id="bus-stop-search-input",
                                                 type="text",
-                                                placeholder="Enter 5-digit bus stop code/click on bus stop location on map",
+                                                placeholder="Enter bus stop code/click on bus stop location on map (after enabling bus stop location toggle)",
                                                 style={
                                                     "flex": "1",
                                                     "borderRadius": "0.25rem",
@@ -1041,7 +1040,7 @@ def transport_page():
                                                 },
                                             ),
                                             html.Button(
-                                                "Search",
+                                                "🔍",
                                                 id="bus-stop-search-btn",
                                                 n_clicks=0,
                                                 style={
@@ -1053,6 +1052,7 @@ def transport_page():
                                                     "cursor": "pointer",
                                                     "fontSize": "0.75rem",
                                                     "fontWeight": "600",
+                                                    "whiteSpace": "nowrap",
                                                 }
                                             ),
                                         ]
@@ -1081,7 +1081,7 @@ def transport_page():
                                     "flexDirection": "column",
                                     "gap": "0.5rem",
                                     "marginBottom": "0.9375rem",
-                                    "flex": "4",
+                                    "flex": "3",
                                     "minHeight": "0",
                                     "overflow": "hidden",
                                 },
@@ -1092,6 +1092,8 @@ def transport_page():
                                             "flexDirection": "row",
                                             "alignItems": "center",
                                             "justifyContent": "space-between",
+                                            "gap": "0.5rem",
+                                            "marginBottom": "0.5rem",
                                         },
                                         children=[
                                             html.Span(
@@ -1099,18 +1101,10 @@ def transport_page():
                                                 style={
                                                     "color": "#fff",
                                                     "fontWeight": "600",
-                                                    "fontSize": "0.8125rem"
+                                                    "fontSize": "0.8125rem",
+                                                    "whiteSpace": "nowrap",
                                                 }
                                             ),
-                                        ]
-                                    ),
-                                    html.Div(
-                                        style={
-                                            "display": "flex",
-                                            "gap": "0.5rem",
-                                            "marginBottom": "0.5rem",
-                                        },
-                                        children=[
                                             dcc.Input(
                                                 id="bus-service-search-input",
                                                 type="text",
@@ -1126,7 +1120,7 @@ def transport_page():
                                                 },
                                             ),
                                             html.Button(
-                                                "Search",
+                                                "🔍",
                                                 id="bus-service-search-btn",
                                                 n_clicks=0,
                                                 style={
@@ -1138,6 +1132,7 @@ def transport_page():
                                                     "cursor": "pointer",
                                                     "fontSize": "0.75rem",
                                                     "fontWeight": "600",
+                                                    "whiteSpace": "nowrap",
                                                 }
                                             ),
                                         ]
