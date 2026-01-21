@@ -1032,6 +1032,7 @@ def transport_page():
                                                 placeholder="Enter bus stop code or click on map",
                                                 style={
                                                     "flex": "1",
+                                                    "padding": "0.375rem 0.5rem",
                                                     "borderRadius": "0.25rem",
                                                     "border": "0.0625rem solid #5a6a7a",
                                                     "backgroundColor": "rgb(58, 74, 90)",
