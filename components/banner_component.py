@@ -71,6 +71,12 @@ def build_dashboard_banner():
                             style=TAB_STYLE,
                             selected_style=TAB_SELECTED_STYLE,
                         ),
+                        dcc.Tab(
+                            label="⏱️ Estimated Travel Times",
+                            value="travel-times",
+                            style=TAB_STYLE,
+                            selected_style=TAB_SELECTED_STYLE,
+                        ),
                     ],
                     style={
                         "height": "auto",

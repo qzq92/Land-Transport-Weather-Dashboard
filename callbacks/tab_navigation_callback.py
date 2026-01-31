@@ -17,6 +17,7 @@ def register_tab_navigation_callback(app):
          Output('weather-indices-page', 'style'),
          Output('transport-page', 'style'),
          Output('nearby-transport-page', 'style'),
+         Output('travel-times-page', 'style'),
          Output('search-bar-section', 'style')],
         Input('navigation-tabs', 'value')
     )
@@ -26,7 +27,8 @@ def register_tab_navigation_callback(app):
 
         Args:
             tab_value: Selected tab value
-                ('main', 'realtime-weather', 'weather-indices', 'transport', 'nearby-transport')
+                ('main', 'realtime-weather', 'weather-indices', 'transport',
+                 'nearby-transport', 'travel-times')
 
         Returns:
             Tuple of style dictionaries for each page and search bar
@@ -37,6 +39,7 @@ def register_tab_navigation_callback(app):
         indices_style = {'display': 'none'}
         transport_style = {'display': 'none'}
         nearby_transport_style = {'display': 'none'}
+        travel_times_style = {'display': 'none'}
         search_bar_style = {'display': 'none'}
 
         if tab_value == 'realtime-weather':
@@ -67,6 +70,13 @@ def register_tab_navigation_callback(app):
                 "height": "calc(100vh - 7.5rem)",
                 "width": "100%",
             }
+        elif tab_value == 'travel-times':
+            travel_times_style = {
+                "display": "block",
+                "padding": "0.5rem",
+                "height": "calc(100vh - 7.5rem)",
+                "width": "100%",
+            }
         else:
             # Main dashboard (search bar is now inside map container)
             main_style = {
@@ -80,8 +90,8 @@ def register_tab_navigation_callback(app):
             # Keep search bar section hidden (placeholder for callback compatibility)
             search_bar_style = {"display": "none"}
 
-        return (main_style, realtime_style,
-                indices_style, transport_style, nearby_transport_style, search_bar_style)
+        return (main_style, realtime_style, indices_style, transport_style,
+                nearby_transport_style, travel_times_style, search_bar_style)
 
     # Clientside callback to fix map rendering after tab switch
     # This triggers invalidateSize() on Leaflet maps when tabs change
