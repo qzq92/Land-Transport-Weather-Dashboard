@@ -77,6 +77,12 @@ def build_dashboard_banner():
                             style=TAB_STYLE,
                             selected_style=TAB_SELECTED_STYLE,
                         ),
+                        dcc.Tab(
+                            label="📊 Analytics and Forecast",
+                            value="analytics-forecast",
+                            style=TAB_STYLE,
+                            selected_style=TAB_SELECTED_STYLE,
+                        ),
                     ],
                     style={
                         "height": "auto",
