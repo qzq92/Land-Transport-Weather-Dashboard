@@ -225,7 +225,7 @@ def fetch_all_station_crowd_data() -> Optional[Dict[str, Any]]:
             'data': combined_data,
             'bucket': current_bucket
         }
-
+    
     print(f"DEBUG: Combined crowd data fetched and cached for bucket {current_bucket} ({len(all_stations)} stations)")
     return combined_data
 

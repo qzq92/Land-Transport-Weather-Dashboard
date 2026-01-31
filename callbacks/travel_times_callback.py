@@ -372,14 +372,14 @@ def build_chain_elements(chain):
             pass
 
         # Add arrow
-        elements.append(html.Span(" → ", style=CHAIN_STYLES["arrow"]))
+        elements.append(html.Span(" >> ", style=CHAIN_STYLES["arrow"]))
 
         # Add time badge with dynamic background color
         badge_style = {**CHAIN_STYLES["time_badge_base"], "backgroundColor": duration_color}
         elements.append(html.Span(f"{est_time} mins", style=badge_style))
 
         # Add arrow
-        elements.append(html.Span(" → ", style=CHAIN_STYLES["arrow"]))
+        elements.append(html.Span(" >> ", style=CHAIN_STYLES["arrow"]))
 
         # Add end point with appropriate styling
         end_point = segment.get("EndPoint", "N/A")
