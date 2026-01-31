@@ -26,6 +26,8 @@ All data are retrieved via API calls to data.gov.sg accessible [here](https://be
    - MRT/LRT service alerts (LTA DataMall TrainServiceAlerts API)
    - Faulty traffic lights (LTA DataMall FaultyTrafficLights API)
    - Estimated expressway travel times (LTA DataMall EstTravelTimes API)
+   - MRT/LRT station locations (MRTLRTStations.csv): Station codes, names, and coordinates
+     - **Note**: Additional Thomson East Coast and Punggol Coast locations are manually mapped from Google
 6. **Traffic**: Live traffic camera feeds at key locations
 
 For developers, please refer to the link [here](https://guide.data.gov.sg/developers) on possible deprecation and updates on API and other information.
@@ -129,7 +131,7 @@ This analytics dashboard provides real-time information on:
   - Updates automatically every 2 minutes
 - **Chain Flow Visualization**: 
   - Connected road segments displayed as visual chains showing the complete journey
-  - Format: Start Point >> Travel Time >> End Point >> Travel Time >> Next Point...
+  - Format: Start Point → Travel Time → End Point → Travel Time → Next Point...
   - Segments automatically linked by matching EndPoint to StartPoint
   - Total travel time displayed for each complete chain
 - **Grouped Display**: 
@@ -147,7 +149,7 @@ This analytics dashboard provides real-time information on:
 - **Visual Indicators**: 
   - Start point marked with cyan bullet (●)
   - End point marked with cyan circle (◉)
-  - Arrows (>>) connecting segments and time badges
+  - Arrows (→) connecting segments and time badges
 - **Last Updated Timestamp**: Shows when data was last refreshed in header
 - **Responsive Layout**: Scrollable table container with card-based design matching dashboard theme
 
@@ -172,7 +174,7 @@ The dashboard consists of 6 main pages accessible via tabs with glossy black-to-
 5. **📍 Nearby Facilities**: Nearby bus stops, MRT/LRT stations, taxi stands, carparks, bicycle parking, and EV charging points
 6. **⏱️ Estimated Travel Times**: Real-time expressway travel time estimates by road segment
    - Data fetched from LTA DataMall EstTravelTimes API
-   - **Chain Flow Visualization**: Connected segments displayed as flow chains showing start point >> travel time >> end point
+   - **Chain Flow Visualization**: Connected segments displayed as flow chains showing start point → travel time → end point
    - **Grouped by Expressway and Direction**: Travel times organized by expressway name (e.g., AYE, PIE, BKE) and direction (East/West or North/South)
    - **Color-Coded Travel Times**: 
      - Green (< 5 mins): Good traffic flow
@@ -460,7 +462,7 @@ The application is fully configured for Plotly Cloud deployment. See [DEPLOYMENT
 
 2. **Connect to Plotly Cloud:**
    - Sign up at [Plotly Cloud](https://plotly.com/)
-   - Create new app >> Connect to Git Repository
+   - Create new app → Connect to Git Repository
    - Select your repository and branch
 
 3. **Set Environment Variables** (in Plotly Cloud app settings):
