@@ -123,6 +123,34 @@ This analytics dashboard provides real-time information on:
 - **Metrics Display**: Standardized metric cards for bus stops and bus services counts
 - **Zoomable Map**: Map supports zoom levels 10-19 for detailed exploration
 
+### Estimated Travel Times Page
+- **Expressway Travel Time Estimates**: Real-time travel time data for expressway segments across Singapore
+  - Data sourced from LTA DataMall EstTravelTimes API
+  - Updates automatically every 2 minutes
+- **Chain Flow Visualization**: 
+  - Connected road segments displayed as visual chains showing the complete journey
+  - Format: Start Point → Travel Time → End Point → Travel Time → Next Point...
+  - Segments automatically linked by matching EndPoint to StartPoint
+  - Total travel time displayed for each complete chain
+- **Grouped Display**: 
+  - Travel times organized by expressway name (e.g., AYE, PIE, BKE, ECP, KJE, SLE, TPE)
+  - Further grouped by direction (East/West or North/South)
+  - Each expressway-direction combination shown in a separate card
+- **Color-Coded Time Badges**: 
+  - **Green** (< 5 mins): Good traffic flow, minimal congestion
+  - **Orange** (5-10 mins): Moderate congestion
+  - **Red** (> 10 mins): Heavy congestion, significant delays
+- **Direction Mapping**: 
+  - Automatic conversion of numeric directions to readable text
+  - East/West expressways: AYE, PIE, ECP, KJE, SLE, TPE
+  - North/South expressways: BKE, CTE, and others
+- **Visual Indicators**: 
+  - Start point marked with cyan bullet (●)
+  - End point marked with cyan circle (◉)
+  - Arrows (→) connecting segments and time badges
+- **Last Updated Timestamp**: Shows when data was last refreshed in header
+- **Responsive Layout**: Scrollable table container with card-based design matching dashboard theme
+
 ## Application Structure
 
 The dashboard consists of 6 main pages accessible via tabs with glossy black-to-silver gradient styling:
@@ -144,8 +172,16 @@ The dashboard consists of 6 main pages accessible via tabs with glossy black-to-
 5. **📍 Nearby Facilities**: Nearby bus stops, MRT/LRT stations, taxi stands, carparks, bicycle parking, and EV charging points
 6. **⏱️ Estimated Travel Times**: Real-time expressway travel time estimates by road segment
    - Data fetched from LTA DataMall EstTravelTimes API
-   - Displays Name, StartPoint, EndPoint, and Estimated Time (mins) in tabular format
-   - Auto-refreshes every 2 minutes
+   - **Chain Flow Visualization**: Connected segments displayed as flow chains showing start point → travel time → end point
+   - **Grouped by Expressway and Direction**: Travel times organized by expressway name (e.g., AYE, PIE, BKE) and direction (East/West or North/South)
+   - **Color-Coded Travel Times**: 
+     - Green (< 5 mins): Good traffic flow
+     - Orange (5-10 mins): Moderate congestion
+     - Red (> 10 mins): Heavy congestion
+   - **Direction Mapping**: Automatic conversion of direction numbers to text (East/West for AYE, PIE, ECP, KJE, SLE, TPE; North/South for others)
+   - **Total Time Display**: Each chain shows cumulative travel time for the entire route
+   - **Auto-refresh**: Updates every 2 minutes with timestamp display
+   - **Last Updated Indicator**: Shows when data was last refreshed
 
 ## Key Features
 
@@ -254,6 +290,10 @@ All sample screenshots are stored in `assets/img` with `.jpg` extensions for cla
 ![Nearby Facilities](assets/img/nearby_facilities.jpg)
 *Top nearby transport options and parking facilities.*
 
+### Estimated Travel Times Page
+![Estimated Travel Times](assets/img/estimated_travel_times.jpg)
+*Real-time expressway travel time estimates with chain flow visualization.*
+
 ## Built with following:
 * [Dash](https://dash.plot.ly/) - Main server and interactive components 
 * [Plotly Python](https://plot.ly/python/) - Used to create the interactive plots
@@ -360,7 +400,7 @@ LTA_API_KEY=your_lta_api_key_here
    - Request API access at [LTA DataMall Request Form](https://datamall.lta.gov.sg/content/datamall/en/request-for-api.html)
    - Fill in the application form with your details and intended usage
    - The API key will be sent to your email after approval
-   - Required for: Real-time carpark availability (CarParkAvailabilityv2 API), train service alerts, faulty traffic lights, and taxi stands data
+   - Required for: Real-time carpark availability (CarParkAvailabilityv2 API), train service alerts, faulty traffic lights, taxi stands data, and estimated travel times (EstTravelTimes API)
 
 ## Using this application
 
