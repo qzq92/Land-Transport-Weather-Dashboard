@@ -45,6 +45,36 @@ def map_direction(expressway_name, direction):
     return str(direction)
 
 
+# Duration color thresholds
+DURATION_COLORS = {
+    "good": "#2ecc71",      # Green - less than 5 mins (good flow)
+    "moderate": "#f39c12",  # Orange - 5 to 10 mins (moderate congestion)
+    "heavy": "#e74c3c",     # Red - more than 10 mins (heavy congestion)
+}
+
+
+def get_duration_color(est_time):
+    """
+    Get color based on estimated travel time duration.
+
+    Args:
+        est_time: Estimated time in minutes (can be string or number)
+
+    Returns:
+        Color hex code based on duration thresholds
+    """
+    try:
+        duration = float(est_time)
+    except (ValueError, TypeError):
+        return DURATION_COLORS["moderate"]  # Default to orange if invalid
+
+    if duration < 5:
+        return DURATION_COLORS["good"]
+    if duration <= 10:
+        return DURATION_COLORS["moderate"]
+    return DURATION_COLORS["heavy"]
+
+
 def build_segment_chains(items):
     """
     Build connected chains of segments by matching EndPoint to StartPoint.
@@ -173,19 +203,61 @@ CHAIN_STYLES = {
         "borderBottom": "0.125rem solid #4a5a6a",
         "borderRadius": "0.375rem 0.375rem 0 0",
     },
-    "point": {
-        "padding": "0.25rem 0.5rem",
-        "color": "#e0e0e0",
+    "point_base": {
+        "padding": "0.25rem 0.625rem",
         "fontSize": "0.75rem",
         "fontWeight": "500",
         "whiteSpace": "nowrap",
+        "borderRadius": "0.375rem",
+        "backgroundColor": "#3a4a5a",
+        "color": "#e0e0e0",
     },
-    "time_badge": {
-        "padding": "0.125rem 0.375rem",
-        "color": "#4ecdc4",
+    "point_first": {
+        "padding": "0.25rem 0.625rem",
+        "fontSize": "0.8125rem",
+        "fontWeight": "600",
+        "whiteSpace": "nowrap",
+        "borderRadius": "0.375rem",
+        "backgroundColor": "#3a4a5a",
+        "color": "#fff",
+        "borderLeft": "0.1875rem solid #4ecdc4",
+    },
+    "point_last": {
+        "padding": "0.25rem 0.625rem",
+        "fontSize": "0.8125rem",
+        "fontWeight": "600",
+        "whiteSpace": "nowrap",
+        "borderRadius": "0.375rem",
+        "backgroundColor": "#3a4a5a",
+        "color": "#fff",
+        "borderRight": "0.1875rem solid #4ecdc4",
+    },
+    "point_intermediate": {
+        "padding": "0.25rem 0.5rem",
+        "fontSize": "0.75rem",
+        "fontWeight": "500",
+        "whiteSpace": "nowrap",
+        "borderRadius": "0.375rem",
+        "backgroundColor": "#3a4a5a",
+        "color": "#ccc",
+    },
+    "location_marker": {
+        "fontSize": "0.625rem",
+        "marginRight": "0.25rem",
+    },
+    "time_badge_base": {
+        "padding": "0.125rem 0.5rem",
         "fontSize": "0.6875rem",
         "fontWeight": "600",
         "whiteSpace": "nowrap",
+        "borderRadius": "0.75rem",
+        "margin": "0 0.25rem",
+        "color": "#fff",
+    },
+    "arrow": {
+        "color": "#888",
+        "fontSize": "0.75rem",
+        "margin": "0 0.125rem",
     },
     "chain_row": {
         "display": "flex",
@@ -210,8 +282,54 @@ CHAIN_STYLES = {
         "display": "grid",
         "gridTemplateColumns": "1fr",
         "gap": "1rem",
+    },
+    "total_time": {
+        "marginLeft": "auto",
+        "padding": "0.125rem 0.5rem",
+        "backgroundColor": "#1a2a3a",
+        "borderRadius": "0.5rem",
+        "color": "#aaa",
+        "fontSize": "0.6875rem",
+        "fontWeight": "500",
     }
 }
+
+
+def build_color_legend():
+    """Build the color legend component for travel time durations."""
+    legend_item_style = {"display": "flex", "alignItems": "center", "gap": "0.375rem"}
+    badge_style = {"width": "0.75rem", "height": "0.75rem", "borderRadius": "50%"}
+    text_style = {"fontSize": "0.75rem", "color": "#ccc"}
+
+    return html.Div(
+        style={
+            "display": "flex",
+            "alignItems": "center",
+            "padding": "0.5rem 1rem",
+            "backgroundColor": "#1a2a3a",
+            "borderRadius": "0.5rem",
+            "marginBottom": "1rem",
+            "flexWrap": "wrap",
+            "gap": "0.5rem",
+        },
+        children=[
+            html.Span("Travel Time:", style={
+                "fontSize": "0.75rem", "color": "#fff", "fontWeight": "600", "marginRight": "0.5rem"
+            }),
+            html.Div(style={**legend_item_style, "marginRight": "1rem"}, children=[
+                html.Div(style={**badge_style, "backgroundColor": DURATION_COLORS["good"]}),
+                html.Span("< 5 mins (Good)", style=text_style),
+            ]),
+            html.Div(style={**legend_item_style, "marginRight": "1rem"}, children=[
+                html.Div(style={**badge_style, "backgroundColor": DURATION_COLORS["moderate"]}),
+                html.Span("5-10 mins (Moderate)", style=text_style),
+            ]),
+            html.Div(style={**legend_item_style, "marginRight": "1rem"}, children=[
+                html.Div(style={**badge_style, "backgroundColor": DURATION_COLORS["heavy"]}),
+                html.Span("> 10 mins (Heavy)", style=text_style),
+            ]),
+        ]
+    )
 
 
 def build_chain_elements(chain):
@@ -222,28 +340,64 @@ def build_chain_elements(chain):
         chain: List of connected segment dictionaries
 
     Returns:
-        List of HTML Span elements representing the chain flow
+        Tuple of (list of HTML elements, total time in minutes)
     """
     elements = []
+    total_time = 0
+    chain_length = len(chain)
+
     for idx, segment in enumerate(chain):
+        is_first_segment = (idx == 0)
+        is_last_segment = (idx == chain_length - 1)
+
         # Add start point (only for first segment)
-        if idx == 0:
+        if is_first_segment:
+            start_point = segment.get("StartPoint", "N/A")
+            # Add start marker and styled first point
             elements.append(
-                html.Span(segment.get("StartPoint", "N/A"), style=CHAIN_STYLES["point"])
+                html.Span([
+                    html.Span("● ", style={**CHAIN_STYLES["location_marker"], "color": "#4ecdc4"}),
+                    start_point
+                ], style=CHAIN_STYLES["point_first"])
             )
 
-        # Add time badge with arrows
+        # Get estimated time and color
         est_time = segment.get("EstTime", "N/A")
-        elements.append(
-            html.Span(f" → ({est_time} mins) → ", style=CHAIN_STYLES["time_badge"])
-        )
+        duration_color = get_duration_color(est_time)
 
-        # Add end point
-        elements.append(
-            html.Span(segment.get("EndPoint", "N/A"), style=CHAIN_STYLES["point"])
-        )
+        # Track total time
+        try:
+            total_time += float(est_time)
+        except (ValueError, TypeError):
+            pass
 
-    return elements
+        # Add arrow
+        elements.append(html.Span(" → ", style=CHAIN_STYLES["arrow"]))
+
+        # Add time badge with dynamic background color
+        badge_style = {**CHAIN_STYLES["time_badge_base"], "backgroundColor": duration_color}
+        elements.append(html.Span(f"{est_time} mins", style=badge_style))
+
+        # Add arrow
+        elements.append(html.Span(" → ", style=CHAIN_STYLES["arrow"]))
+
+        # Add end point with appropriate styling
+        end_point = segment.get("EndPoint", "N/A")
+        if is_last_segment:
+            # Last point with destination marker
+            elements.append(
+                html.Span([
+                    end_point,
+                    html.Span(" ◉", style={**CHAIN_STYLES["location_marker"], "color": "#4ecdc4"})
+                ], style=CHAIN_STYLES["point_last"])
+            )
+        else:
+            # Intermediate point
+            elements.append(
+                html.Span(end_point, style=CHAIN_STYLES["point_intermediate"])
+            )
+
+    return elements, total_time
 
 
 def format_travel_times_table(data):
@@ -280,11 +434,16 @@ def format_travel_times_table(data):
         for direction in sorted(grouped_data[expressway_name].keys()):
             chains = build_segment_chains(grouped_data[expressway_name][direction])
 
-            # Build chain flow rows
-            chain_rows = [
-                html.Div(style=CHAIN_STYLES["chain_row"], children=build_chain_elements(chain))
-                for chain in chains
-            ]
+            # Build chain flow rows with total time
+            chain_rows = []
+            for chain in chains:
+                elements, total_time = build_chain_elements(chain)
+                elements.append(
+                    html.Span(f"Total: {total_time:.0f} mins", style=CHAIN_STYLES["total_time"])
+                )
+                chain_rows.append(
+                    html.Div(style=CHAIN_STYLES["chain_row"], children=elements)
+                )
 
             # Create card header
             direction_text = map_direction(expressway_name, direction)
@@ -300,7 +459,10 @@ def format_travel_times_table(data):
                 )
             )
 
-    return html.Div(style=CHAIN_STYLES["grid"], children=cards)
+    return html.Div(
+        style={"display": "flex", "flexDirection": "column"},
+        children=[build_color_legend(), html.Div(style=CHAIN_STYLES["grid"], children=cards)]
+    )
 
 
 def register_travel_times_callbacks(app):
