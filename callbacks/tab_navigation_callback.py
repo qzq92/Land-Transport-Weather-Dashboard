@@ -18,6 +18,7 @@ def register_tab_navigation_callback(app):
          Output('transport-page', 'style'),
          Output('nearby-transport-page', 'style'),
          Output('travel-times-page', 'style'),
+         Output('analytics-forecast-page', 'style'),
          Output('search-bar-section', 'style')],
         Input('navigation-tabs', 'value')
     )
@@ -28,7 +29,7 @@ def register_tab_navigation_callback(app):
         Args:
             tab_value: Selected tab value
                 ('main', 'realtime-weather', 'weather-indices', 'transport',
-                 'nearby-transport', 'travel-times')
+                 'nearby-transport', 'travel-times', 'analytics-forecast')
 
         Returns:
             Tuple of style dictionaries for each page and search bar
@@ -40,6 +41,7 @@ def register_tab_navigation_callback(app):
         transport_style = {'display': 'none'}
         nearby_transport_style = {'display': 'none'}
         travel_times_style = {'display': 'none'}
+        analytics_forecast_style = {'display': 'none'}
         search_bar_style = {'display': 'none'}
 
         if tab_value == 'realtime-weather':
@@ -77,6 +79,13 @@ def register_tab_navigation_callback(app):
                 "height": "calc(100vh - 7.5rem)",
                 "width": "100%",
             }
+        elif tab_value == 'analytics-forecast':
+            analytics_forecast_style = {
+                "display": "block",
+                "padding": "0.5rem",
+                "height": "calc(100vh - 7.5rem)",
+                "width": "100%",
+            }
         else:
             # Main dashboard (search bar is now inside map container)
             main_style = {
@@ -91,7 +100,7 @@ def register_tab_navigation_callback(app):
             search_bar_style = {"display": "none"}
 
         return (main_style, realtime_style, indices_style, transport_style,
-                nearby_transport_style, travel_times_style, search_bar_style)
+                nearby_transport_style, travel_times_style, analytics_forecast_style, search_bar_style)
 
     # Clientside callback to fix map rendering after tab switch
     # This triggers invalidateSize() on Leaflet maps when tabs change

@@ -318,7 +318,7 @@ def format_transport_page_train_service_alerts(data):
     # Use line info from config
     line_info_map = LINE_INFO_MAP
     
-    print("DATA:", data)
+    #print("DATA:", data)
     # Group disrupted alerts or alerts with messages by line code
     # Focus on the Message list as requested
     line_messages_map = defaultdict(list)
