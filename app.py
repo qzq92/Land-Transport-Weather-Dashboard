@@ -16,6 +16,7 @@ from components.realtime_weather_page import realtime_weather_page
 from components.weather_indices_page import weather_indices_page
 from components.transport_page import transport_page
 from components.nearby_transport_page import nearby_transport_page
+from components.travel_times_page import travel_times_page
 from components.metric_card import create_metric_card
 from callbacks.map_callback import register_search_callbacks
 from callbacks.traffic_callback import register_camera_feed_callbacks
@@ -31,6 +32,7 @@ from callbacks.bus_arrival_callback import register_bus_arrival_callbacks
 from callbacks.bus_service_callback import register_bus_service_callbacks
 from callbacks.train_service_alerts_callback import register_train_service_alerts_callbacks
 from callbacks.mrt_crowd_callback import register_mrt_crowd_callbacks
+from callbacks.travel_times_callback import register_travel_times_callbacks
 from auth.onemap_api import initialize_onemap_token
 from utils.data_download_helper import (
     download_hdb_carpark_csv,
@@ -47,7 +49,7 @@ app = Dash(__name__,
                "initial-scale": "1.0"}],
            external_stylesheets=[dbc.themes.DARKLY],
            suppress_callback_exceptions = True, #
-           title="SimpleDashboard Demo"
+           title="Land Transport and Weather Dashboard"
         )
 register_search_callbacks(app)
 register_camera_feed_callbacks(app)
@@ -62,6 +64,7 @@ register_bus_arrival_callbacks(app)
 register_bus_service_callbacks(app)
 register_train_service_alerts_callbacks(app)
 register_mrt_crowd_callbacks(app)
+register_travel_times_callbacks(app)
 register_tab_navigation_callback(app)
 
 # Dashboard app layout ------------------------------------------------------#
@@ -131,6 +134,8 @@ app.layout = html.Div(
                 transport_page(),
                 # Nearby transport page (hidden by default)
                 nearby_transport_page(),
+                # Travel times page (hidden by default)
+                travel_times_page(),
                 # Main content area with map and right panel side by side
                 html.Div(
                     id="main-content",
@@ -822,7 +827,7 @@ if __name__ == '__main__':
         print("Warning: Failed to initialize OneMap API token. Some features may not work.")
 
     # Set app title
-    app.title = "SG Dashboard"
+    app.title = "Land Transport and Weather Dashboard"
     
     # Enable hot reloading to capture latest changes in code
     # If running locally in Anaconda env:

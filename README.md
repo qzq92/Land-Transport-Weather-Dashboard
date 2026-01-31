@@ -1,8 +1,7 @@
-# Simple analytics enabled dashboard with (near) real-time information on weather, carpark and traffic conditions.
+# Land Transport and Weather Dashboard
 
 ## Overview
-This app is a multi-tab dashboard for Singapore that brings together weather, transport, and environmental data in one place.
-It focuses on quick, readable summaries and interactive maps to explore nearby facilities and live conditions.
+The **Land Transport and Weather Dashboard** is a multi-tab dashboard for Singapore that provides near real-time information on selected land transportation and weather information. This app brings together weather, transport, and environmental data in one place, focusing on quick, readable summaries and interactive maps to explore nearby facilities and live conditions.
 
 ## Acknowledgement
 
@@ -26,6 +25,7 @@ All data are retrieved via API calls to data.gov.sg accessible [here](https://be
    - Taxi stands (LTA DataMall TaxiStands API)
    - MRT/LRT service alerts (LTA DataMall TrainServiceAlerts API)
    - Faulty traffic lights (LTA DataMall FaultyTrafficLights API)
+   - Estimated expressway travel times (LTA DataMall EstTravelTimes API)
 6. **Traffic**: Live traffic camera feeds at key locations
 
 For developers, please refer to the link [here](https://guide.data.gov.sg/developers) on possible deprecation and updates on API and other information.
@@ -125,7 +125,7 @@ This analytics dashboard provides real-time information on:
 
 ## Application Structure
 
-The dashboard consists of 4 main pages accessible via tabs with glossy black-to-silver gradient styling:
+The dashboard consists of 6 main pages accessible via tabs with glossy black-to-silver gradient styling:
 
 1. **🏠 Main Dashboard**: Overview with average PSI, meteorological alerts, traffic incidents, MRT/LRT service alerts, disease clusters, nearby facilities, and interactive map
    - **2-Hour Weather Forecast**: Toggle button on main page to show/hide 2-hour weather predictions with map markers
@@ -142,6 +142,10 @@ The dashboard consists of 4 main pages accessible via tabs with glossy black-to-
    - **Selection Persistence**: Selected bus stops remain active during map navigation
    - **Zoomable Map**: Supports zoom levels 10-19 for detailed exploration
 5. **📍 Nearby Facilities**: Nearby bus stops, MRT/LRT stations, taxi stands, carparks, bicycle parking, and EV charging points
+6. **⏱️ Estimated Travel Times**: Real-time expressway travel time estimates by road segment
+   - Data fetched from LTA DataMall EstTravelTimes API
+   - Displays Name, StartPoint, EndPoint, and Estimated Time (mins) in tabular format
+   - Auto-refreshes every 2 minutes
 
 ## Key Features
 
