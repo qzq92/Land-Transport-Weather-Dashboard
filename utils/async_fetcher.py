@@ -147,8 +147,8 @@ def fetch_url(url: str, headers: Optional[Dict] = None, timeout: int = 10, max_r
             # Check for 5XX server errors (500-599)
             if 500 <= response.status_code < 600:
                 if attempt < max_retries - 1:
-                    # Exponential backoff: 2^attempt seconds (1s, 2s, 4s)
-                    wait_time = 2 ** attempt
+                    # Exponential backoff: 3 * (2^attempt) seconds (3s, 6s, 12s)
+                    wait_time = 3 * (2 ** attempt)
                     print(f"API request failed with {response.status_code}: {url} - retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})")
                     time.sleep(wait_time)
                     continue
@@ -161,7 +161,8 @@ def fetch_url(url: str, headers: Optional[Dict] = None, timeout: int = 10, max_r
                 
         except (requests.exceptions.RequestException, ValueError) as error:
             if attempt < max_retries - 1:
-                wait_time = 2 ** attempt
+                # Exponential backoff: 3 * (2^attempt) seconds (3s, 6s, 12s)
+                wait_time = 3 * (2 ** attempt)
                 print(f"Error fetching {url}: {error} - retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})")
                 time.sleep(wait_time)
                 continue
