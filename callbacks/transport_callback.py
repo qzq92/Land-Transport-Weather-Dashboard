@@ -51,6 +51,10 @@ _road_infra_cache: Dict[str, Optional[Any]] = {
     'bus_services': None,  # Bus services data
 }
 
+# In-memory cache for LTA traffic camera ID → location description mapping
+_LTA_CAMERA_ID_MAPPING: Dict[str, str] = {}
+_LTA_CAMERA_ID_MAPPING_LOADED: bool = False
+
 
 def clear_road_infra_cache():
     """
@@ -72,6 +76,42 @@ def clear_road_infra_cache():
         'bus_services': None,
     }
     print("Road infrastructure cache cleared")
+
+
+def _load_lta_camera_id_mapping() -> Dict[str, str]:
+    """
+    Load LTA camera ID to location description mapping from CSV.
+    Uses in-memory cache since the mapping is static.
+
+    Returns:
+        Dictionary mapping camera_id (str) to location description.
+    """
+    global _LTA_CAMERA_ID_MAPPING, _LTA_CAMERA_ID_MAPPING_LOADED
+
+    if _LTA_CAMERA_ID_MAPPING_LOADED and _LTA_CAMERA_ID_MAPPING:
+        return _LTA_CAMERA_ID_MAPPING
+
+    csv_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'lta_camera_id_mapping.csv')
+
+    try:
+        df = pd.read_csv(csv_path, dtype={'Camera ID': str})
+        mapping: Dict[str, str] = {}
+
+        for _, row in df.iterrows():
+            camera_id = str(row.get('Camera ID', '')).strip()
+            location_desc = str(row.get('Location Description', '')).strip()
+            if camera_id and location_desc:
+                mapping[camera_id] = location_desc
+
+        _LTA_CAMERA_ID_MAPPING = mapping
+        _LTA_CAMERA_ID_MAPPING_LOADED = True
+        print(f"LTA camera ID mapping loaded: {len(mapping)} entries")
+    except FileNotFoundError:
+        print(f"LTA camera ID mapping file not found at {csv_path}")
+    except Exception as e:
+        print(f"Error loading LTA camera ID mapping from {csv_path}: {e}")
+
+    return _LTA_CAMERA_ID_MAPPING
 
 
 def get_erp_gantry_data():
@@ -329,6 +369,7 @@ def create_cctv_markers(camera_data):
         List of dl.Marker components with popups
     """
     markers = []
+    camera_id_mapping = _load_lta_camera_id_mapping()
     
     for camera_id, info in camera_data.items():
         lat = info.get('lat')
@@ -338,7 +379,7 @@ def create_cctv_markers(camera_data):
         
         if lat is None or lon is None:
             continue
-
+        
         # Format timestamp if available
         datetime_text = ""
         if timestamp:
@@ -352,25 +393,23 @@ def create_cctv_markers(camera_data):
             except (ValueError, AttributeError):
                 datetime_text = str(timestamp) if timestamp else ""
 
-        # Create popup content
+        # Lookup human-friendly location description using camera ID mapping
+        location_desc = camera_id_mapping.get(str(camera_id), f"Camera {camera_id}")
+
+        # Tooltip: location description + time only
+        if datetime_text:
+            tooltip_text = f"{location_desc}\nTime: {datetime_text}"
+        else:
+            tooltip_text = location_desc
+        
+        # Popup content: location description and time (no lat/lon), plus image
         popup_children = [
             html.Strong(
-                f"Camera {camera_id}",
+                location_desc,
                 style={"fontSize": "0.875rem"}
-            ),
-            html.Br(),
+            )
         ]
         
-        # Add lat/lon on next line
-        if lat is not None and lon is not None:
-            popup_children.append(
-                html.Div(
-                    f"(lat: {lat:.6f}, lon: {lon:.6f})",
-                    style={"fontSize": "0.75rem", "color": "#888", "marginTop": "0.25rem"}
-                )
-            )
-        
-        # Add datetime if available
         if datetime_text:
             popup_children.append(
                 html.Div(
@@ -390,12 +429,12 @@ def create_cctv_markers(camera_data):
                 }
             )
         )
-
+        
         markers.append(
             dl.Marker(
                 position=[lat, lon],
                 children=[
-                    dl.Tooltip(f"Camera {camera_id}"),
+                    dl.Tooltip(tooltip_text),
                     dl.Popup(
                         children=html.Div(
                             popup_children,
@@ -3165,15 +3204,16 @@ def load_ev_charging_points_from_file() -> Optional[Dict[str, Any]]:
         return None
 
 
-def create_ev_charging_markers_from_file(ev_data: Optional[Dict[str, Any]]) -> List[dl.CircleMarker]:
+def create_ev_charging_markers_from_file(ev_data: Optional[Dict[str, Any]]) -> List[dl.Marker]:
     """
     Create map markers for EV charging point locations from EVCBatch file data.
+    Uses the same EV charger icon as nearby facilities but with green background.
     
     Args:
         ev_data: Dictionary containing EV charging points data from EVCBatch file
     
     Returns:
-        List of dl.CircleMarker components
+        List of dl.Marker components with EV charger icons
     """
     markers = []
     
@@ -3244,19 +3284,34 @@ def create_ev_charging_markers_from_file(ev_data: Optional[Dict[str, Any]]) -> L
                 skipped_count += 1
                 continue
             
-            # Build tooltip content with name and address
+            # Build tooltip content with name
             tooltip_text = f"{name}"
             
-            # Create circle marker
+            # Create EV charger icon SVG with green background (same as nearby facilities but green)
+            ev_charger_svg = (
+                '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
+                '<rect x="4" y="6" width="16" height="12" rx="2" fill="#00E676" opacity="0.9" stroke="#00A855" stroke-width="1.5"/>'
+                '<circle cx="8" cy="12" r="1.5" fill="#fff"/>'
+                '<circle cx="16" cy="12" r="1.5" fill="#fff"/>'
+                '<path d="M 6 2 L 6 6 M 18 2 L 18 6" stroke="#00E676" stroke-width="2" stroke-linecap="round"/>'
+                '<path d="M 10 18 L 10 20 M 14 18 L 14 20" stroke="#00E676" stroke-width="2" stroke-linecap="round"/>'
+                '<path d="M 12 20 L 12 22" stroke="#00E676" stroke-width="2" stroke-linecap="round"/>'
+                '</svg>'
+            )
+            ev_charger_svg_base64 = base64.b64encode(ev_charger_svg.encode()).decode()
+            
+            ev_charger_icon = {
+                "iconUrl": f"data:image/svg+xml;base64,{ev_charger_svg_base64}",
+                "iconSize": [24, 24],
+                "iconAnchor": [12, 24],
+                "popupAnchor": [0, -24],
+            }
+            
+            # Create marker with EV charger icon
             markers.append(
-                dl.CircleMarker(
-                    center=[lat, lon],
-                    radius=6,
-                    color="#00E676",  # Green color for EV charging points
-                    fill=True,
-                    fillColor="#00E676",
-                    fillOpacity=0.7,
-                    weight=2,
+                dl.Marker(
+                    position=[lat, lon],
+                    icon=ev_charger_icon,
                     children=[
                         dl.Tooltip(html.Pre(tooltip_text, style={"margin": "0", "fontFamily": "inherit"})),
                     ]
@@ -4797,11 +4852,12 @@ def register_transport_callbacks(app):
         [Input('ev-charging-toggle-state', 'data'),
          Input('ev-charging-interval', 'n_intervals')]
     )
-    def update_ev_charging_markers(show_ev_charging: bool, n_intervals: int) -> List[dl.CircleMarker]:
+    def update_ev_charging_markers(show_ev_charging: bool, n_intervals: int) -> List[dl.Marker]:
         """
         Update EV charging points markers display based on toggle state.
         Loads data from EVCBatch file and creates markers.
         Force overwrites the file every 5 minutes when interval triggers.
+        Uses the same EV charger icon as nearby facilities but with green background.
         """
         print(f"update_ev_charging_markers called: show_ev_charging={show_ev_charging}, n_intervals={n_intervals}")
         
@@ -4862,5 +4918,214 @@ def register_transport_callbacks(app):
         else:
             print("load_ev_charging_points_from_file returned None")
             return []
+
+
+def register_traffic_conditions_callbacks(app):
+    """
+    Register callbacks for traffic conditions page.
+    
+    Args:
+        app: Dash app instance
+    """
+    @app.callback(
+        Output('traffic-conditions-content', 'children'),
+        [Input('traffic-conditions-interval', 'n_intervals'),
+         Input('navigation-tabs', 'value')]
+    )
+    def update_traffic_conditions_grid(n_intervals: int, tab_value: str) -> html.Div:
+        """
+        Update traffic conditions grid with all LTA traffic camera feeds.
+        Displays cameras in a 6-column grid with location descriptions.
+        
+        Args:
+            n_intervals: Interval counter for auto-refresh (used to trigger updates)
+            tab_value: Current tab value to determine if page is visible
+        
+        Returns:
+            HTML Div containing the camera grid
+        """
+        _ = n_intervals  # Used for periodic refresh
+        
+        # Only update if the traffic conditions tab is active
+        # Handle None case (initial load) or when tab is not active
+        if not tab_value or tab_value != 'traffic-conditions':
+            # Return empty div when tab is not active
+            return html.Div(children=[])
+        
+        try:
+            # Fetch traffic camera data
+            data = fetch_traffic_cameras()
+            
+            if not data:
+                return html.Div(
+                    html.P(
+                        "No traffic camera data available",
+                        style={
+                            "textAlign": "center",
+                            "color": "#999",
+                            "padding": "2rem",
+                            "fontSize": "0.875rem",
+                        }
+                    )
+                )
+            
+            camera_data = parse_traffic_camera_data(data)
+            
+            if not camera_data:
+                return html.Div(
+                    html.P(
+                        "No traffic camera data available",
+                        style={
+                            "textAlign": "center",
+                            "color": "#999",
+                            "padding": "2rem",
+                            "fontSize": "0.875rem",
+                        }
+                    )
+                )
+        except Exception as e:
+            print(f"Error fetching traffic camera data: {e}")
+            import traceback
+            traceback.print_exc()
+            return html.Div(
+                html.P(
+                    f"Error loading traffic camera data: {str(e)}",
+                    style={
+                        "textAlign": "center",
+                        "color": "#ff6b6b",
+                        "padding": "2rem",
+                        "fontSize": "0.875rem",
+                    }
+                )
+            )
+        
+        try:
+            # Load camera ID mapping
+            camera_id_mapping = _load_lta_camera_id_mapping()
+            
+            # Create camera cards in a 4-column grid
+            camera_cards = []
+            
+            # Sort cameras by ID for consistent display
+            sorted_cameras = sorted(camera_data.items(), key=lambda x: x[0])
+            
+            for camera_id, info in sorted_cameras:
+                try:
+                    image_url = info.get('image_url', '')
+                    timestamp = info.get('timestamp', '')
+                    
+                    # Get location description from mapping
+                    # Try both string and integer key formats
+                    location_desc = camera_id_mapping.get(str(camera_id)) or camera_id_mapping.get(camera_id)
+                    if not location_desc:
+                        location_desc = f"Camera {camera_id}"
+                    
+                    # Format timestamp if available
+                    datetime_text = ""
+                    if timestamp:
+                        try:
+                            if isinstance(timestamp, str):
+                                parsed_datetime = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                                datetime_text = parsed_datetime.strftime("%Y-%m-%d %H:%M:%S")
+                            else:
+                                datetime_text = str(timestamp)
+                        except (ValueError, AttributeError):
+                            datetime_text = str(timestamp) if timestamp else ""
+                    
+                    # Create camera card
+                    camera_card = html.Div(
+                        style={
+                            "backgroundColor": "#1a2a3a",
+                            "borderRadius": "0.5rem",
+                            "padding": "0.5rem",
+                            "display": "flex",
+                            "flexDirection": "column",
+                            "gap": "0.5rem",
+                            "border": "0.0625rem solid #3a4a5a",
+                        },
+                        children=[
+                            # Camera image
+                            html.Div(
+                                style={
+                                    "width": "100%",
+                                    "aspectRatio": "16/9",
+                                    "backgroundColor": "#000",
+                                    "borderRadius": "0.25rem",
+                                    "overflow": "hidden",
+                                    "display": "flex",
+                                    "alignItems": "center",
+                                    "justifyContent": "center",
+                                    "position": "relative",
+                                },
+                                children=[
+                                    html.Img(
+                                        src=image_url if image_url else "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3ENo Image%3C/text%3E%3C/svg%3E",
+                                        alt=f"Camera {camera_id}",
+                                        style={
+                                            "width": "100%",
+                                            "height": "100%",
+                                            "objectFit": "cover",
+                                            "display": "block",
+                                        }
+                                    )
+                                ]
+                            ),
+                            # Location description
+                            html.Div(
+                                location_desc,
+                                style={
+                                    "color": "#fff",
+                                    "fontSize": "0.75rem",
+                                    "fontWeight": "500",
+                                    "textAlign": "center",
+                                    "lineHeight": "1.3",
+                                    "minHeight": "2.5rem",
+                                    "display": "flex",
+                                    "alignItems": "center",
+                                    "justifyContent": "center",
+                                }
+                            ),
+                            # Timestamp
+                            html.Div(
+                                datetime_text if datetime_text else "Time: N/A",
+                                style={
+                                    "color": "#999",
+                                    "fontSize": "0.625rem",
+                                    "textAlign": "center",
+                                }
+                            ),
+                        ]
+                    )
+                    
+                    camera_cards.append(camera_card)
+                except Exception as e:
+                    print(f"Error creating card for camera {camera_id}: {e}")
+                    continue
+            
+            # Return grid container with 4 columns
+            return html.Div(
+                style={
+                    "display": "grid",
+                    "gridTemplateColumns": "repeat(4, 1fr)",
+                    "gap": "1rem",
+                    "width": "100%",
+                },
+                children=camera_cards
+            )
+        except Exception as e:
+            print(f"Error creating traffic conditions grid: {e}")
+            import traceback
+            traceback.print_exc()
+            return html.Div(
+                html.P(
+                    f"Error displaying traffic cameras: {str(e)}",
+                    style={
+                        "textAlign": "center",
+                        "color": "#ff6b6b",
+                        "padding": "2rem",
+                        "fontSize": "0.875rem",
+                    }
+                )
+            )
 
 

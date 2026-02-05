@@ -18,6 +18,7 @@ from components.transport_page import transport_page
 from components.nearby_transport_page import nearby_transport_page
 from components.travel_times_page import travel_times_page
 from components.analytics_forecast_page import analytics_forecast_page
+from components.traffic_conditions_page import traffic_conditions_page
 from components.metric_card import create_metric_card
 from callbacks.map_callback import register_search_callbacks
 from callbacks.traffic_callback import register_camera_feed_callbacks
@@ -35,6 +36,7 @@ from callbacks.train_service_alerts_callback import register_train_service_alert
 from callbacks.mrt_crowd_callback import register_mrt_crowd_callbacks
 from callbacks.travel_times_callback import register_travel_times_callbacks
 from callbacks.analytics_forecast_callback import register_analytics_forecast_callbacks
+from callbacks.transport_callback import register_traffic_conditions_callbacks
 from auth.onemap_api import initialize_onemap_token
 from utils.data_download_helper import (
     download_hdb_carpark_csv,
@@ -69,6 +71,7 @@ register_train_service_alerts_callbacks(app)
 register_mrt_crowd_callbacks(app)
 register_travel_times_callbacks(app)
 register_analytics_forecast_callbacks(app)
+register_traffic_conditions_callbacks(app)
 register_tab_navigation_callback(app)
 
 # Dashboard app layout ------------------------------------------------------#
@@ -142,6 +145,8 @@ app.layout = html.Div(
                 travel_times_page(),
                 # Analytics and forecast page (hidden by default)
                 analytics_forecast_page(),
+                # Traffic conditions page (hidden by default)
+                traffic_conditions_page(),
                 # Main content area with map and right panel side by side
                 html.Div(
                     id="main-content",

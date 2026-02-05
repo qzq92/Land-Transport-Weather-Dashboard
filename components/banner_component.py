@@ -83,6 +83,12 @@ def build_dashboard_banner():
                             style=TAB_STYLE,
                             selected_style=TAB_SELECTED_STYLE,
                         ),
+                        dcc.Tab(
+                            label="📹 Traffic Conditions",
+                            value="traffic-conditions",
+                            style=TAB_STYLE,
+                            selected_style=TAB_SELECTED_STYLE,
+                        ),
                     ],
                     style={
                         "height": "auto",
