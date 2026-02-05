@@ -400,6 +400,13 @@ def transport_page():
                                 value_id="bus-services-count-value",
                                 initial_value="--"
                             ),
+                            # EV Charging Points card
+                            create_metric_card(
+                                card_id="ev-charging-points-card",
+                                label="🔌 EV Charging Points",
+                                value_id="ev-charging-points-count-value",
+                                initial_value="--"
+                            ),
                             # Traffic Incidents card
                             html.Div(
                                 id="traffic-incidents-card",
@@ -593,6 +600,21 @@ def transport_page():
                                             "fontWeight": "600",
                                         },
                                     ),
+                                    html.Button(
+                                        "Show EV Charging Points",
+                                        id="ev-charging-toggle-btn",
+                                        n_clicks=0,
+                                        style={
+                                            "backgroundColor": "transparent",
+                                            "border": "0.125rem solid #00E676",
+                                            "borderRadius": "0.25rem",
+                                            "color": "#00E676",
+                                            "cursor": "pointer",
+                                            "padding": "0.25rem 0.625rem",
+                                            "fontSize": "0.75rem",
+                                            "fontWeight": "600",
+                                        },
+                                    ),
                                 ]
                             ),
                             html.Div(
@@ -630,6 +652,7 @@ def transport_page():
                                             dl.LayerGroup(id="traffic-incidents-markers"),
                                             dl.LayerGroup(id="vms-markers"),
                                             dl.LayerGroup(id="bus-stops-markers"),
+                                            dl.LayerGroup(id="ev-charging-markers"),
                                             dl.LayerGroup(id="bus-arrival-popup-layer"),
                                             dl.LayerGroup(id="bus-route-markers"),
                                         ],
@@ -1171,6 +1194,7 @@ def transport_page():
             dcc.Store(id="traffic-incidents-toggle-state", data=False),
             dcc.Store(id="vms-toggle-state", data=False),
             dcc.Store(id="bus-stops-toggle-state", data=False),
+            dcc.Store(id="ev-charging-toggle-state", data=False),
             dcc.Store(id="selected-bus-stop-code", data=None),
             # Interval for auto-refresh
             dcc.Interval(
@@ -1190,6 +1214,12 @@ def transport_page():
             dcc.Interval(
                 id='bus-arrival-interval',
                 interval=60*1000,  # Update every 1 minute
+                n_intervals=0
+            ),
+            # Interval for EV charging points updates (every 5 minutes)
+            dcc.Interval(
+                id='ev-charging-interval',
+                interval=5*60*1000,  # Update every 5 minutes
                 n_intervals=0
             ),
             # Store for current bus stop code to enable auto-refresh
