@@ -1,7 +1,18 @@
 Camera ID,Location Description
+1001,ECP/MCE/KPE instersection
+1002,PIE(Tuas) exit road to KPE(MCE)
+1003,PIE(Changi) exit road to KPE(TPE)
+1004,PIE(Changi) exit to KPE(TPE)/Sims Way
+1005,KPE(TPE) Defu Flyover
+1006,KPE(MCE) - KPE(MCE) Tunnel Entrance
 1111,TPE(PIE) - Exit 2 to Loyang Ave
 1112,TPE(PIE) - Tampines Viaduct
 1113,Tanah Merah Coast Road towards Changi
+1501,Straits Boulevard to MCE
+1502,Slip Road to MCE from Marina Link
+1503,MCE(KPE) near Slip road to Central Boulevard
+1504,Slip Road from ECP(Sheares) to MCE(AYE)
+1505,Slip Road from Marina Coastal Drive to MCE(KPE)
 1701,CTE(AYE) - Moulmein Flyover LP448F
 1702,CTE(AYE) - Braddell Flyover LP274F
 1703,CTE(SLE) - Blk 22 St George's Road
