@@ -80,11 +80,11 @@ def clear_road_infra_cache():
 
 def _load_lta_camera_id_mapping() -> Dict[str, str]:
     """
-    Load LTA camera ID to location description mapping from CSV.
+    Load LTA camera ID to location mapping from CSV.
     Uses in-memory cache since the mapping is static.
 
     Returns:
-        Dictionary mapping camera_id (str) to location description.
+        Dictionary mapping camera_id (str) to location name.
     """
     global _LTA_CAMERA_ID_MAPPING, _LTA_CAMERA_ID_MAPPING_LOADED
 
@@ -99,9 +99,9 @@ def _load_lta_camera_id_mapping() -> Dict[str, str]:
 
         for _, row in df.iterrows():
             camera_id = str(row.get('Camera ID', '')).strip()
-            location_desc = str(row.get('Location Description', '')).strip()
-            if camera_id and location_desc:
-                mapping[camera_id] = location_desc
+            location = str(row.get('Location', '')).strip()
+            if camera_id and location:
+                mapping[camera_id] = location
 
         _LTA_CAMERA_ID_MAPPING = mapping
         _LTA_CAMERA_ID_MAPPING_LOADED = True
