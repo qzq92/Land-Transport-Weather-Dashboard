@@ -41,6 +41,7 @@ from utils.data_download_helper import (
     download_speed_camera_csv
 )
 from callbacks.carpark_callback import clear_carpark_locations_cache
+from callbacks.transport_callback import fetch_evc_batch_async
 
 
 # Dash instantiation ---------------------------------------------------------#
@@ -823,6 +824,31 @@ if __name__ == '__main__':
         print("Speed camera data available (downloaded or already exists)")
     else:
         print("Warning: Failed to download speed camera data. Using existing CSV file if available.")
+
+    # Download EV charging points batch data on startup (only if file doesn't exist)
+    print("Checking EV charging points batch data on startup...")
+    try:
+        evc_future = fetch_evc_batch_async(skip_if_exists=True)
+        if evc_future:
+            # Wait for the download to complete (non-blocking due to @run_in_thread)
+            result = evc_future.result() if hasattr(evc_future, "result") else evc_future
+            if result and result.get('success'):
+                if result.get('skipped'):
+                    print(f"EV charging points batch data available (file already exists)")
+                else:
+                    print(f"EV charging points batch data downloaded successfully")
+                print(f"  File path: {result.get('file_path')}")
+                print(f"  File size: {result.get('file_size', 0)} bytes")
+                print(f"  Format: {result.get('format', 'unknown')}")
+            else:
+                error_msg = result.get('error', 'Unknown error') if result else 'No result returned'
+                print(f"Warning: Failed to download EV charging points batch data: {error_msg}")
+        else:
+            print("Warning: Failed to initiate EV charging points batch data download.")
+    except Exception as e:
+        print(f"Warning: Error during EV charging points batch data download: {e}")
+        import traceback
+        traceback.print_exc()
 
     # Initialize OneMap API token on application startup
     print("Initializing OneMap API authentication...")
