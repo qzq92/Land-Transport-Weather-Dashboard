@@ -20,6 +20,7 @@ from utils.async_fetcher import fetch_url, fetch_url_2min_cached, run_in_thread
 from utils.data_download_helper import fetch_erp_gantry_data
 from utils.map_utils import SG_MAP_CENTER
 from callbacks.map_callback import _haversine_distance_m
+from components.metric_card import create_metric_value_display
 
 # API URLs
 TAXI_API_URL = "https://api.data.gov.sg/v1/transport/taxi-availability"
@@ -29,9 +30,9 @@ FAULTY_TRAFFIC_LIGHTS_URL = "https://datamall2.mytransport.sg/ltaodataservice/Fa
 BICYCLE_PARKING_URL = "https://datamall2.mytransport.sg/ltaodataservice/BicycleParkingv2"
 VMS_URL = "https://datamall2.mytransport.sg/ltaodataservice/VMS"
 EV_CHARGING_URL = "https://datamall2.mytransport.sg/ltaodataservice/EVChargingPoints"
+EVC_BATCH_URL = "https://datamall2.mytransport.sg/ltaodataservice/EVCBatch"
 BUS_STOPS_URL = "https://datamall2.mytransport.sg/ltaodataservice/BusStops"
 BUS_ROUTES_URL = "https://datamall2.mytransport.sg/ltaodataservice/BusRoutes"
-BUS_SERVICES_URL = "https://datamall2.mytransport.sg/ltaodataservice/BusServices"
 BUS_SERVICES_URL = "https://datamall2.mytransport.sg/ltaodataservice/BusServices"
 
 # In-memory cache for static road infrastructure data
@@ -1649,194 +1650,6 @@ def fetch_bus_stops_data_async() -> Optional[Future]:
 
 def load_speed_camera_data() -> pd.DataFrame:
     """
-    Format bus service search results for display.
-    
-    Args:
-        service_no: Bus service number to search for
-        routes_data: Dictionary containing bus routes data from LTA API
-    
-    Returns:
-        HTML Div containing formatted bus service route information
-    """
-    if not routes_data or 'value' not in routes_data:
-        return html.Div(
-            html.P(
-                "Unable to fetch bus routes data. Please try again.",
-                style={
-                    "color": "#999",
-                    "textAlign": "center",
-                    "fontSize": "0.75rem",
-                    "margin": "0.5rem 0",
-                }
-            )
-        )
-    
-    routes = routes_data.get('value', [])
-    
-    # Filter routes for the specified service number
-    service_routes = [route for route in routes if route.get('ServiceNo', '').upper() == service_no.upper().strip()]
-    
-    if not service_routes:
-        return html.Div(
-            html.P(
-                f"No routes found for service {service_no}",
-                style={
-                    "color": "#ff6b6b",
-                    "textAlign": "center",
-                    "fontSize": "0.75rem",
-                    "margin": "0.5rem 0",
-                }
-            )
-        )
-    
-    # Extract bus timing information from first route (timing is same across all segments)
-    timing_info = None
-    if service_routes:
-        timing_info = service_routes[0]
-    
-    # Group routes by direction
-    directions = {}
-    for route in service_routes:
-        direction = route.get('Direction', 'N/A')
-        if direction not in directions:
-            directions[direction] = []
-        directions[direction].append(route)
-    
-    # Sort routes by direction and stop sequence
-    result_items = []
-    
-    # Add bus timing table if timing info is available
-    if timing_info:
-        timing_table = _create_bus_timing_table(timing_info)
-        if timing_table:
-            result_items.append(timing_table)
-    
-    for direction in sorted(directions.keys()):
-        direction_routes = sorted(directions[direction], key=lambda x: int(x.get('StopSequence', 0)))
-        print(direction_routes)
-        # Get origin and destination
-        origin_code = direction_routes[0].get('OriginCode', 'N/A') if direction_routes else 'N/A'
-        destination_code = direction_routes[-1].get('DestinationCode', 'N/A') if direction_routes else 'N/A'
-        
-        # Get bus stop names if available
-        bus_stops_data = fetch_bus_stops_data()
-        origin_name = 'N/A'
-        destination_name = 'N/A'
-        
-        if bus_stops_data and 'value' in bus_stops_data:
-            for bs in bus_stops_data['value']:
-                if bs.get('BusStopCode') == origin_code:
-                    origin_name = bs.get('Description', 'N/A')
-                if bs.get('BusStopCode') == destination_code:
-                    destination_name = bs.get('Description', 'N/A')
-        
-        direction_label = "Direction 1" if direction == 1 else "Direction 2" if direction == 2 else f"Direction {direction}"
-        
-        # Create direction header
-        direction_header = html.Div(
-            style={
-                "backgroundColor": "#3a4a5a",
-                "padding": "0.5rem",
-                "borderRadius": "0.25rem",
-                "marginBottom": "0.5rem",
-            },
-            children=[
-                html.Div(
-                    style={
-                        "display": "flex",
-                        "flexDirection": "column",
-                        "gap": "0.25rem",
-                    },
-                    children=[
-                        html.Span(
-                            direction_label,
-                            style={
-                                "color": "#4169E1",
-                                "fontWeight": "bold",
-                                "fontSize": "0.75rem",
-                            }
-                        ),
-                        html.Span(
-                            f"From: {origin_name} ({origin_code})",
-                            style={
-                                "color": "#ccc",
-                                "fontSize": "0.65rem",
-                            }
-                        ),
-                        html.Span(
-                            f"To: {destination_name} ({destination_code})",
-                            style={
-                                "color": "#ccc",
-                                "fontSize": "0.65rem",
-                            }
-                        ),
-                        html.Span(
-                            f"Total stops: {len(direction_routes)}",
-                            style={
-                                "color": "#999",
-                                "fontSize": "0.625rem",
-                                "fontStyle": "italic",
-                            }
-                        ),
-                        html.Span(
-                            _format_route_distance(direction_routes),
-                            style={
-                                "color": "#999",
-                                "fontSize": "0.625rem",
-                                "fontStyle": "italic",
-                            }
-                        ),
-                    ]
-                )
-            ]
-        )
-        
-        result_items.append(direction_header)
-    
-    if not result_items:
-        return html.Div(
-            html.P(
-                f"No route information available for service {service_no}",
-                style={
-                    "color": "#999",
-                    "textAlign": "center",
-                    "fontSize": "0.75rem",
-                    "margin": "0.5rem 0",
-                }
-            )
-        )
-    
-    return html.Div(
-        style={
-            "display": "flex",
-            "flexDirection": "column",
-            "gap": "0.5rem",
-        },
-        children=[
-            *result_items
-        ]
-    )
-
-
-def fetch_bus_stops_data_async() -> Optional[Future]:
-    """
-    Fetch all bus stops data asynchronously with pagination (returns Future).
-    The API returns 500 records per page. This function fetches all pages
-    until less than 500 records are returned.
-    Call .result() to get the data when needed.
-    
-    Returns:
-        Future object that will contain all bus stops data, or None if error
-    """
-    # Import executor from async_fetcher module
-    from utils.async_fetcher import _executor
-    
-    # Submit the synchronous paginated function to thread pool
-    return _executor.submit(fetch_bus_stops_data)
-
-
-def load_speed_camera_data() -> pd.DataFrame:
-    """
     Load speed camera data from CSV file.
     Uses in-memory cache since speed camera locations are static infrastructure.
     
@@ -2104,7 +1917,7 @@ def fetch_ev_charging_points_async(postal_code: str):
         
         if 200 <= response.status_code < 300:
             data = response.json()
-            print(f"  Response JSON: {data}")
+            #print(f"  Response JSON: {data}")
             
             # Print summary information
             if isinstance(data, dict):
@@ -2128,6 +1941,224 @@ def fetch_ev_charging_points_async(postal_code: str):
         import traceback
         traceback.print_exc()
     return None
+
+
+@run_in_thread
+def fetch_evc_batch_async(output_path: Optional[str] = None, skip_if_exists: bool = False) -> Optional[Dict[str, Any]]:
+    """
+    Fetch EV charging points batch data link from LTA DataMall EVCBatch API and download the file.
+    The API returns a link that contains all electric vehicle charging point data.
+    
+    Args:
+        output_path: Optional full path to output file. If None, saves to data/EVCBatch.json or data/EVCBatch.csv
+                    based on file format detected from URL or content.
+        skip_if_exists: If True, skip download if file already exists (default: False)
+    
+    Returns:
+        Dictionary containing the batch data link, file path, and file info, or None on error
+    """
+    import requests
+    from urllib.parse import urlparse
+    
+    api_key = os.getenv("LTA_API_KEY")
+    
+    if not api_key:
+        print("Warning: LTA_API_KEY not found in environment variables")
+        return None
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "AccountKey": api_key,
+        "Content-Type": "application/json"
+    }
+    
+    print(f"EVCBatch API Request:")
+    print(f"  URL: {EVC_BATCH_URL}")
+    
+    try:
+        response = requests.get(EVC_BATCH_URL, headers=headers, timeout=30)
+        print(f"  Response Status Code: {response.status_code}")
+        
+        if 200 <= response.status_code < 300:
+            data = response.json()
+            #print(f"  Response JSON: {data}")
+            
+            # Extract the link from the response
+            # The response typically contains a 'value' field with a 'Link' or 'link' key
+            # Or 'value' might be the link string directly
+            if isinstance(data, dict):
+                value_data = data.get('value')
+                batch_link = None
+                
+                # Handle different response structures
+                if isinstance(value_data, dict):
+                    # If value is a dictionary, look for Link/link/url keys
+                    batch_link = value_data.get('Link') or value_data.get('link') or value_data.get('url')
+                elif isinstance(value_data, str):
+                    # If value is a string, it might be the link directly
+                    if value_data.startswith('http://') or value_data.startswith('https://'):
+                        batch_link = value_data
+                elif isinstance(value_data, list) and len(value_data) > 0:
+                    # If value is a list, check the first item
+                    first_item = value_data[0]
+                    if isinstance(first_item, dict):
+                        batch_link = first_item.get('Link') or first_item.get('link') or first_item.get('url')
+                    elif isinstance(first_item, str) and (first_item.startswith('http://') or first_item.startswith('https://')):
+                        batch_link = first_item
+                
+                if batch_link:
+                    #print(f"  Batch data link found: {batch_link}")
+                    
+                    # Download the file from the link
+                    try:
+                        print(f"  Downloading file from batch link...")
+                        batch_response = requests.get(batch_link, timeout=120, stream=True)
+                        
+                        if 200 <= batch_response.status_code < 300:
+                            # Determine output file path and extension
+                            if output_path is None:
+                                # Get project root (parent of callbacks folder)
+                                current_file_dir = os.path.dirname(os.path.abspath(__file__))
+                                project_root = os.path.dirname(current_file_dir)
+                                data_dir = os.path.join(project_root, 'data')
+                                os.makedirs(data_dir, exist_ok=True)
+                                
+                                # Try to determine file extension from URL
+                                parsed_url = urlparse(batch_link)
+                                url_path = parsed_url.path.lower()
+                                
+                                if url_path.endswith('.json'):
+                                    file_ext = '.json'
+                                elif url_path.endswith('.csv'):
+                                    file_ext = '.csv'
+                                elif url_path.endswith('.xml'):
+                                    file_ext = '.xml'
+                                else:
+                                    # Try to determine from content type
+                                    content_type = batch_response.headers.get('Content-Type', '').lower()
+                                    if 'json' in content_type:
+                                        file_ext = '.json'
+                                    elif 'csv' in content_type or 'text/csv' in content_type:
+                                        file_ext = '.csv'
+                                    elif 'xml' in content_type:
+                                        file_ext = '.xml'
+                                    else:
+                                        # Default to JSON
+                                        file_ext = '.json'
+                                
+                                output_path = os.path.join(data_dir, f'EVCBatch{file_ext}')
+                            
+                            # Check if file exists and skip if requested
+                            if skip_if_exists and os.path.exists(output_path):
+                                file_size = os.path.getsize(output_path)
+                                print(f"  EVCBatch file already exists: {output_path}")
+                                print(f"  Skipping download (skip_if_exists=True)")
+                                print(f"  Existing file size: {file_size} bytes ({file_size / 1024:.2f} KB)")
+                                
+                                # Try to determine format
+                                file_format = 'unknown'
+                                if output_path.endswith('.json'):
+                                    file_format = 'json'
+                                elif output_path.endswith('.csv'):
+                                    file_format = 'csv'
+                                elif output_path.endswith('.xml'):
+                                    file_format = 'xml'
+                                
+                                return {
+                                    'link': batch_link,
+                                    'file_path': output_path,
+                                    'file_size': file_size,
+                                    'format': file_format,
+                                    'success': True,
+                                    'skipped': True
+                                }
+                            
+                            # Ensure directory exists
+                            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+                            
+                            # Download and save the file
+                            file_size = 0
+                            with open(output_path, 'wb') as f:
+                                for chunk in batch_response.iter_content(chunk_size=8192):
+                                    if chunk:
+                                        f.write(chunk)
+                                        file_size += len(chunk)
+                            
+                            print(f"  File downloaded and saved successfully")
+                            print(f"  File path: {output_path}")
+                            print(f"  File size: {file_size} bytes ({file_size / 1024:.2f} KB)")
+                            
+                            # Try to determine format
+                            file_format = 'unknown'
+                            if output_path.endswith('.json'):
+                                file_format = 'json'
+                            elif output_path.endswith('.csv'):
+                                file_format = 'csv'
+                            elif output_path.endswith('.xml'):
+                                file_format = 'xml'
+                            
+                            return {
+                                'link': batch_link,
+                                'file_path': output_path,
+                                'file_size': file_size,
+                                'format': file_format,
+                                'success': True
+                            }
+                        else:
+                            print(f"  Warning: Failed to download file, status: {batch_response.status_code}")
+                            return {
+                                'link': batch_link,
+                                'file_path': None,
+                                'success': False,
+                                'error': f"HTTP {batch_response.status_code}"
+                            }
+                    except (requests.exceptions.RequestException, IOError, OSError) as batch_error:
+                        print(f"  Error downloading file from link: {batch_error}")
+                        import traceback
+                        traceback.print_exc()
+                        return {
+                            'link': batch_link,
+                            'file_path': None,
+                            'success': False,
+                            'error': str(batch_error)
+                        }
+                else:
+                    # No link found in response
+                    print(f"  Warning: No link found in response")
+                    print(f"  Response 'value' type: {type(value_data)}, value: {value_data}")
+                    return {
+                        'link': None,
+                        'file_path': None,
+                        'success': False,
+                        'error': 'No link found in API response'
+                    }
+            else:
+                print(f"  Warning: Response is not a dictionary, type: {type(data)}")
+                return {
+                    'link': None,
+                    'file_path': None,
+                    'success': False,
+                    'error': f'Invalid response format: {type(data)}'
+                }
+        else:
+            print(f"  Response Text: {response.text}")
+            print(f"EVCBatch API request failed: status={response.status_code}")
+            return {
+                'link': None,
+                'file_path': None,
+                'success': False,
+                'error': f"HTTP {response.status_code}"
+            }
+    except (requests.exceptions.RequestException, ValueError) as error:
+        print(f"Error fetching EVCBatch data: {error}")
+        import traceback
+        traceback.print_exc()
+        return {
+            'link': None,
+            'file_path': None,
+            'success': False,
+            'error': str(error)
+        }
 
 
 def create_ev_charging_markers(ev_data):
@@ -2928,6 +2959,318 @@ def create_nearby_taxi_stands_markers(nearby_taxi_stands: list) -> list:
         except (ValueError, TypeError):
             continue
 
+    return markers
+
+
+@run_in_thread
+def count_ev_charging_points() -> Optional[int]:
+    """
+    Count total number of EV charging points from the downloaded EVCBatch file.
+    Reads the file and counts all charging point locations.
+    
+    Returns:
+        Total count of EV charging points, or None on error
+    """
+    import json
+    import csv
+    import xml.etree.ElementTree as ET
+    
+    # Get project root (parent of callbacks folder)
+    current_file_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(current_file_dir)
+    data_dir = os.path.join(project_root, 'data')
+    
+    # Try to find the EVCBatch file (could be .json, .csv, or .xml)
+    evc_file = None
+    file_format = None
+    
+    for ext in ['.json', '.csv', '.xml']:
+        potential_file = os.path.join(data_dir, f'EVCBatch{ext}')
+        if os.path.exists(potential_file):
+            evc_file = potential_file
+            file_format = ext[1:]  # Remove the dot
+            break
+    
+    if not evc_file:
+        print("EVCBatch file not found in data directory")
+        return None
+    
+    try:
+        if file_format == 'json':
+            with open(evc_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                
+            # Handle different possible JSON structures
+            count = 0
+            if isinstance(data, list):
+                # If it's a list, count items
+                count = len(data)
+            elif isinstance(data, dict):
+                # Check common keys for EV charging data
+                if 'value' in data:
+                    value_data = data['value']
+                    if isinstance(value_data, list):
+                        count = len(value_data)
+                    elif isinstance(value_data, dict):
+                        # Check for nested structures
+                        if 'evLocationsData' in value_data:
+                            locations = value_data['evLocationsData']
+                            if isinstance(locations, list):
+                                count = len(locations)
+                        else:
+                            # Count all top-level items in the dict
+                            count = len(value_data)
+                elif 'evLocationsData' in data:
+                    locations = data['evLocationsData']
+                    if isinstance(locations, list):
+                        count = len(locations)
+                else:
+                    # Try to count all items in the dict
+                    count = len(data)
+            
+            print(f"Counted {count} EV charging points from JSON file")
+            return count
+            
+        elif file_format == 'csv':
+            with open(evc_file, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                count = sum(1 for _ in reader)
+            
+            print(f"Counted {count} EV charging points from CSV file")
+            return count
+            
+        elif file_format == 'xml':
+            # For XML, we'll need to parse it
+            tree = ET.parse(evc_file)
+            root = tree.getroot()
+            
+            # Try to find all location/charging point elements
+            # This is a generic approach - may need adjustment based on actual XML structure
+            count = len(root.findall('.//*'))  # Count all elements as a fallback
+            # More specific: try common element names
+            for tag_name in ['location', 'chargingPoint', 'evLocation', 'item', 'record']:
+                elements = root.findall(f'.//{tag_name}')
+                if elements:
+                    count = len(elements)
+                    break
+            
+            print(f"Counted {count} EV charging points from XML file")
+            return count
+            
+        else:
+            print(f"Unsupported file format: {file_format}")
+            return None
+            
+    except (FileNotFoundError, IOError, json.JSONDecodeError, csv.Error, ET.ParseError) as e:
+        print(f"Error reading EVCBatch file: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+@run_in_thread
+def load_ev_charging_points_from_file() -> Optional[Dict[str, Any]]:
+    """
+    Load EV charging points data from the downloaded EVCBatch file.
+    Reads the file and returns the data structure.
+    
+    Returns:
+        Dictionary containing EV charging points data, or None on error
+    """
+    import json
+    import csv
+    import xml.etree.ElementTree as ET
+    
+    # Get project root (parent of callbacks folder)
+    current_file_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(current_file_dir)
+    data_dir = os.path.join(project_root, 'data')
+    
+    # Try to find the EVCBatch file (could be .json, .csv, or .xml)
+    evc_file = None
+    file_format = None
+    
+    for ext in ['.json', '.csv', '.xml']:
+        potential_file = os.path.join(data_dir, f'EVCBatch{ext}')
+        if os.path.exists(potential_file):
+            evc_file = potential_file
+            file_format = ext[1:]  # Remove the dot
+            break
+    
+    if not evc_file:
+        print("EVCBatch file not found in data directory")
+        return None
+    
+    try:
+        if file_format == 'json':
+            with open(evc_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # Return the data in a consistent format
+            # Handle different possible JSON structures
+            if isinstance(data, dict):
+                # If it has 'value' key, return as is
+                if 'value' in data:
+                    return data
+                # If it has 'evLocationsData', wrap it
+                elif 'evLocationsData' in data:
+                    return {'value': {'evLocationsData': data['evLocationsData']}}
+                else:
+                    return {'value': data}
+            elif isinstance(data, list):
+                # If it's a list, wrap it
+                return {'value': {'evLocationsData': data}}
+            else:
+                return {'value': {'evLocationsData': []}}
+                
+        elif file_format == 'csv':
+            # For CSV, read and convert to dict structure
+            locations = []
+            with open(evc_file, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    locations.append(row)
+            
+            return {'value': {'evLocationsData': locations}}
+            
+        elif file_format == 'xml':
+            # For XML, parse and convert to dict structure
+            tree = ET.parse(evc_file)
+            root = tree.getroot()
+            
+            locations = []
+            # Try to find location elements
+            for location_elem in root.findall('.//location') or root.findall('.//evLocation') or root.findall('.//item'):
+                loc_dict = {}
+                for child in location_elem:
+                    loc_dict[child.tag] = child.text
+                if loc_dict:
+                    locations.append(loc_dict)
+            
+            return {'value': {'evLocationsData': locations}}
+            
+        else:
+            print(f"Unsupported file format: {file_format}")
+            return None
+            
+    except (FileNotFoundError, IOError, json.JSONDecodeError, csv.Error, ET.ParseError) as e:
+        print(f"Error reading EVCBatch file: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+    except Exception as e:
+        print(f"Unexpected error loading EVCBatch file: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+def create_ev_charging_markers_from_file(ev_data: Optional[Dict[str, Any]]) -> List[dl.CircleMarker]:
+    """
+    Create map markers for EV charging point locations from EVCBatch file data.
+    
+    Args:
+        ev_data: Dictionary containing EV charging points data from EVCBatch file
+    
+    Returns:
+        List of dl.CircleMarker components
+    """
+    markers = []
+    
+    print(f"create_ev_charging_markers_from_file: ev_data type={type(ev_data)}")
+    
+    # Ensure ev_data is a dictionary
+    if not ev_data or not isinstance(ev_data, dict):
+        print(f"Invalid ev_data: not a dict or None")
+        return markers
+    
+    if 'value' not in ev_data:
+        print(f"ev_data missing 'value' key. Keys: {list(ev_data.keys())}")
+        return markers
+    
+    value_data = ev_data.get('value', {})
+    if not isinstance(value_data, dict):
+        print(f"value_data is not a dict: type={type(value_data)}")
+        return markers
+        
+    locations = value_data.get('evLocationsData', [])
+    
+    print(f"Locations extracted: type={type(locations)}, count={len(locations) if isinstance(locations, list) else 'N/A'}")
+    
+    # Ensure locations is a list
+    if not isinstance(locations, list):
+        print(f"Locations is not a list: type={type(locations)}")
+        return markers
+    
+    if not locations:
+        print("No locations found in evLocationsData")
+        return markers
+    
+    print(f"Processing {len(locations)} locations...")
+    processed_count = 0
+    skipped_count = 0
+    
+    for i, loc in enumerate(locations):
+        try:
+            # Ensure loc is a dictionary
+            if not isinstance(loc, dict):
+                print(f"Location {i} is not a dict: type={type(loc)}")
+                skipped_count += 1
+                continue
+            
+            # Handle both TitleCase and lowercase keys
+            lat = loc.get('latitude')
+            lon = loc.get('longtitude')
+            name = loc.get('name','N/A')
+            
+            # Debug first location
+            if i == 0:
+                print(f"First location keys: {list(loc.keys())}")
+                print(f"First location lat={lat}, lon={lon}, name={name}")
+            
+            if lat is None or lon is None:
+                skipped_count += 1
+                continue
+            
+            try:
+                lat = float(lat)
+                lon = float(lon)
+            except (ValueError, TypeError):
+                print(f"Invalid coordinates for location {i}: lat={lat}, lon={lon}")
+                skipped_count += 1
+                continue
+            
+            if lat == 0 or lon == 0:
+                skipped_count += 1
+                continue
+            
+            # Build tooltip content with name and address
+            tooltip_text = f"{name}"
+            
+            # Create circle marker
+            markers.append(
+                dl.CircleMarker(
+                    center=[lat, lon],
+                    radius=6,
+                    color="#00E676",  # Green color for EV charging points
+                    fill=True,
+                    fillColor="#00E676",
+                    fillOpacity=0.7,
+                    weight=2,
+                    children=[
+                        dl.Tooltip(html.Pre(tooltip_text, style={"margin": "0", "fontFamily": "inherit"})),
+                    ]
+                )
+            )
+            processed_count += 1
+        except (ValueError, TypeError, KeyError) as e:
+            print(f"Error creating marker for EV charging point {i}: {e}, loc={loc}")
+            import traceback
+            traceback.print_exc()
+            skipped_count += 1
+            continue
+    
+    print(f"Marker creation complete: {processed_count} created, {skipped_count} skipped, total={len(markers)}")
     return markers
 
 
@@ -4347,5 +4690,177 @@ def register_transport_callbacks(app):
         markers = create_fixed_speed_camera_markers()
 
         return markers, count_value
+
+    @app.callback(
+        Output('ev-charging-points-count-value', 'children'),
+        Input('ev-charging-interval', 'n_intervals')
+    )
+    def update_ev_charging_points_count(n_intervals: int) -> html.Div:
+        """
+        Update EV charging points count display periodically (every 5 minutes).
+        Polls the EVCBatch API asynchronously to get fresh data and counts the total points.
+        Force overwrites the file every 5 minutes when interval triggers.
+        """
+        # Force overwrite when interval triggers (n_intervals > 0)
+        # Skip if exists only on initial load (n_intervals == 0)
+        skip_if_exists = (n_intervals == 0)
+        
+        try:
+            # Poll the EVCBatch API asynchronously (every 5 minutes)
+            # Force overwrite the file every 5 minutes to get the latest data
+            download_future = fetch_evc_batch_async(skip_if_exists=skip_if_exists)
+            
+            # Wait for download to complete (non-blocking due to @run_in_thread)
+            if download_future:
+                try:
+                    download_result = download_future.result() if hasattr(download_future, "result") else download_future
+                    if download_result and isinstance(download_result, dict) and download_result.get('success'):
+                        print(f"EVCBatch file refreshed: {download_result.get('file_path')}")
+                except Exception as e:
+                    print(f"Error downloading EVCBatch file: {e}")
+            
+            # Count EV charging points from the file (async)
+            count_future = count_ev_charging_points()
+            
+            if count_future:
+                try:
+                    count = count_future.result() if hasattr(count_future, "result") else count_future
+                    
+                    if count is not None and isinstance(count, int):
+                        count_value = str(count)
+                        color = "#00E676"  # Green color for EV charging points
+                    else:
+                        count_value = "--"
+                        color = "#999"
+                except Exception as e:
+                    print(f"Error counting EV charging points: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    count_value = "--"
+                    color = "#999"
+            else:
+                count_value = "--"
+                color = "#999"
+                
+        except Exception as e:
+            print(f"Error in update_ev_charging_points_count: {e}")
+            import traceback
+            traceback.print_exc()
+            count_value = "--"
+            color = "#999"
+        
+        return create_metric_value_display(count_value, color=color)
+
+    @app.callback(
+        [Output('ev-charging-toggle-state', 'data'),
+         Output('ev-charging-toggle-btn', 'style'),
+         Output('ev-charging-toggle-btn', 'children')],
+        Input('ev-charging-toggle-btn', 'n_clicks'),
+        State('ev-charging-toggle-state', 'data'),
+        prevent_initial_call=True
+    )
+    def toggle_ev_charging_display(_n_clicks, current_state):
+        """Toggle EV charging points markers display on/off."""
+        new_state = not current_state
+        
+        if new_state:
+            # Active state - green background
+            style = {
+                "backgroundColor": "#00E676",
+                "border": "none",
+                "borderRadius": "0.25rem",
+                "color": "#000",
+                "cursor": "pointer",
+                "padding": "0.375rem 0.75rem",
+                "fontSize": "0.75rem",
+                "fontWeight": "600",
+            }
+            text = "Hide EV Charging Points"
+        else:
+            # Inactive state - outline
+            style = {
+                "backgroundColor": "transparent",
+                "border": "0.125rem solid #00E676",
+                "borderRadius": "0.25rem",
+                "color": "#00E676",
+                "cursor": "pointer",
+                "padding": "0.25rem 0.625rem",
+                "fontSize": "0.75rem",
+                "fontWeight": "600",
+            }
+            text = "Show EV Charging Points"
+        
+        return new_state, style, text
+
+    @app.callback(
+        Output('ev-charging-markers', 'children'),
+        [Input('ev-charging-toggle-state', 'data'),
+         Input('ev-charging-interval', 'n_intervals')]
+    )
+    def update_ev_charging_markers(show_ev_charging: bool, n_intervals: int) -> List[dl.CircleMarker]:
+        """
+        Update EV charging points markers display based on toggle state.
+        Loads data from EVCBatch file and creates markers.
+        Force overwrites the file every 5 minutes when interval triggers.
+        """
+        print(f"update_ev_charging_markers called: show_ev_charging={show_ev_charging}, n_intervals={n_intervals}")
+        
+        # Only show markers if toggle is on
+        if not show_ev_charging:
+            print("EV charging toggle is off, returning empty markers")
+            return []
+        
+        # Force overwrite when interval triggers (n_intervals > 0)
+        # Skip if exists only on initial load (n_intervals == 0)
+        skip_if_exists = (n_intervals == 0)
+        
+        # Force refresh the EVCBatch file every 5 minutes
+        download_future = fetch_evc_batch_async(skip_if_exists=skip_if_exists)
+        
+        # Wait for download to complete before loading the file
+        if download_future:
+            try:
+                download_result = download_future.result() if hasattr(download_future, "result") else download_future
+                if download_result and isinstance(download_result, dict) and download_result.get('success'):
+                    print(f"EVCBatch file refreshed for markers: {download_result.get('file_path')}")
+                elif download_result:
+                    print(f"EVCBatch download result: {download_result}")
+            except Exception as e:
+                print(f"Error downloading EVCBatch file for markers: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        # Load EV charging points from file (async)
+        print("Loading EV charging points from file...")
+        ev_data_future = load_ev_charging_points_from_file()
+        
+        if ev_data_future:
+            try:
+                ev_data = ev_data_future.result() if hasattr(ev_data_future, "result") else ev_data_future
+                
+                print(f"EV data loaded: type={type(ev_data)}, is_dict={isinstance(ev_data, dict)}")
+                if ev_data:
+                    if isinstance(ev_data, dict):
+                        value_data = ev_data.get('value', {})
+                        print(f"Value data: type={type(value_data)}, keys={list(value_data.keys()) if isinstance(value_data, dict) else 'N/A'}")
+                        if isinstance(value_data, dict):
+                            locations = value_data.get('evLocationsData', [])
+                            print(f"Locations found: {len(locations) if isinstance(locations, list) else 'Not a list'}")
+                    
+                    # Create markers from file data
+                    markers = create_ev_charging_markers_from_file(ev_data)
+                    print(f"Created {len(markers)} EV charging markers")
+                    return markers
+                else:
+                    print("No EV charging points data loaded from file (ev_data is None or empty)")
+                    return []
+            except Exception as e:
+                print(f"Error loading EV charging points from file: {e}")
+                import traceback
+                traceback.print_exc()
+                return []
+        else:
+            print("load_ev_charging_points_from_file returned None")
+            return []
 
 
