@@ -4533,17 +4533,19 @@ def register_transport_callbacks(app):
          Output('bus-stop-zoom-message', 'children'),
          Output('bus-stops-disclaimer', 'style')],
         [Input('bus-stops-toggle-state', 'data'),
-         Input('transport-map', 'zoom'),
-         Input('transport-map', 'center'),
+         Input('bus-arrival-map', 'zoom'),
+         Input('bus-arrival-map', 'center'),
+         Input('bus-arrival-page-interval', 'n_intervals'),
          Input('transport-interval', 'n_intervals')]
     )
-    def update_bus_stops_display(show_bus_stops: bool, zoom: Optional[int], center: Optional[List], n_intervals: int):
+    def update_bus_stops_display(show_bus_stops: bool, zoom: Optional[int], center: Optional[List], _bus_interval: int, _transport_interval: int):
         """
         Update bus stops markers, count display, and zoom feedback.
         Only renders bus stops within the current viewport when zoomed to level 15+.
         Always shows total count in the metric card.
+        Updates from both bus-arrival-page-interval and transport-interval.
         """
-        _ = n_intervals  # Used for periodic refresh
+        # Used for periodic refresh from either interval
         
         # Default zoom and center if not available
         current_zoom = zoom if zoom is not None else 11
@@ -4745,6 +4747,126 @@ def register_transport_callbacks(app):
         markers = create_fixed_speed_camera_markers()
 
         return markers, count_value
+
+    @app.callback(
+        [Output('transport-bus-stops-markers', 'children'),
+         Output('transport-bus-stop-zoom-message', 'style'),
+         Output('transport-bus-stop-zoom-message', 'children')],
+        [Input('transport-bus-stops-toggle-state', 'data'),
+         Input('transport-map', 'zoom'),
+         Input('transport-map', 'center'),
+         Input('transport-interval', 'n_intervals')]
+    )
+    def update_transport_bus_stops_display(show_bus_stops: bool, zoom: Optional[int], center: Optional[List], _n_intervals: int):
+        """
+        Update bus stops markers on transport map.
+        Only renders bus stops within the current viewport when zoomed to level 15+.
+        """
+        _ = _n_intervals  # Used for periodic refresh
+        
+        # Default zoom and center if not available
+        current_zoom = zoom if zoom is not None else 11
+        
+        # Parse center coordinates - handle both list and dict formats
+        if center is None:
+            center_lat, center_lon = SG_MAP_CENTER[0], SG_MAP_CENTER[1]
+        elif isinstance(center, dict):
+            # Handle dict format {'lat': 1.23, 'lng': 103.45} or {'lat': 1.23, 'lon': 103.45}
+            lat = center.get('lat')
+            lon = center.get('lng') or center.get('lon')
+            try:
+                center_lat = float(lat) if lat is not None else SG_MAP_CENTER[0]
+                center_lon = float(lon) if lon is not None else SG_MAP_CENTER[1]
+            except (ValueError, TypeError):
+                center_lat, center_lon = SG_MAP_CENTER[0], SG_MAP_CENTER[1]
+        elif isinstance(center, (list, tuple)) and len(center) >= 2:
+            # Handle list/tuple format [1.23, 103.45]
+            try:
+                center_lat = float(center[0])
+                center_lon = float(center[1])
+            except (ValueError, TypeError, IndexError):
+                center_lat, center_lon = SG_MAP_CENTER[0], SG_MAP_CENTER[1]
+        else:
+            center_lat, center_lon = SG_MAP_CENTER[0], SG_MAP_CENTER[1]
+        
+        # Overlay styles
+        overlay_show = {
+            "position": "absolute",
+            "top": "50%",
+            "left": "50%",
+            "transform": "translate(-50%, -50%)",
+            "backgroundColor": "rgba(0, 0, 0, 0.8)",
+            "color": "#fbbf24",
+            "padding": "1rem 2rem",
+            "borderRadius": "0.5rem",
+            "zIndex": "1000",
+            "textAlign": "center",
+            "display": "block",
+            "fontWeight": "600",
+            "fontSize": "1rem",
+            "border": "0.0625rem solid #fbbf24",
+        }
+        overlay_hide = {"display": "none"}
+        
+        # If toggle is OFF, return empty markers
+        if not show_bus_stops:
+            return [], overlay_hide, ""
+            
+        # Toggle is ON - Check zoom level
+        if current_zoom < 15:
+            overlay_text = f"Zoom in to level 15+ to view bus stops (Current: {current_zoom})"
+            return [], overlay_show, overlay_text
+            
+        # Toggle is ON and Zoom is >= 15 - Filter and render markers within viewport
+        future = fetch_bus_stops_data_async()
+        data: Optional[Dict[str, Any]] = future.result() if future else None
+        filtered_stops = filter_bus_stops_by_viewport(data, center_lat, center_lon, current_zoom)
+        
+        # Create filtered data dict for marker creation
+        filtered_data = {'value': filtered_stops} if filtered_stops else None
+        
+        markers = create_bus_stops_circle_markers(filtered_data)
+        return markers, overlay_hide, ""
+
+    @app.callback(
+        [Output('transport-bus-stops-toggle-state', 'data'),
+         Output('transport-bus-stops-toggle-btn', 'style'),
+         Output('transport-bus-stops-toggle-btn', 'children')],
+        Input('transport-bus-stops-toggle-btn', 'n_clicks'),
+        State('transport-bus-stops-toggle-state', 'data'),
+        prevent_initial_call=True
+    )
+    def toggle_transport_bus_stops_display(_n_clicks: Optional[int], current_state: bool) -> Tuple[bool, Dict[str, Any], str]:
+        """Toggle Bus Stops markers display on/off for transport map."""
+        new_state = not current_state
+        
+        # Button styles
+        active_style = {
+            "backgroundColor": "#4169E1",
+            "border": "0.125rem solid #4169E1",
+            "borderRadius": "0.25rem",
+            "color": "#fff",
+            "cursor": "pointer",
+            "padding": "0.25rem 0.625rem",
+            "fontSize": "0.75rem",
+            "fontWeight": "600",
+        }
+        
+        inactive_style = {
+            "backgroundColor": "transparent",
+            "border": "0.125rem solid #4169E1",
+            "borderRadius": "0.25rem",
+            "color": "#4169E1",
+            "cursor": "pointer",
+            "padding": "0.25rem 0.625rem",
+            "fontSize": "0.75rem",
+            "fontWeight": "600",
+        }
+        
+        button_style = active_style if new_state else inactive_style
+        button_text = "Hide Bus Stop Locations" if new_state else "Show Bus Stop Locations"
+        
+        return new_state, button_style, button_text
 
     @app.callback(
         Output('ev-charging-points-count-value', 'children'),

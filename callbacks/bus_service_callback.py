@@ -767,19 +767,18 @@ def register_bus_service_callbacks(app):
     """
     @app.callback(
         Output('bus-services-count-value', 'children'),
-        Input('transport-interval', 'n_intervals')
+        [Input('bus-arrival-page-interval', 'n_intervals'),
+         Input('transport-interval', 'n_intervals')]
     )
-    def update_bus_services_count(n_intervals: int) -> html.Div:
+    def update_bus_services_count(_bus_interval, _transport_interval):
         """
         Update bus services count display using async data fetching.
-        
-        Args:
-            n_intervals: Number of intervals (from dcc.Interval component)
+        Updates from both bus-arrival-page-interval and transport-interval.
         
         Returns:
             HTML Div with bus services count
         """
-        _ = n_intervals  # Used for periodic refresh
+        # Used for periodic refresh from either interval
 
         # Fetch data asynchronously
         future = fetch_bus_routes_data_async()
@@ -800,53 +799,8 @@ def register_bus_service_callbacks(app):
         
         return create_metric_value_display(str(bus_services_count), color="#4169E1")
 
-    @app.callback(
-        Output('bus-service-search-content', 'children'),
-        Input('bus-service-search-btn', 'n_clicks'),
-        State('bus-service-search-input', 'value'),
-        prevent_initial_call=True
-    )
-    def update_bus_service_search_display(_n_clicks, search_value):
-        """
-        Update bus service search display based on user input.
-        
-        Args:
-            _n_clicks: Number of times search button was clicked
-            search_value: Bus service number entered by user
-        
-        Returns:
-            HTML Div containing formatted bus service route information
-        """
-        if not search_value:
-            return html.P(
-                "Please enter a bus service number",
-                style={
-                    "color": "#ff6b6b",
-                    "textAlign": "center",
-                    "fontSize": "0.75rem",
-                    "margin": "0.5rem 0",
-                }
-            )
-        
-        # Clean and validate input
-        service_no = search_value.strip().upper()
-        
-        if not service_no:
-            return html.P(
-                "Invalid bus service number. Please enter a valid service number.",
-                style={
-                    "color": "#ff6b6b",
-                    "textAlign": "center",
-                    "fontSize": "0.75rem",
-                    "margin": "0.5rem 0",
-                }
-            )
-        
-        # Fetch bus routes data
-        routes_data = fetch_bus_routes_data()
-        
-        # Format and return display
-        return format_bus_service_search_display(service_no, routes_data)
+    # Bus service search callback removed - now handled by unified callback in bus_arrival_callback.py
+    # to avoid duplicate output to bus-search-results
 
     @app.callback(
         Output({"type": "bus-route-toggle", "direction": MATCH, "service": MATCH}, "children"),

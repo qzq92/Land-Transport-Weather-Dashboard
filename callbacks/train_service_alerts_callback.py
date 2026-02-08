@@ -83,7 +83,7 @@ def format_train_service_alerts(data):
     # If status is 1, check for messages
     if status == 1:
         if messages and len(messages) > 0:
-            return html.P("Refer a Road & Transport Information tab for further advisory/information", style={
+            return html.P("Refer a Road & Transport Metrics and Advisories tab for further advisory/information", style={
                 "color": "#4CAF50",
                 "fontSize": "0.75rem",
                 "fontWeight": "600"
@@ -96,7 +96,7 @@ def format_train_service_alerts(data):
         })
     
     # If status is not 1, show referral message in red
-    return html.P("Refer a Road & Transport Information tab for further advisory/information", style={
+    return html.P("Refer a Road & Transport Metrics and Advisories tab for further advisory/information", style={
         "color": "#ff4444",
         "fontSize": "0.75rem",
         "fontWeight": "600"
@@ -190,7 +190,7 @@ def format_mrt_line_operational_details(data):
                     detail_text_color = "#4CAF50"
             else:
                 # Disrupted/Delays (status != 1) - show referral message
-                detail_text = "Refer a Road & Transport Information tab for further advisory/information"
+                detail_text = "Refer a Road & Transport Metrics and Advisories tab for further advisory/information"
                 detail_text_color = "#ff4444"
         else:
             # No alert data for this line - assume normal
@@ -295,7 +295,7 @@ def format_mrt_line_operational_details(data):
 
 def format_transport_page_train_service_alerts(data):
     """
-    Format train service alerts for display on Road & Transport Information tab.
+    Format train service alerts for display on Road & Transport Metrics and Advisories tab.
     Shows only lines with status != 1, displaying line name with abbreviation,
     direction, and message.
     
@@ -599,7 +599,7 @@ def register_train_service_alerts_callbacks(app):
     )
     def update_transport_page_train_service_alerts(_n_intervals):
         """
-        Update train service alerts display on Road & Transport Information tab.
+        Update train service alerts display on Road & Transport Metrics and Advisories tab.
         Shows disrupted lines with details.
         
         Args:

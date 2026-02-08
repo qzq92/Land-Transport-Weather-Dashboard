@@ -2065,49 +2065,37 @@ def register_realtime_weather_callbacks(app):
     # Callbacks to populate sensor values when sections are visible
     @app.callback(
         Output('temp-sensor-content', 'children'),
-        [Input('temp-sensor-values', 'style'),
-         Input('interval-component', 'n_intervals')]
+        Input('interval-component', 'n_intervals')
     )
-    def update_temp_sensor_content(style, _n_intervals):
-        """Update temperature sensor values when section is visible."""
-        if style and style.get('display') == 'none':
-            return html.P("Loading...", style={"color": "#999", "fontSize": "12px", "textAlign": "center"})
+    def update_temp_sensor_content(_n_intervals):
+        """Update temperature sensor values."""
         data = fetch_realtime_data('air-temperature')
         return format_sensor_values_grid(data, '°C', '#FF9800')
 
     @app.callback(
         Output('rainfall-sensor-content', 'children'),
-        [Input('rainfall-sensor-values', 'style'),
-         Input('interval-component', 'n_intervals')]
+        Input('interval-component', 'n_intervals')
     )
-    def update_rainfall_sensor_content(style, _n_intervals):
-        """Update rainfall sensor values when section is visible."""
-        if style and style.get('display') == 'none':
-            return html.P("Loading...", style={"color": "#999", "fontSize": "12px", "textAlign": "center"})
+    def update_rainfall_sensor_content(_n_intervals):
+        """Update rainfall sensor values."""
         data = fetch_realtime_data('rainfall')
         return format_sensor_values_grid(data, 'mm', '#2196F3')
 
     @app.callback(
         Output('humidity-sensor-content', 'children'),
-        [Input('humidity-sensor-values', 'style'),
-         Input('interval-component', 'n_intervals')]
+        Input('interval-component', 'n_intervals')
     )
-    def update_humidity_sensor_content(style, _n_intervals):
-        """Update humidity sensor values when section is visible."""
-        if style and style.get('display') == 'none':
-            return html.P("Loading...", style={"color": "#999", "fontSize": "12px", "textAlign": "center"})
+    def update_humidity_sensor_content(_n_intervals):
+        """Update humidity sensor values."""
         data = fetch_realtime_data('relative-humidity')
         return format_sensor_values_grid(data, '%', '#00BCD4')
 
     @app.callback(
         Output('wind-sensor-content', 'children'),
-        [Input('wind-sensor-values', 'style'),
-         Input('interval-component', 'n_intervals')]
+        Input('interval-component', 'n_intervals')
     )
-    def update_wind_sensor_content(style, _n_intervals):
-        """Update wind sensor values when section is visible."""
-        if style and style.get('display') == 'none':
-            return html.P("Loading...", style={"color": "#999", "fontSize": "12px", "textAlign": "center"})
+    def update_wind_sensor_content(_n_intervals):
+        """Update wind sensor values."""
         speed_data = fetch_realtime_data('wind-speed')
         if not speed_data or 'data' not in speed_data:
             return _get_error_div()
@@ -2278,16 +2266,30 @@ def register_realtime_weather_callbacks(app):
                 readings = reading_item.get('data', [])
                 stations = build_station_lookup(wind_data)
                 speed_unit = api_data.get('readingUnit', 'km/h')
-                for reading in sorted(readings, key=lambda x: stations.get(x.get('stationId', ''), {}).get('name', '').lower()):
-                    station_id = reading.get('stationId', '')
-                    name = stations.get(station_id, {}).get('name', station_id)
-                    speed_kmh = _convert_to_kmh(reading.get('value', 0), speed_unit)
-                    icon = get_windspeed_icon(speed_kmh)
+                # Create a mapping from stationId to reading value for quick lookup
+                readings_map = {reading.get('stationId', ''): reading for reading in readings}
+                # Iterate through stations to ensure we use station names (same approach as map markers)
+                wind_readings_list = []
+                for station_id, station_info in stations.items():
+                    if station_id in readings_map:
+                        reading = readings_map[station_id]
+                        name = station_info.get('name', 'Unknown')
+                        speed_kmh = _convert_to_kmh(reading.get('value', 0), speed_unit)
+                        icon = get_windspeed_icon(speed_kmh)
+                        wind_readings_list.append({
+                            'type': '💨 Wind Speed averaged across sensors',
+                            'location': name,
+                            'value': f"{icon} {speed_kmh} km/h",
+                            'color': '#4CAF50',
+                            'sort_key': name.lower()
+                        })
+                # Sort by location name and add to all_readings
+                for reading in sorted(wind_readings_list, key=lambda x: x['sort_key']):
                     all_readings.append({
-                        'type': '💨 Wind Speed averaged across sensors',
-                        'location': name,
-                        'value': f"{icon} {speed_kmh} km/h",
-                        'color': '#4CAF50'
+                        'type': reading['type'],
+                        'location': reading['location'],
+                        'value': reading['value'],
+                        'color': reading['color']
                     })
         
         if not all_readings:

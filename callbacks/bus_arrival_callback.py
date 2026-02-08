@@ -331,7 +331,7 @@ def register_bus_arrival_callbacks(app):
         [State('bus-stop-search-input', 'value')],
         prevent_initial_call=True
     )
-    def update_current_bus_stop_code(_search_clicks, marker_clicks, search_value):
+    def update_current_bus_stop_code(_search_clicks, _marker_clicks, search_value):
         """Store the current bus stop code for auto-refresh."""
         ctx = callback_context
         if not ctx.triggered:
@@ -356,41 +356,68 @@ def register_bus_arrival_callbacks(app):
         return bus_stop_code if bus_stop_code else no_update
 
     @app.callback(
-        [Output('bus-arrival-content', 'children'),
-         Output('bus-arrival-content', 'style'),
+        [Output('bus-search-results', 'children'),
          Output('bus-arrival-popup-layer', 'children'),
          Output('bus-stop-search-input', 'value')],
         [Input('bus-stop-search-btn', 'n_clicks'),
+         Input('bus-service-search-btn', 'n_clicks'),
          Input({'type': 'bus-stop-marker', 'index': ALL}, 'n_clicks'),
          Input('bus-arrival-interval', 'n_intervals')],
         [State('bus-stop-search-input', 'value'),
+         State('bus-service-search-input', 'value'),
          State('bus-stops-toggle-state', 'data'),
          State('current-bus-stop-code', 'data')],
         prevent_initial_call=True
     )
-    def update_bus_arrival_display(_search_clicks, marker_clicks, _interval_n, search_value, bus_stops_visible, stored_bus_stop_code):
+    def update_bus_search_display(_bus_stop_clicks, _bus_service_clicks, _marker_clicks, _interval_n, bus_stop_value, bus_service_value, _bus_stops_visible, stored_bus_stop_code):
         """
-        Update bus arrival display when search is performed, a bus stop marker is clicked, or interval triggers.
-        Fills the textbox and shows the arrival info in the side panel.
+        Update bus search display when bus stop or bus service search is performed, 
+        a bus stop marker is clicked, or interval triggers.
+        Handles both bus arrival and bus service searches in unified results area.
         Note: Map viewport is not auto-centered to allow user to freely navigate.
         """
-        # Base style for bus-arrival-content (hidden by default)
-        base_style = {
-            "maxHeight": "25rem",
-            "overflowY": "auto",
-            "backgroundColor": "#3a4a5a",
-            "borderRadius": "0.25rem",
-            "padding": "0.5rem",
-            "display": "none",
-        }
-        
         # Determine which input triggered the callback
         ctx = callback_context
         if not ctx.triggered:
-            return no_update, base_style, [], no_update
+            return no_update, [], no_update
         
         trigger_id = ctx.triggered[0]['prop_id']
         trigger_value = ctx.triggered[0]['value']
+        
+        # Check if bus service search button was clicked
+        if 'bus-service-search-btn' in trigger_id:
+            if not bus_service_value:
+                return html.P(
+                    "Please enter a bus service number",
+                    style={
+                        "color": "#ff6b6b",
+                        "textAlign": "center",
+                        "fontSize": "0.75rem",
+                        "margin": "0.5rem 0",
+                    }
+                ), [], no_update
+            
+            # Clean and validate input
+            service_no = bus_service_value.strip().upper()
+            
+            if not service_no:
+                return html.P(
+                    "Invalid bus service number. Please enter a valid service number.",
+                    style={
+                        "color": "#ff6b6b",
+                        "textAlign": "center",
+                        "fontSize": "0.75rem",
+                        "margin": "0.5rem 0",
+                    }
+                ), [], no_update
+            
+            # Fetch and format bus service data
+            from callbacks.bus_service_callback import fetch_bus_routes_data, format_bus_service_search_display
+            routes_data = fetch_bus_routes_data()
+            formatted_service = format_bus_service_search_display(service_no, routes_data)
+            return formatted_service, [], no_update
+        
+        # Handle bus stop search (arrival timings)
         bus_stop_code = None
         
         # Check if interval triggered (auto-refresh)
@@ -399,24 +426,22 @@ def register_bus_arrival_callbacks(app):
             if stored_bus_stop_code:
                 bus_stop_code = stored_bus_stop_code
             else:
-                return no_update, base_style, [], no_update
+                return no_update, [], no_update
         
         # Check if a bus stop marker was clicked
         elif 'bus-stop-marker' in trigger_id:
             # Validate that this was an actual click (n_clicks must be a positive number)
             if trigger_value is None or trigger_value == 0:
-                return no_update, base_style, [], no_update
+                return no_update, [], no_update
             
             # Extract the bus stop code from the triggered marker ID
             marker_id_str = trigger_id.split('.')[0]
             marker_id = json.loads(marker_id_str)
             bus_stop_code = marker_id['index']
         
-        # Check if search button was clicked
+        # Check if bus stop search button was clicked
         elif 'bus-stop-search-btn' in trigger_id:
-            if not search_value:
-                error_style = base_style.copy()
-                error_style["display"] = "block"
+            if not bus_stop_value:
                 return html.P(
                     "Please enter a bus stop code",
                     style={
@@ -425,13 +450,11 @@ def register_bus_arrival_callbacks(app):
                         "fontSize": "0.75rem",
                         "margin": "0.5rem 0",
                     }
-                ), error_style, [], no_update
+                ), [], no_update
             
             # Validate bus stop code (must be 5 digits)
-            search_value = search_value.strip()
-            if not search_value.isdigit() or len(search_value) != 5:
-                error_style = base_style.copy()
-                error_style["display"] = "block"
+            bus_stop_value = bus_stop_value.strip()
+            if not bus_stop_value.isdigit() or len(bus_stop_value) != 5:
                 return html.P(
                     "Invalid bus stop code. Please enter a 5-digit number.",
                     style={
@@ -440,12 +463,12 @@ def register_bus_arrival_callbacks(app):
                         "fontSize": "0.75rem",
                         "margin": "0.5rem 0",
                     }
-                ), error_style, [], no_update
+                ), [], no_update
             
-            bus_stop_code = search_value
+            bus_stop_code = bus_stop_value
         
         if not bus_stop_code:
-            return no_update, base_style, [], no_update
+            return no_update, [], no_update
         
         # Fetch bus arrival data
         future = fetch_bus_arrival_data_async(bus_stop_code)
@@ -465,10 +488,6 @@ def register_bus_arrival_callbacks(app):
         # Format and return display
         formatted_arrival = format_bus_arrival_display(arrival_data, bus_stop_code)
         
-        # Style to show the content div
-        visible_style = base_style.copy()
-        visible_style["display"] = "block"
-        
         # If coordinates found, update map and return highlight circle
         if lat and lon:
             # Create a highlight circle around the bus stop
@@ -484,10 +503,10 @@ def register_bus_arrival_callbacks(app):
             )
             
             # Return with highlight displayed and textbox updated
-            # The arrival content is now shown in the side panel (bus-arrival-content)
+            # The arrival content is now shown in the unified results area (bus-search-results)
             # Map viewport is not auto-centered to allow user to freely navigate
-            return formatted_arrival, visible_style, [highlight_circle], bus_stop_code
+            return formatted_arrival, [highlight_circle], bus_stop_code
         
         # If no coordinates found, just display the arrival info without highlighting
-        return formatted_arrival, visible_style, [], bus_stop_code
+        return formatted_arrival, [], bus_stop_code
 

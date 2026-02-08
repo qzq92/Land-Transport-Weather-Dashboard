@@ -16,6 +16,7 @@ def register_tab_navigation_callback(app):
          Output('realtime-weather-page', 'style'),
          Output('weather-indices-page', 'style'),
          Output('transport-page', 'style'),
+         Output('bus-arrival-page', 'style'),
          Output('nearby-transport-page', 'style'),
          Output('travel-times-page', 'style'),
          Output('analytics-forecast-page', 'style'),
@@ -40,6 +41,7 @@ def register_tab_navigation_callback(app):
         realtime_style = {'display': 'none'}
         indices_style = {'display': 'none'}
         transport_style = {'display': 'none'}
+        bus_arrival_style = {'display': 'none'}
         nearby_transport_style = {'display': 'none'}
         travel_times_style = {'display': 'none'}
         analytics_forecast_style = {'display': 'none'}
@@ -62,6 +64,13 @@ def register_tab_navigation_callback(app):
             }
         elif tab_value == 'transport':
             transport_style = {
+                "display": "block",
+                "padding": "0.5rem",
+                "height": "calc(100vh - 7.5rem)",
+                "width": "100%",
+            }
+        elif tab_value == 'bus-arrival':
+            bus_arrival_style = {
                 "display": "block",
                 "padding": "0.5rem",
                 "height": "calc(100vh - 7.5rem)",
@@ -109,7 +118,7 @@ def register_tab_navigation_callback(app):
             search_bar_style = {"display": "none"}
 
         return (main_style, realtime_style, indices_style, transport_style,
-                nearby_transport_style, travel_times_style, analytics_forecast_style, traffic_conditions_style, search_bar_style)
+                bus_arrival_style, nearby_transport_style, travel_times_style, analytics_forecast_style, traffic_conditions_style, search_bar_style)
 
     # Clientside callback to fix map rendering after tab switch
     # This triggers invalidateSize() on Leaflet maps when tabs change
@@ -122,6 +131,7 @@ def register_tab_navigation_callback(app):
                 'realtime-weather': 'realtime-weather-map',
                 'weather-indices': 'weather-indices-map',
                 'transport': 'transport-map',
+                'bus-arrival': 'bus-arrival-map',
                 'nearby-transport': 'nearby-transport-map'
             };
             
@@ -153,7 +163,7 @@ def register_tab_navigation_callback(app):
             return window.dash_clientside.no_update;
         }
         """,
-        Output('realtime-weather-map', 'id'),
+        Output('bus-arrival-map', 'id'),
         Input('navigation-tabs', 'value'),
         prevent_initial_call=True
     )
