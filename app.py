@@ -15,6 +15,7 @@ from components.map_component import map_component
 from components.realtime_weather_page import realtime_weather_page
 from components.weather_indices_page import weather_indices_page
 from components.transport_page import transport_page
+from components.bus_arrival_page import bus_arrival_page
 from components.nearby_transport_page import nearby_transport_page
 from components.travel_times_page import travel_times_page
 from components.analytics_forecast_page import analytics_forecast_page
@@ -139,6 +140,8 @@ app.layout = html.Div(
                 weather_indices_page(),
                 # Transport page (hidden by default)
                 transport_page(),
+                # Bus Arrival & Services page (hidden by default)
+                bus_arrival_page(),
                 # Nearby transport page (hidden by default)
                 nearby_transport_page(),
                 # Travel times page (hidden by default)
