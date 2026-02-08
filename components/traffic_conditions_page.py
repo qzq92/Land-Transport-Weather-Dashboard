@@ -31,26 +31,6 @@ def traffic_conditions_page():
                     "gap": "0.75rem",
                 },
                 children=[
-                    # Header
-                    html.Div(
-                        style={
-                            "padding": "0.5rem 1rem",
-                            "backgroundColor": "#1a2a3a",
-                            "borderRadius": "0.5rem",
-                            "borderBottom": "0.0625rem solid #4a5a6a",
-                        },
-                        children=[
-                            html.H4(
-                                "📹 LTA Traffic Camera Feeds",
-                                style={
-                                    "margin": "0",
-                                    "color": "#fff",
-                                    "fontWeight": "600",
-                                    "fontSize": "1.125rem",
-                                }
-                            ),
-                        ]
-                    ),
                     # Camera grid container
                     html.Div(
                         id="traffic-conditions-content",
