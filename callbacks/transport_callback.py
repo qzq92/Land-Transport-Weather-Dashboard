@@ -5048,7 +5048,6 @@ def register_traffic_conditions_callbacks(app):
                             html.Div(
                                 style={
                                     "width": "100%",
-                                    "aspectRatio": "16/9",
                                     "backgroundColor": "#000",
                                     "borderRadius": "0.25rem",
                                     "overflow": "hidden",
@@ -5063,8 +5062,7 @@ def register_traffic_conditions_callbacks(app):
                                         alt=f"Camera {camera_id}",
                                         style={
                                             "width": "100%",
-                                            "height": "100%",
-                                            "objectFit": "cover",
+                                            "height": "auto",
                                             "display": "block",
                                         }
                                     )
