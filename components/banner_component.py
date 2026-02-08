@@ -84,7 +84,7 @@ def build_dashboard_banner():
                             selected_style=TAB_SELECTED_STYLE,
                         ),
                         dcc.Tab(
-                            label="📹 Traffic Conditions",
+                            label="📹 Traffic Conditions from LTA Traffic Cameras",
                             value="traffic-conditions",
                             style=TAB_STYLE,
                             selected_style=TAB_SELECTED_STYLE,
