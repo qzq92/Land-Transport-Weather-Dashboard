@@ -72,10 +72,11 @@ This analytics dashboard provides real-time information on:
 - **WBGT (Wet-Bulb Globe Temperature)**: Heat stress measurements across Singapore with color-coded risk levels
   - Average WBGT value displayed in sub-div
   - Separate card from flood readings
-- **Interactive Map**: Toggle visibility of different weather marker types
+- **Interactive Map**: Zoomable map (zoom levels 10-18) with toggle visibility of different weather marker types
 - **Status Indicators**: Lightning and flood alert indicators with color-coded status
 - **View Sensor Location Tab**: Toggle visibility of weather sensor locations on map
   - Separate toggles for Flood and WBGT sensor locations
+  - Location metrics for temperature, humidity, rainfall, and wind speed always populated and displayed
 
 ### Daily Health and Environmental Watch Page
 - **UV Index**: Hourly trend visualization with line graph
@@ -103,7 +104,7 @@ This analytics dashboard provides real-time information on:
 - **Toggle Controls**: All toggle buttons (PSI display mode, Zika clusters, Dengue clusters) positioned above map
 - **Layout**: Optimized 2:6:2 ratio (indices panel : map : legend)
 
-### Road & Transport Information Page
+### Road & Transport Metrics and Advisories Page
 - **Taxi Availability**: Real-time taxi locations (4,500+ taxis) displayed as yellow markers on map
 - **Traffic Cameras**: CCTV camera locations with live feed popups showing traffic conditions
 - **ERP Gantries**: Electronic Road Pricing gantry locations displayed as red polylines on map
@@ -117,13 +118,22 @@ This analytics dashboard provides real-time information on:
   - Train service advisories displayed in table format (top 5 entries) with line, published time, and message columns
 - **Bus Stops**: Interactive bus stop markers with arrival time information
   - Bus stops displayed as clickable markers (visible at zoom level 15+)
+  - Toggle button to show/hide bus stop locations on map
   - Clicking a bus stop displays arrival times in side panel and highlights the stop on map
   - Bus stop selection persists when navigating the map (no auto-selection on viewport changes)
   - Re-center button available to return to selected bus stop location
   - Viewport filtering for optimal performance (only renders visible bus stops)
 - **Toggle Controls**: Show/hide each transport layer independently
 - **Metrics Display**: Standardized metric cards for bus stops and bus services counts
-- **Zoomable Map**: Map supports zoom levels 10-19 for detailed exploration
+- **Zoomable Map**: Map supports zoom levels 10-18 for detailed exploration
+
+### Bus Arrival & Services Search Page
+- **Unified Search Interface**: Clean header design with both search inputs side-by-side
+- **Bus Arrival Search**: Search by bus stop code or click markers on map to view arrival timings
+- **Bus Service Search**: Search by service number to view route information
+- **Unified Results Area**: Single results container displays either arrival timings or service routes
+- **Interactive Map**: Toggle bus stop locations and view route markers
+- **Zoomable Map**: Supports zoom levels 10-18 for detailed exploration
 
 ### Estimated Travel Times Page
 - **Expressway Travel Time Estimates**: Real-time travel time data for expressway segments across Singapore
@@ -153,9 +163,19 @@ This analytics dashboard provides real-time information on:
 - **Last Updated Timestamp**: Shows when data was last refreshed in header
 - **Responsive Layout**: Scrollable table container with card-based design matching dashboard theme
 
+### MRT/LRT Station Crowd Forecast Page
+- **Train Line Selection**: Dropdown to select train line (CCL, EWL, NSL, DTL, NEL, TEL, LRT lines)
+- **Crowd Level Predictions**: Displays crowd forecast for stations on selected line
+- **Visualization**: Chart-based display of crowd levels across stations
+
+### Traffic Conditions Page
+- **Live Camera Feeds**: Grid layout displaying all LTA traffic camera feeds
+- **Auto-refresh**: Updates automatically every 2 minutes
+- **Full Resolution Images**: Camera feeds displayed without cropping
+
 ## Application Structure
 
-The dashboard consists of 6 main pages accessible via tabs with glossy black-to-silver gradient styling:
+The dashboard consists of 9 main pages accessible via tabs with glossy black-to-silver gradient styling:
 
 1. **🏠 Main Dashboard**: Overview with average PSI, meteorological alerts, traffic incidents, MRT/LRT service alerts, disease clusters, nearby facilities, and interactive map
    - **2-Hour Weather Forecast**: Toggle button on main page to show/hide 2-hour weather predictions with map markers
@@ -164,15 +184,23 @@ The dashboard consists of 6 main pages accessible via tabs with glossy black-to-
 2. **📡 Realtime Weather Metrics**: Live temperature, rainfall, humidity, and wind speed readings across Singapore
    - **WBGT Readings**: Heat stress measurements with average value display
    - **View Sensor Location Tab**: Toggle visibility of Flood and WBGT sensor locations
+   - **Zoomable Map**: Map supports zoom levels 10-18 for detailed exploration
+   - **Location Metrics**: Temperature, humidity, rainfall, and wind speed location metrics always populated and displayed
 3. **📊 Daily Health and Environmental Watch**: UV Index trends, comprehensive PSI pollutant data, Zika clusters, and Dengue clusters
    - **PSI Display Modes**: Toggle between map text boxes and detailed metrics table
    - **Zika/Dengue Clusters**: Toggle visibility of cluster polygons on map
-4. **🚦 Road & Transport Information**: Taxi availability, traffic cameras, ERP gantries, taxi stands, bus stops, and MRT/LRT operational status
-   - **Bus Stop Interaction**: Click bus stops to view arrival times (zoom level 15+ required)
+4. **🚦 Road & Transport Metrics and Advisories**: Taxi availability, traffic cameras, ERP gantries, taxi stands, bus stops, and MRT/LRT operational status
+   - **Bus Stop Interaction**: Toggle button to show/hide bus stop locations on map (visible at zoom level 15+)
    - **Selection Persistence**: Selected bus stops remain active during map navigation
-   - **Zoomable Map**: Supports zoom levels 10-19 for detailed exploration
-5. **📍 Nearby Facilities**: Nearby bus stops, MRT/LRT stations, taxi stands, carparks, bicycle parking, and EV charging points
-6. **⏱️ Estimated Travel Times**: Real-time expressway travel time estimates by road segment
+   - **Zoomable Map**: Supports zoom levels 10-18 for detailed exploration
+5. **🚌 Bus Arrival & Services Search**: Unified search interface for bus stop arrival times and bus service routes
+   - **Unified Header Design**: Both search inputs side-by-side in clean header bar
+   - **Bus Arrival Search**: Search by bus stop code or click markers on map to view arrival timings
+   - **Bus Service Search**: Search by service number to view route information
+   - **Unified Results Area**: Single results container displays either arrival timings or service routes
+   - **Interactive Map**: Toggle bus stop locations and view route markers
+6. **📍 Nearby Facilities**: Nearby bus stops, MRT/LRT stations, taxi stands, carparks, bicycle parking, and EV charging points
+7. **⏱️ Estimated Travel Times**: Real-time expressway travel time estimates by road segment
    - Data fetched from LTA DataMall EstTravelTimes API
    - **Chain Flow Visualization**: Connected segments displayed as flow chains showing start point → travel time → end point
    - **Grouped by Expressway and Direction**: Travel times organized by expressway name (e.g., AYE, PIE, BKE) and direction (East/West or North/South)
@@ -184,6 +212,12 @@ The dashboard consists of 6 main pages accessible via tabs with glossy black-to-
    - **Total Time Display**: Each chain shows cumulative travel time for the entire route
    - **Auto-refresh**: Updates every 2 minutes with timestamp display
    - **Last Updated Indicator**: Shows when data was last refreshed
+8. **🚆 MRT/LRT Station Crowd Forecast**: Station crowd level predictions by train line
+   - Select train line from dropdown to view crowd forecast
+   - Displays crowd level predictions for stations on selected line
+9. **📹 Traffic Conditions from LTA Traffic Cameras**: Live traffic camera feeds
+   - Grid layout displaying all LTA traffic camera feeds
+   - Updates automatically every 2 minutes
 
 ## Key Features
 
@@ -284,9 +318,13 @@ All sample screenshots are stored in `assets/img` with `.jpg` extensions for cla
 ![Daily Health and Environmental Watch](assets/img/daily_health_env_watch.jpg)
 *UV index trends, PSI details, and cluster overlays.*
 
-### Road & Transport Information Page
+### Road & Transport Metrics and Advisories Page
 ![Road and Transport](assets/img/road_transport.jpg)
 *Traffic, taxi, and transport layers on the map.*
+
+### Bus Arrival & Services Search Page
+![Bus Arrival Search](assets/img/bus_arrival_search.jpg)
+*Unified search interface for bus stop arrival times and bus service routes.*
 
 ### Nearby Facilities Page
 ![Nearby Facilities](assets/img/nearby_facilities.jpg)
@@ -295,6 +333,14 @@ All sample screenshots are stored in `assets/img` with `.jpg` extensions for cla
 ### Estimated Travel Times Page
 ![Estimated Travel Times](assets/img/estimated_travel_times.jpg)
 *Real-time expressway travel time estimates with chain flow visualization.*
+
+### MRT/LRT Station Crowd Forecast Page
+![MRT/LRT Station Crowd Forecast](assets/img/crowd_forecast.jpg)
+*Crowd level predictions for MRT/LRT stations by train line.*
+
+### Traffic Conditions Page
+![Traffic Conditions](assets/img/traffic_conditions_from_lta_traffic_cameras.jpg)
+*Live traffic camera feeds from LTA cameras across Singapore.*
 
 ## Built with following:
 * [Dash](https://dash.plot.ly/) - Main server and interactive components 
