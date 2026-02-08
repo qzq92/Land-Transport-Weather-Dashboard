@@ -60,8 +60,14 @@ def build_dashboard_banner():
                             selected_style=TAB_SELECTED_STYLE,
                         ),
                         dcc.Tab(
-                            label="🚦 Road & Transport Information",
+                            label="🚦 Road & Transport Metrics and Advisories",
                             value="transport",
+                            style=TAB_STYLE,
+                            selected_style=TAB_SELECTED_STYLE,
+                        ),
+                        dcc.Tab(
+                            label="🚌 Bus Arrival & Services Search",
+                            value="bus-arrival",
                             style=TAB_STYLE,
                             selected_style=TAB_SELECTED_STYLE,
                         ),

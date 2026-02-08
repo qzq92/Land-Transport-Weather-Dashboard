@@ -327,6 +327,71 @@ def transport_page():
                                     ),
                                 ]
                             ),
+                            # EV Charging Points card
+                            create_metric_card(
+                                card_id="ev-charging-points-card",
+                                label="🔌 EV Charging Points",
+                                value_id="ev-charging-points-count-value",
+                                initial_value="--"
+                            ),
+                            # Traffic Incidents card
+                            html.Div(
+                                id="traffic-incidents-card",
+                                style={
+                                    "backgroundColor": "#4a5a6a",
+                                    "borderRadius": "0.5rem",
+                                    "padding": "0.625rem",
+                                    "display": "flex",
+                                    "flexDirection": "column",
+                                    "gap": "0.5rem",
+                                },
+                                children=[
+                                    html.Div(
+                                        style={
+                                            "display": "flex",
+                                            "flexDirection": "row",
+                                            "alignItems": "center",
+                                            "justifyContent": "space-between",
+                                        },
+                                        children=[
+                                            html.Span(
+                                                "🚦 Traffic Incidents",
+                                                style={
+                                                    "color": "#fff",
+                                                    "fontWeight": "600",
+                                                    "fontSize": "0.8125rem"
+                                                }
+                                            ),
+                                            html.Div(
+                                                id="traffic-incidents-count-value",
+                                                style={
+                                                    "color": "#FF9800",
+                                                    "fontSize": "1.125rem",
+                                                    "fontWeight": "700",
+                                                },
+                                                children=[
+                                                    html.Div(
+                                                        html.Span("--", style={"color": "#999"}),
+                                                        style={
+                                                            "backgroundColor": "rgb(58, 74, 90)",
+                                                            "padding": "0.25rem 0.5rem",
+                                                            "borderRadius": "0.25rem",
+                                                        }
+                                                    )
+                                                ]
+                                            ),
+                                        ]
+                                    ),
+                                    html.Div(
+                                        id="traffic-incidents-messages",
+                                        style={
+                                            "maxHeight": "9.375rem",
+                                            "overflowY": "auto",
+                                            "display": "none",
+                                        }
+                                    ),
+                                ]
+                            ),
                             # Bus Stops card
                             html.Div(
                                 id="bus-stops-card",
@@ -399,71 +464,6 @@ def transport_page():
                                 label="🚌 Bus Services Currently in Operation",
                                 value_id="bus-services-count-value",
                                 initial_value="--"
-                            ),
-                            # EV Charging Points card
-                            create_metric_card(
-                                card_id="ev-charging-points-card",
-                                label="🔌 EV Charging Points",
-                                value_id="ev-charging-points-count-value",
-                                initial_value="--"
-                            ),
-                            # Traffic Incidents card
-                            html.Div(
-                                id="traffic-incidents-card",
-                                style={
-                                    "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "0.5rem",
-                                    "padding": "0.625rem",
-                                    "display": "flex",
-                                    "flexDirection": "column",
-                                    "gap": "0.5rem",
-                                },
-                                children=[
-                                    html.Div(
-                                        style={
-                                            "display": "flex",
-                                            "flexDirection": "row",
-                                            "alignItems": "center",
-                                            "justifyContent": "space-between",
-                                        },
-                                        children=[
-                                            html.Span(
-                                                "🚦 Traffic Incidents",
-                                                style={
-                                                    "color": "#fff",
-                                                    "fontWeight": "600",
-                                                    "fontSize": "0.8125rem"
-                                                }
-                                            ),
-                                            html.Div(
-                                                id="traffic-incidents-count-value",
-                                                style={
-                                                    "color": "#FF9800",
-                                                    "fontSize": "1.125rem",
-                                                    "fontWeight": "700",
-                                                },
-                                                children=[
-                                                    html.Div(
-                                                        html.Span("--", style={"color": "#999"}),
-                                                        style={
-                                                            "backgroundColor": "rgb(58, 74, 90)",
-                                                            "padding": "0.25rem 0.5rem",
-                                                            "borderRadius": "0.25rem",
-                                                        }
-                                                    )
-                                                ]
-                                            ),
-                                        ]
-                                    ),
-                                    html.Div(
-                                        id="traffic-incidents-messages",
-                                        style={
-                                            "maxHeight": "9.375rem",
-                                            "overflowY": "auto",
-                                            "display": "none",
-                                        }
-                                    ),
-                                ]
                             ),
                         ]
                     ),
@@ -586,21 +586,6 @@ def transport_page():
                                         },
                                     ),
                                     html.Button(
-                                        "Show Bus Stop Locations",
-                                        id="bus-stops-toggle-btn",
-                                        n_clicks=0,
-                                        style={
-                                            "backgroundColor": "transparent",
-                                            "border": "0.125rem solid #4169E1",
-                                            "borderRadius": "0.25rem",
-                                            "color": "#4169E1",
-                                            "cursor": "pointer",
-                                            "padding": "0.25rem 0.625rem",
-                                            "fontSize": "0.75rem",
-                                            "fontWeight": "600",
-                                        },
-                                    ),
-                                    html.Button(
                                         "Show EV Charging Points",
                                         id="ev-charging-toggle-btn",
                                         n_clicks=0,
@@ -609,6 +594,21 @@ def transport_page():
                                             "border": "0.125rem solid #00E676",
                                             "borderRadius": "0.25rem",
                                             "color": "#00E676",
+                                            "cursor": "pointer",
+                                            "padding": "0.25rem 0.625rem",
+                                            "fontSize": "0.75rem",
+                                            "fontWeight": "600",
+                                        },
+                                    ),
+                                    html.Button(
+                                        "Show Bus Stop Locations",
+                                        id="transport-bus-stops-toggle-btn",
+                                        n_clicks=0,
+                                        style={
+                                            "backgroundColor": "transparent",
+                                            "border": "0.125rem solid #4169E1",
+                                            "borderRadius": "0.25rem",
+                                            "color": "#4169E1",
                                             "cursor": "pointer",
                                             "padding": "0.25rem 0.625rem",
                                             "fontSize": "0.75rem",
@@ -651,10 +651,8 @@ def transport_page():
                                             dl.LayerGroup(id="speed-camera-markers"),
                                             dl.LayerGroup(id="traffic-incidents-markers"),
                                             dl.LayerGroup(id="vms-markers"),
-                                            dl.LayerGroup(id="bus-stops-markers"),
                                             dl.LayerGroup(id="ev-charging-markers"),
-                                            dl.LayerGroup(id="bus-arrival-popup-layer"),
-                                            dl.LayerGroup(id="bus-route-markers"),
+                                            dl.LayerGroup(id="transport-bus-stops-markers"),
                                         ],
                                         zoomControl=True,
                                         dragging=True,
@@ -917,7 +915,7 @@ def transport_page():
                                     ),
                                     # Bus Stop Zoom Message Overlay
                                     html.Div(
-                                        id="bus-stop-zoom-message",
+                                        id="transport-bus-stop-zoom-message",
                                         style={
                                             "position": "absolute",
                                             "top": "50%",
@@ -934,15 +932,15 @@ def transport_page():
                                             "fontSize": "1rem",
                                             "border": "0.0625rem solid #fbbf24",
                                         },
-                                        children="Zoom in to level 14+ to view bus stops"
+                                        children="Zoom in to level 15+ to view bus stops"
                                     ),
                                 ]
                             ),
                         ]
                     ),
-                    # Right side: MRT Line Operational Details
+                    # Right side: Train Service Alerts
                     html.Div(
-                        id="train-advisory-bus-arrival-service-search-panel",
+                        id="train-advisory-panel",
                         style={
                             "flex": "1",
                             "minWidth": "18.75rem",
@@ -1015,187 +1013,19 @@ def transport_page():
                                     ),
                                 ]
                             ),
-                            # Bus Arrival Information card
-                            html.Div(
-                                id="bus-arrival-card",
-                                style={
-                                    "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "0.5rem",
-                                    "display": "flex",
-                                    "flexDirection": "column",
-                                    "gap": "0.5rem",
-                                    "marginBottom": "0.9375rem",
-                                    "flex": "3",
-                                    "minHeight": "0",
-                                    "overflow": "hidden",
-                                },
-                                children=[
-                                    html.Div(
-                                        style={
-                                            "display": "flex",
-                                            "flexDirection": "row",
-                                            "alignItems": "center",
-                                            "justifyContent": "space-between",
-                                            "gap": "0.5rem",
-                                            "marginBottom": "0.5rem",
-                                        },
-                                        children=[
-                                            html.Span(
-                                                "🚌 Arrival Timings For Stops",
-                                                style={
-                                                    "color": "#fff",
-                                                    "fontWeight": "600",
-                                                    "fontSize": "0.8125rem",
-                                                    "whiteSpace": "nowrap",
-                                                }
-                                            ),
-                                            dcc.Input(
-                                                id="bus-stop-search-input",
-                                                type="text",
-                                                placeholder="Enter bus stop code or click on map",
-                                                style={
-                                                    "flex": "1",
-                                                    "padding": "0.375rem 0.5rem",
-                                                    "borderRadius": "0.25rem",
-                                                    "border": "0.0625rem solid #5a6a7a",
-                                                    "backgroundColor": "rgb(58, 74, 90)",
-                                                    "color": "#fff",
-                                                    "fontSize": "0.75rem",
-                                                },
-                                            ),
-                                            html.Button(
-                                                "🔍",
-                                                id="bus-stop-search-btn",
-                                                n_clicks=0,
-                                                style={
-                                                    "padding": "0.375rem 0.75rem",
-                                                    "backgroundColor": "#4169E1",
-                                                    "color": "#fff",
-                                                    "border": "none",
-                                                    "borderRadius": "0.25rem",
-                                                    "cursor": "pointer",
-                                                    "fontSize": "0.75rem",
-                                                    "fontWeight": "600",
-                                                    "whiteSpace": "nowrap",
-                                                }
-                                            ),
-                                        ]
-                                    ),
-                                    html.Div(
-                                        id="bus-arrival-content",
-                                        style={
-                                            "maxHeight": "25rem",
-                                            "overflowY": "auto",
-                                            "backgroundColor": "#3a4a5a",
-                                            "borderRadius": "0.25rem",
-                                            "padding": "0.5rem",
-                                            "display": "none",
-                                        },
-                                        children=[]
-                                    ),
-                                ]
-                            ),
-                            # Bus Services Search card
-                            html.Div(
-                                id="bus-services-search-card",
-                                style={
-                                    "backgroundColor": "#4a5a6a",
-                                    "borderRadius": "0.5rem",
-                                    "display": "flex",
-                                    "flexDirection": "column",
-                                    "gap": "0.5rem",
-                                    "marginBottom": "0.9375rem",
-                                    "flex": "3",
-                                    "minHeight": "0",
-                                    "overflow": "hidden",
-                                },
-                                children=[
-                                    html.Div(
-                                        style={
-                                            "display": "flex",
-                                            "flexDirection": "row",
-                                            "alignItems": "center",
-                                            "justifyContent": "space-between",
-                                            "gap": "0.5rem",
-                                            "marginBottom": "0.5rem",
-                                        },
-                                        children=[
-                                            html.Span(
-                                                "🔍 Bus Services Search",
-                                                style={
-                                                    "color": "#fff",
-                                                    "fontWeight": "600",
-                                                    "fontSize": "0.8125rem",
-                                                    "whiteSpace": "nowrap",
-                                                }
-                                            ),
-                                            dcc.Input(
-                                                id="bus-service-search-input",
-                                                type="text",
-                                                placeholder="Enter bus service number (e.g., 21, 21A, CT8)",
-                                                style={
-                                                    "flex": "1",
-                                                    "padding": "0.375rem 0.5rem",
-                                                    "borderRadius": "0.25rem",
-                                                    "border": "0.0625rem solid #5a6a7a",
-                                                    "backgroundColor": "rgb(58, 74, 90)",
-                                                    "color": "#fff",
-                                                    "fontSize": "0.75rem",
-                                                },
-                                            ),
-                                            html.Button(
-                                                "🔍",
-                                                id="bus-service-search-btn",
-                                                n_clicks=0,
-                                                style={
-                                                    "padding": "0.375rem 0.75rem",
-                                                    "backgroundColor": "#4169E1",
-                                                    "color": "#fff",
-                                                    "border": "none",
-                                                    "borderRadius": "0.25rem",
-                                                    "cursor": "pointer",
-                                                    "fontSize": "0.75rem",
-                                                    "fontWeight": "600",
-                                                    "whiteSpace": "nowrap",
-                                                }
-                                            ),
-                                        ]
-                                    ),
-                                    html.Div(
-                                        id="bus-service-search-content",
-                                        style={
-                                            "maxHeight": "18.75rem",
-                                            "overflowY": "auto",
-                                        },
-                                        children=[
-                                            html.P(
-                                                "Enter a bus service number to view its route information",
-                                                style={
-                                                    "color": "#999",
-                                                    "textAlign": "center",
-                                                    "fontSize": "0.75rem",
-                                                    "fontStyle": "italic",
-                                                    "margin": "0.5rem 0",
-                                                }
-                                            )
-                                        ]
-                                    ),
-                                ]
-                            ),
                         ]
                     ),
                 ]
             ),
             # Store for toggle states
             dcc.Store(id="taxi-toggle-state", data=False),
+            dcc.Store(id="transport-bus-stops-toggle-state", data=False),
             dcc.Store(id="cctv-toggle-state", data=False),
             dcc.Store(id="erp-toggle-state", data=False),
             dcc.Store(id="speed-camera-toggle-state", data=False),
             dcc.Store(id="traffic-incidents-toggle-state", data=False),
             dcc.Store(id="vms-toggle-state", data=False),
-            dcc.Store(id="bus-stops-toggle-state", data=False),
             dcc.Store(id="ev-charging-toggle-state", data=False),
-            dcc.Store(id="selected-bus-stop-code", data=None),
             # Interval for auto-refresh
             dcc.Interval(
                 id='transport-interval',
@@ -1210,19 +1040,11 @@ def transport_page():
                 max_intervals=1,  # Only fire once per activation
                 disabled=True  # Start disabled
             ),
-            # Interval for bus arrival updates (every 1 minute)
-            dcc.Interval(
-                id='bus-arrival-interval',
-                interval=60*1000,  # Update every 1 minute
-                n_intervals=0
-            ),
             # Interval for EV charging points updates (every 5 minutes)
             dcc.Interval(
                 id='ev-charging-interval',
                 interval=5*60*1000,  # Update every 5 minutes
                 n_intervals=0
             ),
-            # Store for current bus stop code to enable auto-refresh
-            dcc.Store(id='current-bus-stop-code', data=None),
         ]
     )

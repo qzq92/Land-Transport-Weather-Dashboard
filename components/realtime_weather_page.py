@@ -656,8 +656,8 @@ def realtime_weather_page():
                                                         id="realtime-weather-map",
                                                         center=sg_center,
                                                         zoom=fixed_zoom,
-                                                        minZoom=fixed_zoom,
-                                                        maxZoom=fixed_zoom,
+                                                        minZoom=10,
+                                                        maxZoom=18,
                                                         maxBounds=sg_bounds,
                                                         maxBoundsViscosity=1.0,
                                                         style={
