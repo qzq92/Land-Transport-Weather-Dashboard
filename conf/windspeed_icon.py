@@ -24,29 +24,8 @@ WINDSPEED_THRESHOLDS = [
     (118, 9999, "🌪️", "Hurricane"),     # Hurricane: >= 118 km/h
 ]
 
-# Wind direction icons
-WIND_DIRECTION_ICONS = {
-    "N": "⬆️",
-    "NNE": "↗️",
-    "NE": "↗️",
-    "ENE": "↗️",
-    "E": "➡️",
-    "ESE": "↘️",
-    "SE": "↘️",
-    "SSE": "↘️",
-    "S": "⬇️",
-    "SSW": "↙️",
-    "SW": "↙️",
-    "WSW": "↙️",
-    "W": "⬅️",
-    "WNW": "↖️",
-    "NW": "↖️",
-    "NNW": "↖️",
-}
-
-# Default icons
+# Default icon
 DEFAULT_WINDSPEED_ICON = "🌬️"
-DEFAULT_DIRECTION_ICON = "🧭"
 
 
 def get_windspeed_icon(speed_kmh: Optional[Union[int, float]]) -> str:
@@ -107,54 +86,3 @@ def get_windspeed_description(speed_kmh: Optional[Union[int, float]]) -> str:
     return "Unknown"
 
 
-def get_windspeed_icon_with_description(speed_kmh: Optional[Union[int, float]]) -> str:
-    """
-    Get the wind speed icon combined with description.
-
-    Args:
-        speed_kmh: Wind speed in kilometers per hour
-
-    Returns:
-        String containing icon followed by description
-    """
-    icon = get_windspeed_icon(speed_kmh)
-    description = get_windspeed_description(speed_kmh)
-    return f"{icon} {description}"
-
-
-def get_wind_direction_icon(direction: Optional[str]) -> str:
-    """
-    Get the wind direction icon based on compass direction.
-
-    Args:
-        direction: Wind direction as compass abbreviation (e.g., "N", "NE", "SW")
-
-    Returns:
-        String containing the appropriate direction icon/emoji
-    """
-    if not direction:
-        return DEFAULT_DIRECTION_ICON
-
-    direction_upper = str(direction).strip().upper()
-    return WIND_DIRECTION_ICONS.get(direction_upper, DEFAULT_DIRECTION_ICON)
-
-
-def get_wind_info(speed_kmh: Optional[Union[int, float]], direction: Optional[str] = None) -> str:
-    """
-    Get complete wind information with icon, speed, and direction.
-
-    Args:
-        speed_kmh: Wind speed in kilometers per hour
-        direction: Optional wind direction as compass abbreviation
-
-    Returns:
-        String containing wind icon, speed, and direction icon
-    """
-    speed_icon = get_windspeed_icon(speed_kmh)
-    speed_str = f"{speed_kmh} km/h" if speed_kmh is not None else "N/A"
-
-    if direction:
-        dir_icon = get_wind_direction_icon(direction)
-        return f"{speed_icon} {speed_str} {dir_icon} {direction}"
-
-    return f"{speed_icon} {speed_str}"

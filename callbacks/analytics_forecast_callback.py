@@ -1,5 +1,5 @@
 """
-Callback functions for Analytics and Forecast page.
+Callback functions for MRT/LRT Station Crowd Forecast page.
 Handles MRT/LRT crowd forecast data visualization with async data fetching.
 """
 import os
@@ -353,7 +353,7 @@ def create_crowd_forecast_chart(train_line: Optional[str] = None):
 
 def register_analytics_forecast_callbacks(app):
     """
-    Register callbacks for analytics and forecast page.
+    Register callbacks for MRT/LRT Station Crowd Forecast page.
     
     Args:
         app: Dash app instance

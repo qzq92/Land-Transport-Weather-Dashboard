@@ -78,7 +78,7 @@ def build_dashboard_banner():
                             selected_style=TAB_SELECTED_STYLE,
                         ),
                         dcc.Tab(
-                            label="📊 Analytics and Forecast",
+                            label="🚆 MRT/LRT Station Crowd Forecast",
                             value="analytics-forecast",
                             style=TAB_STYLE,
                             selected_style=TAB_SELECTED_STYLE,

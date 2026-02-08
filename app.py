@@ -143,7 +143,7 @@ app.layout = html.Div(
                 nearby_transport_page(),
                 # Travel times page (hidden by default)
                 travel_times_page(),
-                # Analytics and forecast page (hidden by default)
+                # MRT/LRT Station Crowd Forecast page (hidden by default)
                 analytics_forecast_page(),
                 # Traffic conditions page (hidden by default)
                 traffic_conditions_page(),

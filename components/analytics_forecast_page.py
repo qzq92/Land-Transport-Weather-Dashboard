@@ -1,5 +1,5 @@
 """
-Component for the analytics and forecast page.
+Component for the MRT/LRT Station Crowd Forecast page.
 """
 from dash import html, dcc
 from conf.page_layout_config import PAGE_PADDING, PAGE_HEIGHT
@@ -24,10 +24,10 @@ TRAIN_LINE_OPTIONS = [
 
 def analytics_forecast_page():
     """
-    Create the analytics and forecast page layout.
+    Create the MRT/LRT Station Crowd Forecast page layout.
 
     Returns:
-        HTML Div containing the analytics and forecast page
+        HTML Div containing the MRT/LRT Station Crowd Forecast page
     """
     return html.Div(
         id="analytics-forecast-page",
@@ -66,7 +66,7 @@ def analytics_forecast_page():
                                 },
                                 children=[
                                     html.H4(
-                                        "📊 MRT/LRT Crowd Forecast",
+                                        "🚆 MRT/LRT Station Crowd Forecast",
                                         style={
                                             "margin": "0",
                                             "color": "#fff",
