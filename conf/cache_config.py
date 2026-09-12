@@ -58,6 +58,7 @@ TTL_MRT_CROWD_CALLBACKS: int = _SECONDS_10_MIN
 # These datasets are relatively slow-moving and poll-download endpoints can
 # rate-limit aggressively, so keep refresh to once daily.
 TTL_DISEASE_CLUSTER_CALLBACKS: int = _SECONDS_24_HOURS
+TTL_DISEASE_CLUSTER_RETRY_SECONDS: int = _SECONDS_5_MIN
 
 # Analytics Forecast tab callbacks:
 # LTA PCDForecast per train line.

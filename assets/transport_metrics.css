@@ -1,0 +1,212 @@
+/* Road & Transport Metrics & Map: left rail + wide map */
+
+.transport-metrics-view {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.transport-metrics-content {
+  display: flex;
+  flex: 1;
+  gap: 0.5rem;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+}
+
+.transport-metrics-rail-wrap {
+  display: flex;
+  flex: 0 0 22rem;
+  max-width: 24rem;
+  min-height: 0;
+  min-width: 20rem;
+}
+
+.transport-metrics-rail {
+  background-color: #1a2a3a;
+  border-radius: 0.5rem;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+  min-width: 0;
+  padding: 0.625rem;
+}
+
+.transport-metrics-grid {
+  display: grid;
+  flex-shrink: 0;
+  gap: 0.375rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.transport-metric-tile {
+  background-color: #2a3a4a;
+  border-radius: 0.375rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  padding: 0.4rem 0.5rem;
+}
+
+.transport-metric-label {
+  color: #cbd5e1;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.transport-metric-value {
+  color: #f8fafc;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.transport-metric-note {
+  color: #fbbf24;
+  font-size: 0.625rem;
+  font-style: italic;
+  line-height: 1.3;
+  margin: 0.25rem 0 0;
+}
+
+.transport-advisory-panel {
+  background-color: #2a3a4a;
+  border-radius: 0.375rem;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 8rem;
+  overflow: hidden;
+  padding: 0.5rem 0.6rem;
+}
+
+.transport-advisory-card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-height: 0;
+}
+
+.transport-advisory-title {
+  color: #f8fafc;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.transport-advisory-body {
+  color: #cbd5e1;
+  flex: 1;
+  font-size: 0.8125rem;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.transport-advisory-empty {
+  color: #94a3b8;
+  font-size: 0.8125rem;
+  font-style: italic;
+  margin: 0;
+}
+
+.transport-map-panel {
+  background-color: #1a2a3a;
+  border-radius: 0.5rem;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.transport-layer-chips {
+  align-items: center;
+  background-color: #2c3e50;
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  padding: 0.45rem 0.6rem;
+}
+
+.transport-layer-chip {
+  line-height: 1.2;
+}
+
+.transport-map-frame {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  width: 100%;
+}
+
+.transport-map-legend {
+  background-color: rgba(26, 42, 58, 0.9);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.3);
+  padding: 0.625rem;
+  position: absolute;
+  right: 0.625rem;
+  top: 0.625rem;
+  z-index: 1000;
+}
+
+.transport-map-legend-title {
+  border-bottom: 0.0625rem solid #4a5a6a;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+}
+
+.transport-map-legend-row {
+  align-items: center;
+  color: #fff;
+  display: flex;
+  font-size: 0.6875rem;
+  margin-bottom: 0.375rem;
+}
+
+.transport-map-legend-dot {
+  background-color: #ffd700;
+  border-radius: 50%;
+  height: 0.75rem;
+  margin-right: 0.5rem;
+  width: 0.75rem;
+}
+
+.transport-map-legend-stand {
+  border-bottom: 0.75rem solid #ffa500;
+  border-left: 0.375rem solid transparent;
+  border-right: 0.375rem solid transparent;
+  height: 0;
+  margin-right: 0.5rem;
+  width: 0;
+}
+
+.transport-bus-stop-zoom {
+  background-color: rgba(0, 0, 0, 0.8);
+  border: 0.0625rem solid #fbbf24;
+  border-radius: 0.5rem;
+  color: #fbbf24;
+  font-size: 1rem;
+  font-weight: 600;
+  left: 50%;
+  padding: 1rem 2rem;
+  position: absolute;
+  text-align: center;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+}

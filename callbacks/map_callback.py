@@ -1,6 +1,6 @@
 """
 Callback functions for handling map interactions and OneMap search API integration.
-Reference: https://www.onemap.gov.sg/apidocs/search
+See ONEMAP_SEARCH_URL in conf.api_urls.
 """
 import re
 from urllib.parse import quote_plus
@@ -8,16 +8,16 @@ from urllib.parse import quote_plus
 import requests
 from dotenv import load_dotenv
 from dash.dependencies import Input, Output, State
-from dash import no_update
+from dash import callback_context, no_update
 import dash_leaflet as dl
 from utils.async_fetcher import run_in_thread
+from conf.api_urls import ONEMAP_SEARCH_URL
 load_dotenv(override=True)
 
 @run_in_thread
 def search_location_via_onemap_info_async(searchVal: str, returnGeom: str = "Y", getAddrDetails: str = "Y", pageNum: int = 1):
     """
     Search for location using OneMap Search API.
-    Reference: https://www.onemap.gov.sg/apidocs/search
     
     Args:
         searchVal: Search value (required)
@@ -35,7 +35,10 @@ def search_location_via_onemap_info_async(searchVal: str, returnGeom: str = "Y",
     searchVal = quote_plus(str(searchVal).strip())
     
     # OneMap Search API endpoint as per documentation
-    onemap_search_url = f"https://www.onemap.gov.sg/api/common/elastic/search?searchVal={searchVal}&returnGeom={returnGeom}&getAddrDetails={getAddrDetails}&pageNum={pageNum}"
+    onemap_search_url = (
+        f"{ONEMAP_SEARCH_URL}?searchVal={searchVal}&returnGeom={returnGeom}"
+        f"&getAddrDetails={getAddrDetails}&pageNum={pageNum}"
+    )
     print(f"OneMap Search API Request: {onemap_search_url}")
 
     req_headers = {
@@ -61,6 +64,60 @@ def search_location_via_onemap_info_async(searchVal: str, returnGeom: str = "Y",
         print(f"Error during OneMap API request: {error}")
         return []
 
+MIN_ONEMAP_QUERY_LENGTH = 3
+ONEMAP_RESULT_LIMIT = 5
+
+
+def format_onemap_dropdown_options(results, include_postal=False, limit=ONEMAP_RESULT_LIMIT):
+    """Convert OneMap search records into dropdown options."""
+    options = []
+    for result in (results or [])[:limit]:
+        address = result.get("ADDRESS", "Unknown Address")
+        building = result.get("BUILDING", "")
+        postal = result.get("POSTAL", "")
+        lat = result.get("LATITUDE")
+        lon = result.get("LONGITUDE")
+        if not lat or not lon:
+            continue
+
+        label_parts = []
+        if building:
+            label_parts.append(building)
+        if address:
+            label_parts.append(address)
+        if postal:
+            label_parts.append(f"(S{postal})")
+        label = ", ".join(label_parts) if label_parts else address
+
+        if include_postal and postal:
+            value = f"{lat},{lon},{address},{postal}"
+        else:
+            value = f"{lat},{lon},{address}"
+        options.append({"label": label, "value": value})
+    return options
+
+
+def fetch_onemap_dropdown_options(search_value, include_postal=False):
+    """Fetch OneMap matches and format dropdown options for a completed query."""
+    if not search_value or len(str(search_value).strip()) < MIN_ONEMAP_QUERY_LENGTH:
+        return []
+    future = search_location_via_onemap_info_async(search_value)
+    results = future.result() if future else []
+    return format_onemap_dropdown_options(results, include_postal=include_postal)
+
+
+def nearby_search_dropdown_update(query):
+    """
+    Build nearby-search dropdown state after an explicit submit.
+
+    A single match is selected automatically; multiple matches wait for a click.
+    """
+    options = fetch_onemap_dropdown_options(query, include_postal=False)
+    if len(options) == 1:
+        return options, options[0]["value"]
+    return options, None
+
+
 def _haversine_distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Compute great-circle distance in meters between two WGS84 lat/lon points."""
     from math import radians, sin, cos, asin, sqrt
@@ -75,7 +132,7 @@ def register_search_callbacks(app):
     """
     Register search-related callbacks for the OneMap search functionality.
     Implements integrated search bar with top 5 most relevant results.
-    Reference: https://www.onemap.gov.sg/apidocs/search
+    See ONEMAP_SEARCH_URL in conf.api_urls.
     """
 
     @app.callback(
@@ -103,42 +160,8 @@ def register_search_callbacks(app):
             except (ValueError, IndexError):
                 return []
 
-        if not search_value or len(str(search_value).strip()) < 3:
-            return []
-
-        future = search_location_via_onemap_info_async(search_value)
-        results = future.result() if future else []
-        options = []
-
-        # Limit to top 5 most relevant results
-        for result in results[:5]:
-            # Extract relevant fields from OneMap API response
-            address = result.get('ADDRESS', 'Unknown Address')
-            building = result.get('BUILDING', '')
-            postal = result.get('POSTAL', '')
-            lat = result.get('LATITUDE')
-            lon = result.get('LONGITUDE')
-
-            if lat and lon:
-                # Create a descriptive label
-                label_parts = []
-                if building:
-                    label_parts.append(building)
-                if address:
-                    label_parts.append(address)
-                if postal:
-                    label_parts.append(f"(S{postal})")
-
-                label = ', '.join(label_parts) if label_parts else address
-
-                # Store coordinates in EPSG:4326 format (Leaflet expects this)
-                # Include postal code in value: lat,lon,address,postal
-                options.append({
-                    'label': label,
-                    'value': f'{lat},{lon},{address},{postal}' if postal else f'{lat},{lon},{address}'
-                })
-
-        print(f"Generated {len(options)} dropdown options (top 5)")
+        options = fetch_onemap_dropdown_options(search_value, include_postal=True)
+        print(f"Generated {len(options)} dropdown options (top {ONEMAP_RESULT_LIMIT})")
         return options
 
     @app.callback(
@@ -204,69 +227,25 @@ def register_search_callbacks(app):
             traceback.print_exc()
             return no_update, no_update, no_update
 
-    # Callback for nearby transport page search bar
+    # Nearby Facilities: search OneMap only after Enter or the search button.
     @app.callback(
         Output('nearby-transport-search', 'options'),
-        Input('nearby-transport-search', 'search_value'),
-        Input('nearby-transport-search', 'value')
+        Output('nearby-transport-search', 'value'),
+        Input('nearby-transport-search-query', 'n_submit'),
+        Input('nearby-transport-search-btn', 'n_clicks'),
+        State('nearby-transport-search-query', 'value'),
+        prevent_initial_call=True,
     )
-    def update_nearby_transport_search_options(search_value, selected_value):
-        """
-        Update dropdown with top 5 search results from OneMap API as user types.
-        For nearby transport page.
-
-        Args:
-            search_value: Text entered in the search input
-            selected_value: Currently selected value
-
-        Returns:
-            List of top 5 dropdown options with address labels and lat/lon values
-        """
-        # If user has selected a value, keep it in options
-        if selected_value and not search_value:
-            try:
-                parts = selected_value.split(',', 2)
-                address = parts[2] if len(parts) > 2 else "Selected Location"
-                return [{'label': address, 'value': selected_value}]
-            except (ValueError, IndexError):
-                return []
-
-        if not search_value or len(str(search_value).strip()) < 3:
-            return []
-
-        future = search_location_via_onemap_info_async(search_value)
-        results = future.result() if future else []
-        options = []
-
-        # Limit to top 5 most relevant results
-        for result in results[:5]:
-            # Extract relevant fields from OneMap API response
-            address = result.get('ADDRESS', 'Unknown Address')
-            building = result.get('BUILDING', '')
-            postal = result.get('POSTAL', '')
-            lat = result.get('LATITUDE')
-            lon = result.get('LONGITUDE')
-
-            if lat and lon:
-                # Create a descriptive label
-                label_parts = []
-                if building:
-                    label_parts.append(building)
-                if address:
-                    label_parts.append(address)
-                if postal:
-                    label_parts.append(f"(S{postal})")
-
-                label = ', '.join(label_parts) if label_parts else address
-
-                # Store coordinates in EPSG:4326 format (Leaflet expects this)
-                options.append({
-                    'label': label,
-                    'value': f'{lat},{lon},{address}'  # Store lat,lon,address in EPSG:4326
-                })
-
-        print(f"Generated {len(options)} dropdown options for nearby transport (top 5)")
-        return options
+    def update_nearby_transport_search_options(_n_submit, _n_clicks, query):
+        """Fetch matching locations only after the user finishes the query."""
+        if not callback_context.triggered:
+            return no_update, no_update
+        options, selected_value = nearby_search_dropdown_update(query)
+        print(
+            f"Nearby search submitted; {len(options)} option(s), "
+            f"auto_selected={selected_value is not None}"
+        )
+        return options, selected_value
 
     @app.callback(
         [Output('nearby-transport-map', 'viewport'),

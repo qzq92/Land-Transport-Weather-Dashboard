@@ -7,7 +7,7 @@ import numpy as np
 from datetime import datetime
 from utils.async_fetcher import run_in_thread, fetch_url_2min_cached, get_default_headers
 
-_TRAFFIC_IMAGES_URL = "https://api.data.gov.sg/v1/transport/traffic-images"
+from conf.api_urls import TRAFFIC_IMAGES_API_URL as _TRAFFIC_IMAGES_URL
 
 
 def query_traffic_metadata() -> Dict:

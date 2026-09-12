@@ -1,7 +1,6 @@
 """
 Weather forecast icons configuration.
 Maps forecast text descriptions to appropriate icons/emojis.
-Reference: https://data.gov.sg/datasets?query=weather
 """
 from typing import Optional
 

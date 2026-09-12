@@ -13,8 +13,7 @@ import dash_leaflet as dl
 from utils.async_fetcher import fetch_url_10min_cached, _executor, get_current_10min_bucket
 from utils.map_utils import SG_MAP_CENTER
 
-# API URL
-PCD_REALTIME_URL = "https://datamall2.mytransport.sg/ltaodataservice/PCDRealTime"
+from conf.api_urls import PCD_REALTIME_URL
 
 # Global cache for the combined crowd data to ensure 10-minute alignment
 _COMBINED_CROWD_CACHE = {'data': None, 'bucket': None}
@@ -438,4 +437,4 @@ def register_mrt_crowd_callbacks(app):
             )
             markers.append(marker)
 
-        return [dl.MarkerClusterGroup(children=markers)], legend_visible_style
+        return markers, legend_visible_style

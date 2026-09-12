@@ -1,10 +1,6 @@
 """
 Callback functions for handling weather forecast API integration.
-References:
-- 2-hour forecast:
-  https://data.gov.sg/datasets?query=weather&resultId=d_3f9e064e25005b0e42969944ccaf2e7a
-- 24-hour forecast:
-  https://data.gov.sg/datasets?query=weather&resultId=d_ce2eb1e307bda31993c533285834ef2b
+See WEATHER_2H_FORECAST_URL and WEATHER_24H_FORECAST_URL in conf.api_urls.
 """
 import os
 import requests
@@ -12,6 +8,7 @@ from dash import Input, Output, State, html, no_update
 from dotenv import load_dotenv
 import dash_leaflet as dl
 from conf.weather_icons import get_weather_icon
+from conf.api_urls import WEATHER_2H_FORECAST_URL, WEATHER_24H_FORECAST_URL
 from utils.async_fetcher import run_in_thread
 
 load_dotenv(override=True)
@@ -88,8 +85,6 @@ def create_weather_markers(data):
 def fetch_weather_forecast_2h_async():
     """
     Fetch 2-hour weather forecast asynchronously from data.gov.sg API.
-    Reference:
-    https://data.gov.sg/datasets?query=weather&resultId=d_3f9e064e25005b0e42969944ccaf2e7a
 
     Returns:
         Future object. Call .result() to get the data.
@@ -99,7 +94,7 @@ def fetch_weather_forecast_2h_async():
         print("DATA_GOV_API environment variable not set")
         return None
 
-    url = "https://api.data.gov.sg/v1/environment/2-hour-weather-forecast"
+    url = WEATHER_2H_FORECAST_URL
     headers = {
         "X-API-Key": api_key,
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
@@ -279,8 +274,6 @@ def fetch_and_format_weather_24h_async():
     """
     Fetch and format 24-hour weather forecast data asynchronously for main dashboard display.
     Shows temperature, relative humidity, general forecast and wind information.
-    Reference:
-    https://data.gov.sg/datasets?query=weather&resultId=d_ce2eb1e307bda31993c533285834ef2b
 
     Returns:
         Future object. Call .result() to get the HTML Div.
@@ -294,7 +287,7 @@ def fetch_and_format_weather_24h_async():
             style={"padding": "10px", "color": "#999", "textAlign": "center"}
         )
 
-    url = "https://api-open.data.gov.sg/v2/real-time/api/twenty-four-hr-forecast"
+    url = WEATHER_24H_FORECAST_URL
     headers = {
         "X-API-Key": api_key,
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"

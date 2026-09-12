@@ -11,12 +11,12 @@ from utils.map_utils import (
     SG_MAP_BOUNDS,
     ONEMAP_TILES_URL
 )
-from conf.page_layout_config import PAGE_PADDING, PAGE_HEIGHT, get_content_container_style, STANDARD_GAP
+from conf.page_layout_config import get_content_container_style, STANDARD_GAP
 
 
-def bus_arrival_page():
+def bus_arrival_view():
     """
-    Create the Bus Arrival & Services Search page layout.
+    Create the reusable Bus Arrival & Services Search view.
     Features: Bus stop search, bus arrival timings, and bus service route search with map.
 
     Returns:
@@ -30,11 +30,11 @@ def bus_arrival_page():
     sg_bounds = SG_MAP_BOUNDS
 
     return html.Div(
-        id="bus-arrival-page",
+        id="transit-bus-view",
         style={
-            "display": "none",  # Hidden by default
-            "padding": PAGE_PADDING,
-            "height": PAGE_HEIGHT,
+            "display": "none",
+            "flex": "1",
+            "minHeight": "0",
             "width": "100%",
         },
         children=[
@@ -219,29 +219,77 @@ def bus_arrival_page():
                             ),
                             # Unified Results Area
                             html.Div(
-                                id="bus-search-results",
                                 style={
                                     "flex": "1",
-                                    "backgroundColor": "#2a3a4a",
-                                    "borderRadius": "0.5rem",
-                                    "padding": "1rem",
-                                    "overflowY": "auto",
                                     "minHeight": "0",
-                                    "boxShadow": "0 0.125rem 0.5rem rgba(0, 0, 0, 0.3)",
-                                    "border": "0.0625rem solid #4a5a6a",
+                                    "display": "flex",
+                                    "flexDirection": "column",
+                                    "gap": "0.5rem",
                                 },
                                 children=[
-                                    html.P(
-                                        "Search for a bus stop or bus service to view information",
+                                    html.Div(
+                                        className="bus-arrival-toolbar",
                                         style={
-                                            "color": "#999",
-                                            "textAlign": "center",
-                                            "fontSize": "0.8125rem",
-                                            "fontStyle": "italic",
-                                            "margin": "2rem 0",
-                                        }
-                                    )
-                                ]
+                                            "display": "flex",
+                                            "flexWrap": "wrap",
+                                            "gap": "0.5rem",
+                                            "alignItems": "center",
+                                            "justifyContent": "space-between",
+                                        },
+                                        children=[
+                                            dcc.RadioItems(
+                                                id="bus-arrival-sort-mode",
+                                                options=[
+                                                    {"label": "Soonest", "value": "soonest"},
+                                                    {"label": "Service no.", "value": "service"},
+                                                ],
+                                                value="soonest",
+                                                inline=True,
+                                                className="bus-arrival-sort",
+                                            ),
+                                            dcc.Input(
+                                                id="bus-arrival-service-filter",
+                                                type="text",
+                                                placeholder="Filter service (e.g. 12)",
+                                                debounce=False,
+                                                style={
+                                                    "width": "11rem",
+                                                    "padding": "0.35rem 0.6rem",
+                                                    "borderRadius": "0.375rem",
+                                                    "border": "0.0625rem solid #5a6a7a",
+                                                    "backgroundColor": "rgb(58, 74, 90)",
+                                                    "color": "#fff",
+                                                    "fontSize": "0.75rem",
+                                                },
+                                            ),
+                                        ],
+                                    ),
+                                    html.Div(
+                                        id="bus-search-results",
+                                        style={
+                                            "flex": "1",
+                                            "backgroundColor": "#2a3a4a",
+                                            "borderRadius": "0.5rem",
+                                            "padding": "1rem",
+                                            "overflowY": "auto",
+                                            "minHeight": "0",
+                                            "boxShadow": "0 0.125rem 0.5rem rgba(0, 0, 0, 0.3)",
+                                            "border": "0.0625rem solid #4a5a6a",
+                                        },
+                                        children=[
+                                            html.P(
+                                                "Enter a 5-digit stop code, or zoom the map and click a stop. You can also search a service number for its route.",
+                                                style={
+                                                    "color": "#999",
+                                                    "textAlign": "center",
+                                                    "fontSize": "0.8125rem",
+                                                    "fontStyle": "italic",
+                                                    "margin": "2rem 0",
+                                                }
+                                            )
+                                        ]
+                                    ),
+                                ],
                             ),
                         ]
                     ),
@@ -360,7 +408,8 @@ def bus_arrival_page():
             dcc.Interval(
                 id='bus-arrival-page-interval',
                 interval=INTERVAL_TRANSPORT_MS,
-                n_intervals=0
+                n_intervals=0,
+                disabled=True,
             ),
             # Interval for map invalidation (fixes grey tiles)
             dcc.Interval(
@@ -374,10 +423,13 @@ def bus_arrival_page():
             dcc.Interval(
                 id='bus-arrival-interval',
                 interval=INTERVAL_BUS_ARRIVAL_MS,
-                n_intervals=0
+                n_intervals=0,
+                disabled=True,
             ),
             # Store for current bus stop code to enable auto-refresh
             dcc.Store(id='current-bus-stop-code', data=None),
+            dcc.Store(id='bus-arrival-results-store', data=None),
+            dcc.Store(id='bus-arrival-filter-status', data=None),
         ]
     )
 

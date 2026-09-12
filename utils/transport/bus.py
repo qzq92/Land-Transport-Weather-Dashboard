@@ -6,9 +6,9 @@ from concurrent.futures import Future, as_completed
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+from conf.api_urls import BUS_ROUTES_URL, BUS_SERVICES_URL, BUS_STOPS_URL
 from utils.async_fetcher import _executor, fetch_url, fetch_url_10min_cached, run_in_thread
 from utils.transport.cache import _road_infra_cache
-from utils.transport.constants import BUS_ROUTES_URL, BUS_SERVICES_URL, BUS_STOPS_URL
 
 
 def _lta_headers() -> Optional[Dict[str, str]]:

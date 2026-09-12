@@ -1,92 +1,69 @@
-"""
-Component for displaying MRT and LRT line service status banner.
-Shows real-time operational status for all train lines.
-"""
+"""Compact, globally visible MRT and LRT service-status summary."""
 from dash import html
 
 
 def build_mrt_line_status_banner():
-    """
-    Create the MRT/LRT line service status banner component.
-    
-    Returns:
-        HTML Div containing the rail operational status banner with MRT and LRT line displays
-    """
+    """Create the rail summary and an expandable all-lines status region."""
     return html.Div(
         id="rail-status-banner",
-        style={
-            "backgroundColor": "#1a2a3a",
-            "padding": "0.125rem 1rem",
-            "borderBottom": "0.0625rem solid #4a5a6a",
-            "width": "100%",
-            "display": "flex",
-            "flexDirection": "row",
-            "alignItems": "flex-start",
-            "justifyContent": "space-between",
-            "minHeight": "1.5rem",
-            "gap": "0.25rem",
-        },
+        className="rail-status-banner",
         children=[
-            # Left column: MRT Lines (70% width)
             html.Div(
-                style={
-                    "flex": "6.5",
-                    "display": "flex",
-                    "flexDirection": "column",
-                    "gap": "0.25rem",
-                },
+                className="rail-status-primary",
                 children=[
                     html.Span(
-                        "MRT Lines Service Statuses:",
-                        style={
-                            "color": "#fff",
-                            "fontWeight": "600",
-                            "fontSize": "0.8rem",
-                            "whiteSpace": "nowrap",
-                        }
+                        "Rail service:",
+                        className="rail-status-label",
                     ),
                     html.Div(
-                        id="mrt-lines-display",
-                        style={"width": "100%"},
+                        id="rail-status-summary",
+                        className="rail-status-summary",
                         children=[
-                            html.P(
-                                "Loading MRT line status...",
-                                style={"color": "#999", "margin": "0", "fontSize": "0.75rem"}
+                            html.Span(
+                                "Updating rail status…",
+                                className="rail-status-updating",
                             )
-                        ]
-                    )
-                ]
+                        ],
+                    ),
+                ],
             ),
-            # Right column: LRT Lines (30% width)
-            html.Div(
-                style={
-                    "flex": "3.5",
-                    "display": "flex",
-                    "flexDirection": "column",
-                    "gap": "0.25rem",
-                },
+            html.Span(
+                id="rail-status-updated",
+                className="rail-status-updated",
+                children="Updating",
+            ),
+            html.Details(
+                id="rail-status-details",
+                className="rail-status-details",
                 children=[
-                    html.Span(
-                        "LRT Lines Service Statuses:",
-                        style={
-                            "color": "#fff",
-                            "fontWeight": "600",
-                            "fontSize": "0.8rem",
-                            "whiteSpace": "nowrap",
-                        }
-                    ),
+                    html.Summary("View all lines"),
                     html.Div(
-                        id="lrt-lines-display",
-                        style={"width": "100%"},
+                        className="rail-status-expanded",
                         children=[
-                            html.P(
-                                "Loading LRT line status...",
-                                style={"color": "#999", "margin": "0", "fontSize": "0.75rem"}
-                            )
-                        ]
-                    )
-                ]
-            )
-        ]
+                            html.Section(
+                                children=[
+                                    html.H3("MRT"),
+                                    html.Div(
+                                        id="mrt-lines-display",
+                                        className="rail-line-grid",
+                                        children="Updating MRT status…",
+                                    ),
+                                ],
+                            ),
+                            html.Section(
+                                children=[
+                                    html.H3("LRT"),
+                                    html.Div(
+                                        id="lrt-lines-display",
+                                        className="rail-line-grid",
+                                        children="Updating LRT status…",
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ],
     )
 

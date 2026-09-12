@@ -2,7 +2,6 @@
 Component for the MRT/LRT Station Crowd Forecast page.
 """
 from dash import html, dcc
-from conf.page_layout_config import PAGE_PADDING, PAGE_HEIGHT
 
 
 # Train line options for dropdown
@@ -22,19 +21,20 @@ TRAIN_LINE_OPTIONS = [
 ]
 
 
-def analytics_forecast_page():
+def analytics_forecast_view():
     """
-    Create the MRT/LRT Station Crowd Forecast page layout.
+    Create the reusable MRT/LRT Station Crowd Forecast view.
 
     Returns:
         HTML Div containing the MRT/LRT Station Crowd Forecast page
     """
     return html.Div(
-        id="analytics-forecast-page",
+        id="transit-crowd-view",
         style={
-            "display": "none",  # Hidden by default
-            "padding": PAGE_PADDING,
-            "height": PAGE_HEIGHT,
+            "display": "flex",
+            "flex": "1",
+            "minHeight": "0",
+            "flexDirection": "column",
             "width": "100%",
         },
         children=[

@@ -1,6 +1,6 @@
 """
 Callback functions for handling flood alerts API integration.
-Reference: https://data.gov.sg/datasets?formats=API&resultId=d_f1404e08587ce555b9ea3f565e2eb9a3
+See FLOOD_ALERTS_URL in conf.api_urls.
 """
 from dash import Input, Output, State, html, no_update
 from utils.realtime_weather_api import fetch_flood_alerts_async

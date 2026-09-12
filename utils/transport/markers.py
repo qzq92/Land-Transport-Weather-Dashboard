@@ -7,6 +7,7 @@ from dash import html
 import dash_leaflet as dl
 
 from utils.transport.cache import load_lta_camera_id_mapping
+from conf.api_urls import LEAFLET_MARKER_ICON_GREEN_URL, LEAFLET_MARKER_SHADOW_URL
 
 
 def create_taxi_markers(data: Optional[Dict[str, Any]]) -> List[dl.CircleMarker]:
@@ -39,7 +40,7 @@ def create_cctv_markers(camera_data: Dict[str, Dict[str, Any]]) -> List[dl.Marke
     """Create CCTV camera markers with image popups."""
     markers = []
     camera_id_mapping = load_lta_camera_id_mapping()
-    icon_url = "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png"
+    icon_url = LEAFLET_MARKER_ICON_GREEN_URL
 
     for camera_id, info in camera_data.items():
         lat = info.get("lat")
@@ -88,7 +89,7 @@ def create_cctv_markers(camera_data: Dict[str, Dict[str, Any]]) -> List[dl.Marke
                 ],
                 icon={
                     "iconUrl": icon_url,
-                    "shadowUrl": "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+                    "shadowUrl": LEAFLET_MARKER_SHADOW_URL,
                     "iconSize": [25, 41],
                     "iconAnchor": [12, 41],
                     "popupAnchor": [1, -34],

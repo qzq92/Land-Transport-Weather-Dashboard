@@ -11,18 +11,8 @@ import glob
 import requests
 from typing import Optional, Dict, Any
 from utils.async_fetcher import fetch_url
+from conf.api_urls import DATASET_IDS, initiate_download_url
 from conf.cache_config import TTL_INITIATE_DOWNLOAD_DATASETS
-
-# Base URL for initiate-download API
-INITIATE_DOWNLOAD_BASE_URL = "https://api-open.data.gov.sg/v1/public/api/datasets"
-
-# Dataset IDs for various datasets
-DATASET_IDS = {
-    'ERP_GANTRY': 'd_753090823cc9920ac41efaa6530c5893',
-    'PUB_CCTV': 'd_1de1c45043183bec57e762d01c636eee',
-    'HDB_CARPARK': 'd_23f946fa557947f93a8043bbef41dd09',
-    'SPEED_CAMERA': 'd_983804de2bc016f53e44031d85d1ec8a',
-}
 
 # Default cache TTL — sourced from centralised config
 DEFAULT_CACHE_TTL: int = TTL_INITIATE_DOWNLOAD_DATASETS
@@ -41,7 +31,7 @@ def get_initiate_download_url(dataset_id: str) -> str:
     Returns:
         Full URL for the initiate-download endpoint
     """
-    return f"{INITIATE_DOWNLOAD_BASE_URL}/{dataset_id}/initiate-download"
+    return initiate_download_url(dataset_id)
 
 
 def initiate_download(dataset_id: str) -> Optional[str]:

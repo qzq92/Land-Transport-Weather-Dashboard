@@ -1,12 +1,6 @@
 """
 Callback functions for handling realtime weather readings from data.gov.sg v2 API.
-References:
-- Air Temperature: https://api-open.data.gov.sg/v2/real-time/api/air-temperature
-- Rainfall: https://api-open.data.gov.sg/v2/real-time/api/rainfall
-- Relative Humidity: https://api-open.data.gov.sg/v2/real-time/api/relative-humidity
-- Wind Speed: https://api-open.data.gov.sg/v2/real-time/api/wind-speed
-
-Uses ThreadPoolExecutor for async API fetching to improve performance.
+See DATA_GOV_REALTIME_API_BASE in conf.api_urls.
 """
 import time
 from datetime import datetime, timedelta

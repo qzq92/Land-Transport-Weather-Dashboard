@@ -1,13 +1,14 @@
 """
 OneMap API Authentication Module
 Handles token acquisition and caching for OneMap API requests.
-Reference: https://www.onemap.gov.sg/apidocs/authentication
+See ONEMAP_TOKEN_URL in conf.api_urls.
 """
 import requests
 import os
 import time
 from typing import Optional
 from dotenv import load_dotenv
+from conf.api_urls import ONEMAP_TOKEN_URL
 load_dotenv(override=True)
 
 # Token cache
@@ -75,7 +76,7 @@ def get_onemap_token() -> Optional[str]:
                 return None
         
         # OneMap authentication endpoint
-        token_url = "https://www.onemap.gov.sg/api/auth/post/getToken"
+        token_url = ONEMAP_TOKEN_URL
         
         # Request token using POST with email, password, and optionally API key
         print("Requesting token using POST with email, password, and optionally API key")

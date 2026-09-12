@@ -178,15 +178,9 @@ app.layout = html.Div(
                          children=[_loading_placeholder()]),
                 html.Div(id="transport-page", style={"display": "none"},
                          children=[_loading_placeholder()]),
-                html.Div(id="bus-arrival-page", style={"display": "none"},
+                html.Div(id="transit-page", style={"display": "none"},
                          children=[_loading_placeholder()]),
                 html.Div(id="nearby-transport-page", style={"display": "none"},
-                         children=[_loading_placeholder()]),
-                html.Div(id="travel-times-page", style={"display": "none"},
-                         children=[_loading_placeholder()]),
-                html.Div(id="analytics-forecast-page", style={"display": "none"},
-                         children=[_loading_placeholder()]),
-                html.Div(id="traffic-conditions-page", style={"display": "none"},
                          children=[_loading_placeholder()]),
                 # Main content area with map and right panel side by side
                 html.Div(

@@ -1,10 +1,8 @@
 """Data.gov.sg realtime weather API helpers."""
 
 from utils.async_fetcher import _executor, fetch_url_2min_cached, get_default_headers
+from conf.api_urls import DATA_GOV_REALTIME_API_BASE, FLOOD_ALERTS_URL, LIGHTNING_URL
 
-API_BASE = "https://api-open.data.gov.sg/v2/real-time/api"
-FLOOD_ALERTS_URL = f"{API_BASE}/weather/flood-alerts"
-LIGHTNING_URL = f"{API_BASE}/weather?api=lightning"
 SUPPORTED_ENDPOINTS = ["air-temperature", "rainfall", "relative-humidity", "wind-speed"]
 
 
@@ -19,7 +17,7 @@ def fetch_realtime_data(endpoint):
         print(f"Unsupported endpoint: {endpoint}")
         return None
 
-    url = f"{API_BASE}/{endpoint}"
+    url = f"{DATA_GOV_REALTIME_API_BASE}/{endpoint}"
     return fetch_url_2min_cached(url, get_default_headers())
 
 
@@ -29,7 +27,7 @@ def fetch_realtime_data_async(endpoint):
         print(f"Unsupported endpoint: {endpoint}")
         return None
 
-    url = f"{API_BASE}/{endpoint}"
+    url = f"{DATA_GOV_REALTIME_API_BASE}/{endpoint}"
     return _executor.submit(fetch_url_2min_cached, url, get_default_headers())
 
 

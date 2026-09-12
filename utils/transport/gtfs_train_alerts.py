@@ -13,15 +13,8 @@ import requests
 from google.protobuf.message import DecodeError
 from google.transit import gtfs_realtime_pb2
 
+from conf.api_urls import GTFS_TRAIN_SERVICE_ALERTS_URL, GTFS_TRAIN_TRIP_UPDATES_URL
 from utils.async_fetcher import get_current_2min_bucket
-
-
-GTFS_TRAIN_SERVICE_ALERTS_URL = (
-    "https://datamall2.mytransport.sg/ltaodataservice/GTFSRealTimeTrainServiceAlerts"
-)
-GTFS_TRAIN_TRIP_UPDATES_URL = (
-    "https://datamall2.mytransport.sg/ltaodataservice/GTFSRealtimeTrainTrip"
-)
 
 _GTFS_STATUS_CACHE: Dict[str, Dict[str, object]] = {}
 _CACHE_LOCK = threading.Lock()
@@ -80,7 +73,7 @@ _STOP_TIME_DISRUPTION_RELATIONSHIPS = {
     gtfs_realtime_pb2.TripUpdate.StopTimeUpdate.ScheduleRelationship.SKIPPED,
 }
 
-_STATUS_PRIORITY = {"Normal": 0, "Normal*": 1, "Alert*": 2, "Delayed*": 3}
+_STATUS_PRIORITY = {"Normal": 0, "Service disruption": 2, "Delay": 3}
 
 
 def _lta_headers() -> Optional[Dict[str, str]]:
@@ -96,7 +89,65 @@ def _lta_headers() -> Optional[Dict[str, str]]:
     }
 
 
+def _request_with_retries(
+    url: str,
+    headers: Optional[Dict[str, str]],
+    timeout: int,
+    max_retries: int,
+    source_name: str,
+) -> Optional[requests.Response]:
+    """GET a URL with retry/backoff for transient 5xx and network errors."""
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(url, headers=headers or {}, timeout=timeout)
+            if 200 <= response.status_code < 300:
+                return response
+            if 400 <= response.status_code < 500:
+                print(f"GTFS request failed: {source_name} - status={response.status_code}")
+                return None
+            if 500 <= response.status_code < 600 and attempt < max_retries - 1:
+                wait_time = 3 * (2 ** attempt)
+                print(
+                    f"GTFS request failed with {response.status_code}: {source_name} - "
+                    f"retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})"
+                )
+                time.sleep(wait_time)
+                continue
+            print(f"GTFS request failed: {source_name} - status={response.status_code}")
+            return None
+        except requests.exceptions.RequestException as error:
+            if attempt < max_retries - 1:
+                wait_time = 3 * (2 ** attempt)
+                print(
+                    f"Error fetching GTFS feed {source_name}: {error} - retrying in {wait_time}s "
+                    f"(attempt {attempt + 1}/{max_retries})"
+                )
+                time.sleep(wait_time)
+                continue
+            print(
+                f"Error fetching GTFS feed {source_name} after {max_retries} attempts: {error}"
+            )
+    return None
+
+
+def _extract_gtfs_download_link(metadata: object) -> Optional[str]:
+    """Return the signed protobuf download URL from DataMall metadata JSON."""
+    if not isinstance(metadata, dict):
+        return None
+    value = metadata.get("value")
+    if not isinstance(value, list) or not value:
+        return None
+    first = value[0]
+    if not isinstance(first, dict):
+        return None
+    link = first.get("link")
+    if isinstance(link, str) and link.startswith("http"):
+        return link
+    return None
+
+
 def _fetch_gtfs_payload(url: str, timeout: int = 10, max_retries: int = 3) -> Optional[bytes]:
+    """Fetch GTFS protobuf bytes via DataMall metadata JSON then signed download URL."""
     headers = _lta_headers()
     if headers is None:
         return None
@@ -107,37 +158,43 @@ def _fetch_gtfs_payload(url: str, timeout: int = 10, max_retries: int = 3) -> Op
         if cache_item and isinstance(cache_item.get("payload"), bytes):
             return cache_item["payload"]  # type: ignore[index]
 
-    for attempt in range(max_retries):
-        try:
-            response = requests.get(url, headers=headers, timeout=timeout)
-            if 200 <= response.status_code < 300:
-                payload = response.content
-                if payload:
-                    with _CACHE_LOCK:
-                        _GTFS_STATUS_CACHE.clear()
-                        _GTFS_STATUS_CACHE[cache_key] = {"payload": payload}
-                return payload
-            if 500 <= response.status_code < 600 and attempt < max_retries - 1:
-                wait_time = 3 * (2 ** attempt)
-                print(
-                    f"GTFS request failed with {response.status_code}: {url} - "
-                    f"retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})"
-                )
-                time.sleep(wait_time)
-                continue
-            print(f"GTFS request failed: {url} - status={response.status_code}")
-            return None
-        except requests.exceptions.RequestException as error:
-            if attempt < max_retries - 1:
-                wait_time = 3 * (2 ** attempt)
-                print(
-                    f"Error fetching GTFS feed {url}: {error} - retrying in {wait_time}s "
-                    f"(attempt {attempt + 1}/{max_retries})"
-                )
-                time.sleep(wait_time)
-                continue
-            print(f"Error fetching GTFS feed {url} after {max_retries} attempts: {error}")
-    return None
+    metadata_response = _request_with_retries(
+        url,
+        headers=headers,
+        timeout=timeout,
+        max_retries=max_retries,
+        source_name="metadata",
+    )
+    if metadata_response is None:
+        return None
+
+    try:
+        metadata = metadata_response.json()
+    except ValueError:
+        print("GTFS metadata is not valid JSON")
+        return None
+
+    download_link = _extract_gtfs_download_link(metadata)
+    if not download_link:
+        print("GTFS metadata missing download link")
+        return None
+
+    protobuf_response = _request_with_retries(
+        download_link,
+        headers={"User-Agent": "Mozilla/5.0"},
+        timeout=timeout,
+        max_retries=max_retries,
+        source_name="protobuf download",
+    )
+    if protobuf_response is None:
+        return None
+
+    payload = protobuf_response.content
+    if payload:
+        with _CACHE_LOCK:
+            _GTFS_STATUS_CACHE.clear()
+            _GTFS_STATUS_CACHE[cache_key] = {"payload": payload}
+    return payload
 
 
 def _decode_gtfs_feed(
@@ -248,7 +305,7 @@ def fetch_gtfs_train_service_alerts() -> Dict[str, Dict[str, object]]:
 
         is_disruption = alert.effect in _DISRUPTION_ALERT_EFFECTS
         status = 2 if is_disruption else 1
-        status_text = "Alert*"
+        status_text = "Service disruption" if is_disruption else "Normal"
         reason = description_text or header_text or "Service advisory"
         for line_code in line_codes:
             _upsert_line_status(
@@ -298,7 +355,7 @@ def fetch_gtfs_train_trip_updates() -> Dict[str, Dict[str, object]]:
             continue
 
         status = 2 if has_disruption else 1
-        status_text = "Delayed*" if has_delay else "Alert*"
+        status_text = "Delay" if has_delay else "Service disruption"
         reason = "Trip update indicates delays or service adjustments"
         for line_code in line_codes:
             _upsert_line_status(

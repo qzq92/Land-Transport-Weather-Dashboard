@@ -14,12 +14,13 @@ def register_traffic_conditions_callbacks(app):
     @app.callback(
         Output("traffic-conditions-content", "children"),
         [Input("traffic-conditions-interval", "n_intervals"),
-         Input("navigation-tabs", "value")],
+         Input("navigation-tabs", "value"),
+         Input("transport-sub-tabs", "value")],
     )
-    def update_traffic_conditions_grid(n_intervals: int, tab_value: str) -> html.Div:
+    def update_traffic_conditions_grid(n_intervals: int, tab_value: str, sub_tab: str) -> html.Div:
         """Update traffic conditions grid with all available LTA camera feeds."""
         _ = n_intervals
-        if tab_value != "traffic-conditions":
+        if tab_value != "transport" or sub_tab != "transport-cameras":
             return no_update
 
         try:

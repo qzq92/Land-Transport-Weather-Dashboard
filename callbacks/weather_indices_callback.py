@@ -17,21 +17,31 @@ import dash_leaflet as dl
 import requests
 from dash import html, dcc, Input, Output, State, no_update
 from utils.async_fetcher import get_default_headers, fetch_url_2min_cached, run_in_thread
-from conf.cache_config import TTL_DISEASE_CLUSTER_CALLBACKS
+from conf.cache_config import (
+    TTL_DISEASE_CLUSTER_CALLBACKS,
+    TTL_DISEASE_CLUSTER_RETRY_SECONDS,
+)
+from conf.api_urls import (
+    DENGUE_POLL_DOWNLOAD_URL,
+    PSI_URL,
+    UV_URL,
+    WBGT_URL,
+    ZIKA_POLL_DOWNLOAD_URL,
+)
+from conf.weather_indices_config import (
+    POLLUTANT_CATEGORY_MAP,
+    POLLUTANT_UNITS,
+    PSI_MAP_COLUMNS,
+    PSI_REGIONS,
+    PSI_TABLE_COLUMNS,
+    UNKNOWN_CATEGORY,
+    WBGT_CATEGORIES,
+)
 from utils.transport.taxi import fetch_taxi_availability
 from components.metric_card import create_metric_value_display
 
 # Thread pool for async exposure index fetching
 _exposure_executor = ThreadPoolExecutor(max_workers=5)
-
-# API URLs
-PSI_URL = "https://api-open.data.gov.sg/v2/real-time/api/psi"
-UV_URL = "https://api-open.data.gov.sg/v2/real-time/api/uv"
-WBGT_URL = "https://api-open.data.gov.sg/v2/real-time/api/weather?api=wbgt"
-ZIKA_DATASET_ID = "d_a3c783f11d79ff7feb8856f762ccf2c5"
-ZIKA_POLL_DOWNLOAD_URL = f"https://api-open.data.gov.sg/v1/public/api/datasets/{ZIKA_DATASET_ID}/poll-download"
-DENGUE_DATASET_ID = "d_dbfabf16158d1b0e1c420627c0819168"
-DENGUE_POLL_DOWNLOAD_URL = f"https://api-open.data.gov.sg/v1/public/api/datasets/{DENGUE_DATASET_ID}/poll-download"
 
 # Cache disease cluster GeoJSON because several callbacks request the same
 # dataset repeatedly during a single refresh cycle.
@@ -42,7 +52,7 @@ _cluster_data_cache = {
 }
 _cluster_cache_lock = Lock()
 CLUSTER_CACHE_TTL: int = TTL_DISEASE_CLUSTER_CALLBACKS
-CLUSTER_RETRY_ON_429_SECONDS: int = 5 * 60
+CLUSTER_RETRY_ON_429_SECONDS: int = TTL_DISEASE_CLUSTER_RETRY_SECONDS
 
 
 def _parse_retry_after_seconds(retry_after_header) -> int:
@@ -142,7 +152,8 @@ def _build_combined_cluster_retry_notice():
         return None
 
     return html.Div(
-        "Disease cluster API rate limited (429). Auto-repoll scheduled in 5 minutes. "
+        "Disease cluster API rate limited (429). Auto-repoll scheduled in "
+        f"{max(1, TTL_DISEASE_CLUSTER_RETRY_SECONDS // 60)} minutes. "
         f"Next retry - {' | '.join(notices)}",
         style={
             "color": "#fbbf24",
@@ -157,160 +168,52 @@ def _build_combined_cluster_retry_notice():
     )
 
 
-# PSI (Pollutant Standards Index) categories
-PSI_CATEGORIES = [
-    (0, 50, "#3ea72d", "Good"),
-    (51, 100, "#fff300", "Moderate"),
-    (101, 200, "#f18b00", "Unhealthy"),
-    (201, 300, "#e53210", "Very Unhealthy"),
-    (301, 999, "#b567a4", "Hazardous"),
-]
+def _parse_category_value(value):
+    """Parse a numeric reading, or return None when it is missing/invalid."""
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return None
 
 
-
-# WBGT Heat Stress color coding
-WBGT_CATEGORIES = [
-    (0, 28, "#3ea72d", "Low"),           # Green - Low risk
-    (28, 30, "#fff300", "Moderate"),     # Yellow - Moderate risk
-    (30, 32, "#f18b00", "High"),         # Orange - High risk
-    (32, 34, "#e53210", "Very High"),    # Red - Very high risk
-    (34, 999, "#1a1a1a", "Extreme"),       # Black - Extreme risk
-]
-
-# Pollutant category thresholds (based on WHO/EPA standards)
-# PM2.5 (24h average, µg/m³)
-PM25_CATEGORIES = [
-    (0, 15, "#3ea72d", "Good"),
-    (15, 35, "#fff300", "Moderate"),
-    (35, 55, "#f18b00", "Unhealthy"),
-    (55, 150, "#e53210", "Very Unhealthy"),
-    (150, 9999, "#b567a4", "Hazardous"),
-]
-
-# PM10 (24h average, µg/m³)
-PM10_CATEGORIES = [
-    (0, 45, "#3ea72d", "Good"),
-    (45, 100, "#fff300", "Moderate"),
-    (100, 200, "#f18b00", "Unhealthy"),
-    (200, 300, "#e53210", "Very Unhealthy"),
-    (300, 9999, "#b567a4", "Hazardous"),
-]
-
-# SO2 (24h average, µg/m³)
-SO2_CATEGORIES = [
-    (0, 20, "#3ea72d", "Good"),
-    (20, 50, "#fff300", "Moderate"),
-    (50, 125, "#f18b00", "Unhealthy"),
-    (125, 250, "#e53210", "Very Unhealthy"),
-    (250, 9999, "#b567a4", "Hazardous"),
-]
-
-# CO (8h average, mg/m³)
-CO_CATEGORIES = [
-    (0, 4, "#3ea72d", "Good"),
-    (4, 9, "#fff300", "Moderate"),
-    (9, 15, "#f18b00", "Unhealthy"),
-    (15, 30, "#e53210", "Very Unhealthy"),
-    (30, 9999, "#b567a4", "Hazardous"),
-]
-
-# O3 (8h average, µg/m³)
-O3_CATEGORIES = [
-    (0, 100, "#3ea72d", "Good"),
-    (100, 160, "#fff300", "Moderate"),
-    (160, 240, "#f18b00", "Unhealthy"),
-    (240, 300, "#e53210", "Very Unhealthy"),
-    (300, 9999, "#b567a4", "Hazardous"),
-]
-
-# NO2 (1h average, µg/m³)
-NO2_CATEGORIES = [
-    (0, 200, "#3ea72d", "Good"),
-    (200, 400, "#fff300", "Moderate"),
-    (400, 1000, "#f18b00", "Unhealthy"),
-    (1000, 2000, "#e53210", "Very Unhealthy"),
-    (2000, 9999, "#b567a4", "Hazardous"),
-]
-
-
+def _match_inclusive_category(categories, value):
+    """Return (color, label) for the first inclusive [min, max] band that matches."""
+    parsed = _parse_category_value(value)
+    if parsed is None:
+        return UNKNOWN_CATEGORY
+    for min_val, max_val, color, label in categories:
+        if min_val <= parsed <= max_val:
+            return color, label
+    return UNKNOWN_CATEGORY
 
 
 def get_psi_category(value):
     """Get PSI category info (color and label) based on value."""
-    if value is None:
-        return "#888", "Unknown"
-    try:
-        val = float(value)
-    except (ValueError, TypeError):
-        return "#888", "Unknown"
-    for min_val, max_val, color, label in PSI_CATEGORIES:
-        if min_val <= val <= max_val:
-            return color, label
-    return "#888", "Unknown"
+    return _match_inclusive_category(POLLUTANT_CATEGORY_MAP["psi_twenty_four_hourly"], value)
 
 
 def get_wbgt_category(value):
     """Get WBGT category info (color and label) based on value."""
-    if value is None:
-        return "#888", "Unknown"
-    try:
-        val = float(value)
-    except (ValueError, TypeError):
-        return "#888", "Unknown"
+    parsed = _parse_category_value(value)
+    if parsed is None:
+        return UNKNOWN_CATEGORY
     for min_val, max_val, color, label in WBGT_CATEGORIES:
-        if min_val <= val < max_val:
+        if min_val <= parsed < max_val:
             return color, label
     # Check last category (extreme)
-    if val >= 34:
+    if parsed >= 34:
         return "#b567a4", "Extreme"
-    return "#888", "Unknown"
+    return UNKNOWN_CATEGORY
 
 
 def get_pollutant_category(pollutant_key, value):
     """Get pollutant category info (color and label) based on value and pollutant type."""
-    if value is None:
-        return "#888", "Unknown"
-    try:
-        val = float(value)
-    except (ValueError, TypeError):
-        return "#888", "Unknown"
-
-    # Select appropriate category thresholds based on pollutant type
-    if pollutant_key == "pm25_twenty_four_hourly":
-        categories = PM25_CATEGORIES
-    elif pollutant_key == "pm10_twenty_four_hourly":
-        categories = PM10_CATEGORIES
-    elif pollutant_key == "so2_twenty_four_hourly":
-        categories = SO2_CATEGORIES
-    elif pollutant_key == "co_eight_hour_max":
-        categories = CO_CATEGORIES
-    elif pollutant_key == "o3_eight_hour_max":
-        categories = O3_CATEGORIES
-    elif pollutant_key == "no2_one_hour_max":
-        categories = NO2_CATEGORIES
-    else:
-        return "#888", "Unknown"
-
-    # Find matching category
-    for min_val, max_val, color, label in categories:
-        if min_val <= val <= max_val:
-            return color, label
-    return "#888", "Unknown"
-
-
-# Pollutant units mapping
-# SO₂, PM2.5, PM10, O₃, NO₂ are measured in µg/m³
-# CO is measured in mg/m³
-# PSI is an index (no unit)
-POLLUTANT_UNITS = {
-    "so2_twenty_four_hourly": "µg/m³",
-    "pm25_twenty_four_hourly": "µg/m³",
-    "pm10_twenty_four_hourly": "µg/m³",
-    "o3_eight_hour_max": "µg/m³",
-    "no2_one_hour_max": "µg/m³",
-    "co_eight_hour_max": "mg/m³",
-    "psi_twenty_four_hourly": "",  # PSI is an index, no unit
-}
+    categories = POLLUTANT_CATEGORY_MAP.get(pollutant_key)
+    if not categories:
+        return UNKNOWN_CATEGORY
+    return _match_inclusive_category(categories, value)
 
 
 def _get_pollutant_unit(pollutant_key):
@@ -591,23 +494,6 @@ def format_uv_display(data):
     )
 
 
-def _build_pollutant_row_html(pollutant_key, pollutant_name, value):
-    """Build HTML for a single pollutant row with unit."""
-    unit = _get_pollutant_unit(pollutant_key)
-    value_with_unit = f"{value} {unit}" if unit else str(value)
-
-    if pollutant_key == "psi_twenty_four_hourly":
-        color, category = get_psi_category(value)
-        return (
-            f'<div style="margin: 0.125rem 0;">'
-            f'{pollutant_name}: '
-            f'<span style="color:{color};font-weight:bold;">{value}</span> '
-            f'({category})'
-            f'</div>'
-        )
-    return f'<div style="margin: 0.125rem 0;">{pollutant_name}: {value_with_unit}</div>'
-
-
 def _create_single_psi_marker(region_info, readings, pollutants):
     """Create a single PSI text box for a region."""
     region_name = region_info.get("name", "")
@@ -803,18 +689,8 @@ def create_psi_markers(data):
         return []
 
     readings = items[0].get("readings", {})
-    pollutants = [
-        ("psi_twenty_four_hourly", "PSI (24H Avg)"),
-        ("pm25_twenty_four_hourly", "PM2.5 (24H Avg)"),
-        ("pm10_twenty_four_hourly", "PM10 (24H Avg)"),
-        ("so2_twenty_four_hourly", "SO₂ (Max 24H Avg)"),
-        ("co_eight_hour_max", "CO (Max 8H Avg)"),
-        ("o3_eight_hour_max", "O₃ (Max 8H Avg)"),
-        ("no2_one_hour_max", "NO₂ (Max 1H)")
-    ]
-
     markers = [
-        _create_single_psi_marker(region_info, readings, pollutants)
+        _create_single_psi_marker(region_info, readings, PSI_MAP_COLUMNS)
         for region_info in region_metadata
     ]
     return [m for m in markers if m is not None]
@@ -837,24 +713,15 @@ def format_psi_display(data):
 
     readings = items[0].get("readings", {})
     update_time_str = _parse_timestamp(items[0].get("updatedTimestamp", ""))
-
-    # Define pollutants and regions
-    pollutants = [
-        ("psi_twenty_four_hourly", "24H Mean PSI"),
-        ("pm25_twenty_four_hourly", "24H Mean PM2.5 Particulate Matter"),
-        ("pm10_twenty_four_hourly", "24H Mean PM10 Particulate Matter"),
-        ("so2_twenty_four_hourly", "24H Mean Sulphur Dioxide"),
-        ("co_eight_hour_max", "8H Mean Carbon Monoxide"),
-        ("o3_eight_hour_max", "8H Mean Ozone"),
-        ("no2_one_hour_max", "1H Max Nitrogen Dioxide")
-    ]
-    regions = ["north", "south", "east", "west", "central"]
+    pollutants = PSI_TABLE_COLUMNS
+    regions = PSI_REGIONS
+    table_grid_columns = f"4.375rem repeat({len(pollutants)}, 1fr)"
 
     # Create table header
     header_row = html.Div(
         style={
             "display": "grid",
-            "gridTemplateColumns": "4.375rem repeat(7, 1fr)",
+            "gridTemplateColumns": table_grid_columns,
             "gap": "0",
             "padding": "0.5rem",
             "backgroundColor": "#2a3a4a",
@@ -904,11 +771,7 @@ def format_psi_display(data):
             value = pollutant_data.get(region)
 
             if value is not None:
-                # Color code PSI values, use blue for others
-                if pollutant_key == "psi_twenty_four_hourly":
-                    color, _ = get_psi_category(value)
-                else:
-                    color = "#60a5fa"
+                color, _ = get_pollutant_category(pollutant_key, value)
 
                 # Get unit for pollutant
                 unit = _get_pollutant_unit(pollutant_key)
@@ -974,7 +837,7 @@ def format_psi_display(data):
             html.Div(
                 style={
                     "display": "grid",
-                    "gridTemplateColumns": "4.375rem repeat(7, 1fr)",
+                    "gridTemplateColumns": table_grid_columns,
                     "gap": "0",
                     "padding": "0.5rem",
                     "backgroundColor": "#3a4a5a",
@@ -988,7 +851,7 @@ def format_psi_display(data):
 
     return html.Div(
         style={
-            "padding": "2rem",
+            "padding": "0.5rem 0",
         },
         children=[
             html.Div(
@@ -1791,7 +1654,12 @@ def register_weather_indices_callbacks(app):
         # If table mode is enabled, show table and hide map markers
         if show_table:
             table_content = format_psi_display(data)
-            return [], table_content, {"display": "block", "marginBottom": "0.5rem", "flexShrink": "0"}
+            return [], table_content, {
+                "display": "block",
+                "marginBottom": "0.5rem",
+                "flexShrink": "0",
+                "overflowX": "auto",
+            }
         
         # Map mode: show markers and hide table
         markers = create_psi_markers(data)
@@ -2329,9 +2197,8 @@ def format_main_page_taxi_count(data):
 
 def _calc_regional_average(psi_data):
     """Calculate average PSI across all regions (rounded up)."""
-    regions = ["north", "south", "east", "west", "central"]
     values = []
-    for region in regions:
+    for region in PSI_REGIONS:
         val = psi_data.get(region)
         if val is not None:
             try:

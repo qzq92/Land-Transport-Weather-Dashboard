@@ -1,9 +1,6 @@
 """
 Callback functions for handling Carpark Availability API integration.
-Uses LTA DataMall CarPark Availability v2 API.
-Reference: https://datamall2.mytransport.sg/ltaodataservice/CarParkAvailabilityv2
-
-Uses ThreadPoolExecutor for async API fetching to improve performance.
+Uses LTA DataMall CarPark Availability v2 (see CARPARK_AVAILABILITY_URL in conf.api_urls).
 """
 import pandas as pd
 import numpy as np
@@ -15,15 +12,18 @@ import dash_leaflet as dl
 from typing import List, Optional, Dict, Tuple
 from pyproj import Transformer
 from utils.async_fetcher import fetch_url_2min_cached, run_in_thread
+from components.nearby_list_items import (
+    nearby_compact_row,
+    nearby_empty_message,
+    nearby_section_title,
+)
+from conf.api_urls import CARPARK_AVAILABILITY_URL
 
 # Cache for carpark location data
 _carpark_locations_cache: Optional[pd.DataFrame] = None
 
 # Thread pool for async carpark operations
 _carpark_executor = ThreadPoolExecutor(max_workers=5)
-
-# API URL - LTA DataMall CarPark Availability v2
-CARPARK_AVAILABILITY_URL = "https://datamall2.mytransport.sg/ltaodataservice/CarParkAvailabilityv2"
 
 
 def clear_carpark_locations_cache():
@@ -692,26 +692,8 @@ def register_carpark_callbacks(app):
         """
         if not location_data:
             return [
-                html.H4(
-                    "Top 5 Nearest HDB Carparks",
-                    style={
-                        "textAlign": "center",
-                        "marginBottom": "0.625rem",
-                        "color": "#fff",
-                        "fontWeight": "700",
-                        "fontSize": "0.875rem"
-                    }
-                ),
-                html.P(
-                    "Select a location to view nearest carparks",
-                    style={
-                        "textAlign": "center",
-                        "padding": "0.9375rem",
-                        "color": "#999",
-                        "fontSize": "0.75rem",
-                        "fontStyle": "italic"
-                    }
-                )
+                nearby_section_title("Top 5 Nearest HDB Carparks"),
+                nearby_empty_message(),
             ], []
 
         try:
@@ -882,126 +864,17 @@ def register_carpark_callbacks(app):
             else:
                 total_lots_color = "#ef4444"
 
-            # Build availability display for card
-            availability_elements = []
-            for avail_info in carpark_data['availability']:
-                # Get first character safely (default to '?' if empty string)
-                type_initial = (avail_info['type_name'][0]
-                                if avail_info['type_name'] else '?')
-                availability_elements.append(
-                    html.Div(
-                        [
-                            html.Span(
-                                f"{type_initial}: ",
-                                style={
-                                    "fontSize": "0.5625rem",
-                                    "color": "#999",
-                                }
-                            ),
-                            html.Span(
-                                f"{avail_info['available']}",
-                                style={
-                                    "fontSize": "0.5625rem",
-                                    "color": avail_info['color'],
-                                    "fontWeight": "bold",
-                                }
-                            ),
-                        ],
-                        style={"marginBottom": "0.125rem"}
-                    )
-                )
-
-            # Create card with availability info on the right
-            carpark_card = html.Div(
-                [
-                    # Left side: Carpark info
-                    html.Div(
-                        [
-                            # Carpark ID label and distance
-                            html.Div(
-                                [
-                                    html.Span(
-                                        carpark_number,
-                                        style={
-                                            "display": "inline-block",
-                                            "padding": "0.125rem 0.5rem",
-                                            "backgroundColor": "#2196F3",
-                                            "color": "#fff",
-                                            "borderRadius": "0.25rem",
-                                            "fontSize": "0.6875rem",
-                                            "fontWeight": "bold",
-                                            "marginRight": "0.5rem",
-                                        }
-                                    ),
-                                    html.Span(
-                                        f"{distance_str}",
-                                        style={
-                                            "fontSize": "0.625rem",
-                                            "color": "#999",
-                                        }
-                                    ),
-                                ],
-                                style={
-                                    "marginBottom": "0.1875rem",
-                                    "display": "flex",
-                                    "alignItems": "center"
-                                }
-                            ),
-                            # Remaining lots count
-                            html.Div(
-                                [
-                                    html.Span(
-                                        f"{total_lots} lots remaining",
-                                        style={
-                                            "fontSize": "0.625rem",
-                                            "color": total_lots_color,
-                                            "fontWeight": "600",
-                                        }
-                                    ),
-                                ],
-                                style={
-                                    "marginBottom": "0.1875rem",
-                                }
-                            ),
-                            # Address
-                            html.Div(
-                                address if address != 'N/A' else 'No address',
-                                style={
-                                    "fontSize": "0.5625rem",
-                                    "color": "#ccc",
-                                    "overflow": "hidden",
-                                    "textOverflow": "ellipsis",
-                                    "whiteSpace": "nowrap"
-                                }
-                            ),
-                        ],
-                        style={"flex": "1", "minWidth": "0"}
-                    ),
-                    # Right side: Availability info
-                    html.Div(
-                        availability_elements if availability_elements else html.Span("No data", style={"fontSize": "0.5625rem", "color": "#666"}),
-                        style={
-                            "display": "flex",
-                            "flexDirection": "column",
-                            "alignItems": "flex-end",
-                            "justifyContent": "center",
-                            "marginLeft": "0.5rem"
-                        }
-                    )
-                ],
+            extra = html.Span(
+                f"{total_lots} lots",
                 style={
-                    "padding": "0.375rem 0.5rem",
-                    "marginBottom": "0.25rem",
-                    "backgroundColor": "#000000",
-                    "borderRadius": "0.25rem",
-                    "borderLeft": "0.1875rem solid #60a5fa",
-                    "display": "flex",
-                    "alignItems": "center",
-                    "gap": "0.5rem"
-                }
+                    "fontSize": "0.6875rem",
+                    "fontWeight": "600",
+                    "color": total_lots_color,
+                },
             )
-
-            carpark_cards.append(carpark_card)
+            carpark_cards.append(
+                nearby_compact_row(carpark_number, distance_str, extra=extra)
+            )
 
         # Return cards and markers with H4 title
         if carpark_cards:

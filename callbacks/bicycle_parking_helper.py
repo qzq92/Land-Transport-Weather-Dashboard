@@ -25,7 +25,7 @@ def fetch_bicycle_parking_from_api_async(lat: float, lon: float, dist_m: int = 3
     """
     import requests
     
-    BICYCLE_PARKING_URL = "https://datamall2.mytransport.sg/ltaodataservice/BicycleParkingv2"
+    from conf.api_urls import BICYCLE_PARKING_URL
     
     api_key = os.getenv("LTA_API_KEY")
     if not api_key:

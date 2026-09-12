@@ -3,8 +3,8 @@
 import os
 from typing import Any, Dict, Optional
 
+from conf.api_urls import FAULTY_TRAFFIC_LIGHTS_URL, TRAFFIC_INCIDENTS_URL
 from utils.async_fetcher import fetch_url_2min_cached, run_in_thread
-from utils.transport.constants import FAULTY_TRAFFIC_LIGHTS_URL, TRAFFIC_INCIDENTS_URL
 
 
 def _lta_headers() -> Optional[Dict[str, str]]:

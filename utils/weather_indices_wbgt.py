@@ -5,9 +5,8 @@ from datetime import datetime
 from dash import html
 import dash_leaflet as dl
 
+from conf.api_urls import WBGT_URL
 from utils.async_fetcher import _executor, fetch_url_2min_cached, get_default_headers
-
-WBGT_URL = "https://api-open.data.gov.sg/v2/real-time/api/weather?api=wbgt"
 
 
 def fetch_wbgt_data_async():

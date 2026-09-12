@@ -1,8 +1,6 @@
 """
 Callback functions for handling nearest bus stop display using OneMap Nearby Transport API.
-Reference: https://www.onemap.gov.sg/apidocs/nearbytransport
-
-Uses ThreadPoolExecutor for async API fetching to improve performance.
+See ONEMAP_NEAREST_BUS_STOPS_URL in conf.api_urls.
 """
 import os
 from concurrent.futures import ThreadPoolExecutor
@@ -11,6 +9,12 @@ from dash import html
 import dash_leaflet as dl
 from callbacks.map_callback import _haversine_distance_m
 from utils.async_fetcher import fetch_url
+from conf.api_urls import ONEMAP_NEAREST_BUS_STOPS_URL
+from components.nearby_list_items import (
+    nearby_compact_row,
+    nearby_empty_message,
+    nearby_section_title,
+)
 
 # Thread pool for async bus stop fetching
 _bus_executor = ThreadPoolExecutor(max_workers=5)
@@ -61,7 +65,6 @@ def _process_bus_stop_data(data, lat, lon, radius_m):
 def fetch_nearby_bus_stops(lat: float, lon: float, radius_m: int = 500):
     """
     Fetch nearest bus stops using OneMap Nearby Transport API.
-    Reference: https://www.onemap.gov.sg/apidocs/nearbytransport
     
     Args:
         lat: Latitude in degrees
@@ -73,7 +76,10 @@ def fetch_nearby_bus_stops(lat: float, lon: float, radius_m: int = 500):
     """
     try:
         # OneMap Nearby Transport API endpoint for bus stops
-        url = f"https://www.onemap.gov.sg/api/public/nearbysvc/getNearestBusStops?latitude={lat}&longitude={lon}&radius_in_meters={radius_m}"
+        url = (
+            f"{ONEMAP_NEAREST_BUS_STOPS_URL}?latitude={lat}&longitude={lon}"
+            f"&radius_in_meters={radius_m}"
+        )
         
         headers = _get_onemap_headers()
         response_data = fetch_url(url, headers=headers)
@@ -351,26 +357,8 @@ def register_busstop_callbacks(app):
         """
         if not location_data:
             return [
-                html.H4(
-                    "Top 5 Nearest Bus Stops",
-                    style={
-                        "textAlign": "center",
-                        "marginBottom": "0.625rem",
-                        "color": "#fff",
-                        "fontWeight": "700",
-                        "fontSize": "0.875rem"
-                    }
-                ),
-                html.P(
-                    "Select a location to view nearest bus stops",
-                    style={
-                        "textAlign": "center",
-                        "color": "#999",
-                        "fontSize": "0.75rem",
-                        "fontStyle": "italic",
-                        "padding": "0.9375rem"
-                    }
-                )
+                nearby_section_title("Top 5 Nearest Bus Stops"),
+                nearby_empty_message(),
             ], []
 
         try:
@@ -449,64 +437,25 @@ def register_busstop_callbacks(app):
             else:
                 distance_str = f"{distance_m/1000:.2f}km"
 
+            display_name = f"{name} ({code})" if code else name
+            leading = html.Span(
+                label,
+                style={
+                    "display": "inline-block",
+                    "width": "1.5rem",
+                    "height": "1.5rem",
+                    "lineHeight": "1.5rem",
+                    "textAlign": "center",
+                    "backgroundColor": "#FF5722",
+                    "color": "#fff",
+                    "borderRadius": "50%",
+                    "fontSize": "0.75rem",
+                    "fontWeight": "bold",
+                    "flexShrink": "0",
+                },
+            )
             bus_stop_items.append(
-                html.Div(
-                    [
-                        html.Div(
-                            [
-                                html.Span(
-                                    label,
-                                    style={
-                                        "display": "inline-block",
-                                        "width": "24px",
-                                        "height": "24px",
-                                        "lineHeight": "24px",
-                                        "textAlign": "center",
-                                        "backgroundColor": "#FF5722",
-                                        "color": "#fff",
-                                        "borderRadius": "50%",
-                                        "fontSize": "12px",
-                                        "fontWeight": "bold",
-                                        "marginRight": "8px"
-                                    }
-                                ),
-                                html.Div(
-                                    [
-                                        html.Div(
-                                            name,
-                                            style={
-                                                "fontWeight": "600",
-                                                "fontSize": "0.875rem",
-                                                "color": "#fff",
-                                                "marginBottom": "4px"
-                                            }
-                                        ),
-                                        html.Div(
-                                            f"Code: {code} | Distance: {distance_str}",
-                                            style={
-                                                "fontSize": "12px",
-                                                "color": "#4CAF50",
-                                                "fontWeight": "500"
-                                            }
-                                        )
-                                    ],
-                                    style={"flex": "1"}
-                                )
-                            ],
-                            style={
-                                "display": "flex",
-                                "alignItems": "center"
-                            }
-                        )
-                    ],
-                    style={
-                        "padding": "10px 12px",
-                        "borderBottom": "1px solid #444",
-                        "marginBottom": "6px",
-                        "backgroundColor": "#1a1a1a",
-                        "borderRadius": "4px"
-                    }
-                )
+                nearby_compact_row(display_name, distance_str, leading=leading)
             )
 
         # Return all bus stop items and markers with H4 title

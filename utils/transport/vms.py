@@ -3,9 +3,9 @@
 import os
 from typing import Any, Dict, Optional
 
+from conf.api_urls import VMS_URL
 from utils.async_fetcher import fetch_url, run_in_thread
 from utils.transport.cache import _road_infra_cache
-from utils.transport.constants import VMS_URL
 
 
 @run_in_thread

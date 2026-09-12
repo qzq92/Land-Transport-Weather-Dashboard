@@ -2,9 +2,9 @@
 
 from typing import Any, Dict, Optional
 
+from conf.api_urls import TRAFFIC_IMAGES_API_URL
 from utils.async_fetcher import fetch_url_2min_cached
 from utils.transport.cache import load_lta_camera_id_mapping
-from utils.transport.constants import TRAFFIC_IMAGES_API_URL
 
 
 def fetch_traffic_cameras() -> Optional[Dict[str, Any]]:

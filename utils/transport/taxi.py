@@ -3,11 +3,9 @@
 import os
 from typing import Any, Dict, List, Optional
 
+from conf.api_urls import TAXI_API_URL, TAXI_STANDS_URL
 from utils.async_fetcher import fetch_url, fetch_url_2min_cached, run_in_thread
 from utils.transport.cache import _road_infra_cache
-from utils.transport.constants import TAXI_API_URL
-
-TAXI_STANDS_URL = "https://datamall2.mytransport.sg/ltaodataservice/TaxiStands"
 
 
 def fetch_taxi_availability() -> Optional[Dict[str, Any]]:

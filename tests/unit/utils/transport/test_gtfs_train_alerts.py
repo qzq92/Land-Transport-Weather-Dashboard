@@ -34,7 +34,7 @@ class TestGtfsTrainAlerts(unittest.TestCase):
 
         self.assertIn("NSL", result)
         self.assertEqual(result["NSL"]["status"], 2)
-        self.assertEqual(result["NSL"]["status_text"], "Alert*")
+        self.assertEqual(result["NSL"]["status_text"], "Service disruption")
 
     @patch("utils.transport.gtfs_train_alerts._fetch_gtfs_payload")
     def test_fetch_gtfs_trip_updates_marks_delays(self, mock_fetch_payload):
@@ -51,7 +51,7 @@ class TestGtfsTrainAlerts(unittest.TestCase):
 
         self.assertIn("EWL", result)
         self.assertEqual(result["EWL"]["status"], 2)
-        self.assertEqual(result["EWL"]["status_text"], "Delayed*")
+        self.assertEqual(result["EWL"]["status_text"], "Delay")
 
     @patch("utils.transport.gtfs_train_alerts._fetch_gtfs_payload", return_value=b"not-protobuf")
     def test_fetch_gtfs_service_alerts_handles_decode_errors(self, _mock_payload):
@@ -59,11 +59,11 @@ class TestGtfsTrainAlerts(unittest.TestCase):
         self.assertEqual(result, {})
 
     def test_merge_gtfs_with_legacy_status_prioritizes_gtfs(self):
-        legacy_map = {"NSL": {"status": 1, "status_text": "Normal*"}}
-        service_map = {"NSL": {"status": 2, "status_text": "Alert*"}}
-        trip_map = {"EWL": {"status": 2, "status_text": "Delayed*"}}
+        legacy_map = {"NSL": {"status": 1, "status_text": "Normal"}}
+        service_map = {"NSL": {"status": 2, "status_text": "Service disruption"}}
+        trip_map = {"EWL": {"status": 2, "status_text": "Delay"}}
 
         merged = merge_gtfs_with_legacy_status(legacy_map, service_map, trip_map)
 
-        self.assertEqual(merged["NSL"]["status_text"], "Alert*")
-        self.assertEqual(merged["EWL"]["status_text"], "Delayed*")
+        self.assertEqual(merged["NSL"]["status_text"], "Service disruption")
+        self.assertEqual(merged["EWL"]["status_text"], "Delay")

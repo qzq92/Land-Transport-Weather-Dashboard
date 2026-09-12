@@ -1,12 +1,14 @@
 """
 Callback functions for handling train service alerts from LTA DataMall API.
-Reference: https://datamall2.mytransport.sg/ltaodataservice/TrainServiceAlerts
+See TRAIN_SERVICE_ALERTS_URL in conf.api_urls.
 """
 import os
 import re
+import threading
 from collections import defaultdict
+from datetime import datetime
 from typing import Any, Dict, Optional
-from dash import Input, Output, State, html, no_update
+from dash import ALL, Input, Output, State, html, no_update
 from utils.async_fetcher import fetch_url_2min_cached, _executor
 from conf.mrt_line_config import MRT_LINES, LRT_LINES, ALL_TRAIN_LINES, LINE_INFO_MAP
 from utils.transport.gtfs_train_alerts import (
@@ -14,9 +16,126 @@ from utils.transport.gtfs_train_alerts import (
     fetch_gtfs_train_trip_updates,
     merge_gtfs_with_legacy_status,
 )
+from conf.api_urls import TRAIN_SERVICE_ALERTS_URL
+_RAIL_STATUS_LOCK = threading.Lock()
+_LAST_RAIL_STATUS_MAP: Dict[str, Dict[str, object]] = {}
+_LAST_RAIL_STATUS_UPDATED: Optional[datetime] = None
 
 
-TRAIN_SERVICE_ALERTS_URL = "https://datamall2.mytransport.sg/ltaodataservice/TrainServiceAlerts"
+def _normalise_status(status_info: Optional[Dict[str, object]], unavailable=False):
+    """Return an accessible display label, icon, and affected-state flag."""
+    if status_info is None:
+        if unavailable:
+            return "Status unavailable", "?", False
+        return "Normal", "✓", False
+
+    raw_text = str(status_info.get("status_text", "")).rstrip("*").lower()
+    status_value = int(status_info.get("status", 1))
+    if raw_text.startswith("delay"):
+        return "Delay", "!", True
+    if raw_text.startswith("alert") or status_value != 1:
+        return "Service disruption", "!", True
+    return "Normal", "✓", False
+
+
+def _affected_lines(line_status_map):
+    """Return configured lines whose merged status indicates an impact."""
+    affected = []
+    for line_info in ALL_TRAIN_LINES:
+        status_info = line_status_map.get(line_info["code"])
+        label, icon, is_affected = _normalise_status(status_info)
+        if is_affected:
+            affected.append((line_info, status_info, label, icon))
+    return affected
+
+
+def _badge_text_color(background_color):
+    """Choose dark or light text using WCAG relative contrast."""
+    color = background_color.lstrip("#")
+    if len(color) != 6:
+        return "#ffffff"
+    channels = [int(color[index:index + 2], 16) / 255 for index in (0, 2, 4)]
+    linear = [
+        value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
+        for value in channels
+    ]
+    luminance = 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+    white_contrast = 1.05 / (luminance + 0.05)
+    return "#ffffff" if white_contrast >= 4.5 else "#111827"
+
+
+def format_rail_status_summary(line_status_map, availability="current"):
+    """Build the compact global summary, including expandable affected chips."""
+    affected = _affected_lines(line_status_map)
+    if availability == "unavailable":
+        return html.Span(
+            "? Data unavailable",
+            className="rail-status-unavailable",
+        )
+
+    if not affected:
+        text = (
+            "Last known: all lines were operating normally"
+            if availability == "stale"
+            else "✓ All lines operating normally"
+        )
+        return html.Span(text, className="rail-status-ok")
+
+    qualifier = "known " if availability == "partial" else ""
+    stale_prefix = "Last known: " if availability == "stale" else ""
+    summary = html.Span(
+        f"! {stale_prefix}{len(affected)} {qualifier}"
+        f"{'line' if len(affected) == 1 else 'lines'} affected",
+        className="rail-status-warning",
+    )
+    chips = []
+    for line_info, status_info, label, _icon in affected:
+        reason = str(status_info.get("reason", "")).strip()
+        chips.append(
+            html.Details(
+                className="rail-affected-chip",
+                children=[
+                    html.Summary(
+                        f"{line_info['code']} — {label}",
+                        **{"aria-label": f"{line_info['name']}: {label}"},
+                    ),
+                    html.Div(
+                        className="rail-affected-detail",
+                        children=[
+                            html.Strong(f"{line_info['name']} — {label}"),
+                            html.Span(reason or "See Road & Transport advisories for details."),
+                            html.Button(
+                                "View advisory",
+                                id={
+                                    "type": "rail-advisory-link",
+                                    "index": line_info["code"],
+                                },
+                                className="rail-advisory-link",
+                                n_clicks=0,
+                            ),
+                        ],
+                    ),
+                ],
+            )
+        )
+    return html.Div(
+        [summary, *chips],
+        className="rail-status-summary",
+        role="status",
+        **{"aria-live": "polite"},
+    )
+
+
+def format_rail_status_freshness(updated_at, availability="current"):
+    """Format source freshness without implying failed data is current."""
+    if availability == "unavailable" or updated_at is None:
+        return "Data unavailable"
+    time_text = updated_at.astimezone().strftime("%H:%M")
+    if availability == "stale":
+        return f"Last known status · Updated {time_text}"
+    if availability == "partial":
+        return f"Partial data · Updated {time_text}"
+    return f"Updated {time_text}"
 
 
 def fetch_train_service_alerts():
@@ -39,26 +158,6 @@ def fetch_train_service_alerts():
     }
     
     return fetch_url_2min_cached(TRAIN_SERVICE_ALERTS_URL, headers)
-
-
-def fetch_train_service_alerts_async():
-    """
-    Fetch train service alerts asynchronously (returns Future).
-    Call .result() to get the data when needed.
-    """
-    api_key = os.getenv("LTA_API_KEY")
-    
-    if not api_key:
-        print("Warning: LTA_API_KEY not found in environment variables")
-        return None
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "AccountKey": api_key,
-        "Content-Type": "application/json"
-    }
-    
-    return _executor.submit(fetch_url_2min_cached, TRAIN_SERVICE_ALERTS_URL, headers)
 
 
 def _build_legacy_line_status_map(data: Optional[Dict[str, Any]]) -> Dict[str, Dict[str, object]]:
@@ -103,12 +202,14 @@ def _build_legacy_line_status_map(data: Optional[Dict[str, Any]]) -> Dict[str, D
                             line_status_map[line_upper] = {
                                 "status": status,
                                 "has_message": True,
-                                "status_text": "Normal*" if status == 1 else "Alert*",
+                                "status_text": (
+                                    "Normal" if status == 1 else "Service disruption"
+                                ),
                             }
                         else:
                             line_status_map[line_upper]["has_message"] = True
                             if status == 1:
-                                line_status_map[line_upper]["status_text"] = "Normal*"
+                                line_status_map[line_upper]["status_text"] = "Normal"
                         break
     return line_status_map
 
@@ -161,7 +262,9 @@ def format_train_service_alerts(data):
     })
 
 
-def format_mrt_line_operational_details(data, line_status_map_override=None):
+def format_mrt_line_operational_details(
+    data, line_status_map_override=None, availability="current"
+):
     """
     Format MRT line operational details for display on transport page.
     Shows status for each MRT line.
@@ -182,73 +285,40 @@ def format_mrt_line_operational_details(data, line_status_map_override=None):
         else _build_legacy_line_status_map(data)
     )
     
-    # Helper function to create line status display
     def create_line_status_display(line_info, line_status_dict):
         line_code = line_info["code"]
         line_name = line_info["name"]
         line_color = line_info["color"]
-        
-        # Get status for this line
         line_status_info = line_status_dict.get(line_code)
-        
-        # Determine status display
-        if line_status_info:
-            status_value = line_status_info.get("status", 1)
-            has_message = line_status_info.get("has_message", False)
-            status_text_override = line_status_info.get("status_text")
-            
-            if status_text_override:
-                detail_text = str(status_text_override)
-                detail_text_color = "#ff4444" if detail_text in ("Delayed*", "Alert*") else "#4CAF50"
-            elif status_value == 1:
-                detail_text = "Normal*" if has_message else "Normal"
-                detail_text_color = "#4CAF50"
-            else:
-                detail_text = "Alert*"
-                detail_text_color = "#ff4444"
-        else:
-            # No alert data for this line - assume normal
-            detail_text = "Normal"
-            detail_text_color = "#4CAF50"
-        
+        line_unavailable = availability in ("partial", "unavailable") and line_status_info is None
+        detail_text, status_icon, is_affected = _normalise_status(
+            line_status_info, unavailable=line_unavailable
+        )
+        accessible_status = f"{status_icon} {detail_text}"
+
         return html.Div(
+            className="rail-line-card",
             style={
-                "padding": "0.25rem 0.5rem",
-                "backgroundColor": "#2c3e50",
-                "borderRadius": "0.5rem",
-                "display": "flex",
-                "alignItems": "center",
-                "gap": "0.75rem",
-                "minWidth": "fit-content",
-                "boxShadow": "0 0.125rem 0.25rem rgba(0, 0, 0, 0.3)",
-                "transition": "all 0.2s ease",
+                "borderLeft": (
+                    "0.1875rem solid #d99b45"
+                    if is_affected
+                    else "0.1875rem solid transparent"
+                ),
             },
             children=[
-                # Pill badge with line name and code
                 html.Span(
                     f"{line_name} ({line_code})",
+                    className="rail-line-badge",
                     style={
                         "backgroundColor": line_color,
-                        "color": "#ffffff",
-                        "fontWeight": "bold",
-                        "fontSize": "0.625rem",
-                        "padding": "0.25rem 0.625rem",
-                        "borderRadius": "1rem",
-                        "whiteSpace": "nowrap",
-                        "boxShadow": "0 0.0625rem 0.125rem rgba(0, 0, 0, 0.2)",
-                    }
+                        "color": _badge_text_color(line_color),
+                    },
                 ),
-                # Status indicator (colored text)
                 html.Span(
-                    detail_text,
-                    style={
-                        "color": detail_text_color,
-                        "fontSize": "0.625rem",
-                        "fontWeight": "bold",
-                        "marginLeft": "auto",
-                    }
+                    accessible_status,
+                    className="rail-line-state",
                 ),
-            ]
+            ],
         )
     
     # Create display for each MRT line
@@ -261,7 +331,6 @@ def format_mrt_line_operational_details(data, line_status_map_override=None):
     for line_info in lrt_lines:
         lrt_elements.append(create_line_status_display(line_info, line_status_map))
     
-    # Return MRT and LRT displays separately
     mrt_display = html.Div(
         children=mrt_elements if mrt_elements else [
             html.P(
@@ -273,14 +342,7 @@ def format_mrt_line_operational_details(data, line_status_map_override=None):
                 }
             )
         ],
-        style={
-            "display": "flex",
-            "flexDirection": "row",
-            "flexWrap": "wrap",
-            "gap": "0.5rem",
-            "justifyContent": "flex-start",
-            "width": "100%",
-        }
+        className="rail-line-grid",
     )
     
     lrt_display = html.Div(
@@ -294,14 +356,7 @@ def format_mrt_line_operational_details(data, line_status_map_override=None):
                 }
             )
         ],
-        style={
-            "display": "flex",
-            "flexDirection": "row",
-            "flexWrap": "wrap",
-            "gap": "0.5rem",
-            "justifyContent": "flex-start",
-            "width": "100%",
-        }
+        className="rail-line-grid",
     )
     
     return mrt_display, lrt_display
@@ -555,6 +610,17 @@ def register_train_service_alerts_callbacks(app):
         app: Dash app instance
     """
     @app.callback(
+        Output('navigation-tabs', 'value'),
+        Input({'type': 'rail-advisory-link', 'index': ALL}, 'n_clicks'),
+        prevent_initial_call=True,
+    )
+    def open_rail_advisory(click_counts):
+        """Open the Road & Transport view from an affected-line detail."""
+        if not click_counts or not any(click_counts):
+            return no_update
+        return 'transport'
+
+    @app.callback(
         Output('train-service-alerts-status', 'children'),
         Input('interval-component', 'n_intervals'),
         State('navigation-tabs', 'value')
@@ -577,20 +643,15 @@ def register_train_service_alerts_callbacks(app):
         return alerts_display
     
     @app.callback(
-        [Output('mrt-lines-display', 'children'),
-         Output('lrt-lines-display', 'children')],
+        [Output('rail-status-summary', 'children'),
+         Output('mrt-lines-display', 'children'),
+         Output('lrt-lines-display', 'children'),
+         Output('rail-status-updated', 'children')],
         Input('interval-component', 'n_intervals')
     )
     def update_mrt_line_operational_details(n_intervals):
-        """
-        Update MRT and LRT line operational details in banner periodically.
-        
-        Args:
-            n_intervals: Number of intervals (from dcc.Interval component)
-            
-        Returns:
-            Tuple of (MRT lines display, LRT lines display)
-        """
+        """Update the compact summary and expandable all-lines details."""
+        global _LAST_RAIL_STATUS_MAP, _LAST_RAIL_STATUS_UPDATED
         try:
             _ = n_intervals
             legacy_data_future = _executor.submit(fetch_train_service_alerts)
@@ -607,20 +668,62 @@ def register_train_service_alerts_callbacks(app):
                 service_alerts_map=gtfs_service_alerts_map,
                 trip_updates_map=gtfs_trip_updates_map,
             )
-            return format_mrt_line_operational_details(
-                legacy_data, line_status_map_override=merged_line_status_map
+
+            now = datetime.now().astimezone()
+            if isinstance(legacy_data, dict):
+                availability = "current"
+                with _RAIL_STATUS_LOCK:
+                    _LAST_RAIL_STATUS_MAP = {
+                        code: dict(status)
+                        for code, status in merged_line_status_map.items()
+                    }
+                    _LAST_RAIL_STATUS_UPDATED = now
+                display_map = merged_line_status_map
+                updated_at = now
+            elif merged_line_status_map:
+                availability = "partial"
+                display_map = merged_line_status_map
+                updated_at = now
+            else:
+                with _RAIL_STATUS_LOCK:
+                    display_map = {
+                        code: dict(status)
+                        for code, status in _LAST_RAIL_STATUS_MAP.items()
+                    }
+                    updated_at = _LAST_RAIL_STATUS_UPDATED
+                availability = "stale" if updated_at is not None else "unavailable"
+
+            mrt_display, lrt_display = format_mrt_line_operational_details(
+                legacy_data,
+                line_status_map_override=display_map,
+                availability=availability,
+            )
+            return (
+                format_rail_status_summary(display_map, availability),
+                mrt_display,
+                lrt_display,
+                format_rail_status_freshness(updated_at, availability),
             )
         except Exception as error:
             print(f"Error updating MRT/LRT line operational details: {error}")
-            error_display = html.P(
-                "Error loading line status",
-                style={
-                    "color": "#ff4444",
-                    "fontSize": "0.75rem",
-                    "margin": "0",
+            with _RAIL_STATUS_LOCK:
+                display_map = {
+                    code: dict(status)
+                    for code, status in _LAST_RAIL_STATUS_MAP.items()
                 }
+                updated_at = _LAST_RAIL_STATUS_UPDATED
+            availability = "stale" if updated_at is not None else "unavailable"
+            mrt_display, lrt_display = format_mrt_line_operational_details(
+                None,
+                line_status_map_override=display_map,
+                availability=availability,
             )
-            return error_display, error_display
+            return (
+                format_rail_status_summary(display_map, availability),
+                mrt_display,
+                lrt_display,
+                format_rail_status_freshness(updated_at, availability),
+            )
     
     @app.callback(
         [Output('train-service-alerts-content', 'children'),
@@ -669,17 +772,23 @@ def register_train_service_alerts_callbacks(app):
                 content_style = {
                     "padding": "0.25rem",
                     "color": "#999",
-                    "fontSize": "0.5rem",
-                    "textAlign": "center",
+                    "fontSize": "0.8125rem",
+                    "textAlign": "left",
                     "backgroundColor": "#3a4a5a",
                     "borderRadius": "0.25rem",
+                    "overflowY": "auto",
+                    "flex": "1",
+                    "minHeight": "0",
                 }
             else:
                 content_style = {
                     "padding": "0.25rem",
-                    "color": "#999",
-                    "fontSize": "0.5rem",
-                    "textAlign": "center",
+                    "color": "#cbd5e1",
+                    "fontSize": "0.8125rem",
+                    "textAlign": "left",
+                    "overflowY": "auto",
+                    "flex": "1",
+                    "minHeight": "0",
                 }
             
             return content, content_style

@@ -743,14 +743,29 @@ def format_bus_service_search_display(service_no: str, routes_data: Optional[Dic
         },
         children=[
             html.Div(
-                f"Service {service_no} - {len(directions)} direction(s)",
-                style={
-                    "color": "#fff",
-                    "fontWeight": "bold",
-                    "fontSize": "0.8125rem",
-                    "marginBottom": "0.5rem",
-                    "textAlign": "center",
-                }
+                [
+                    html.Div(
+                        "Service route",
+                        style={
+                            "color": "#9fc5ff",
+                            "fontSize": "0.7rem",
+                            "fontWeight": "700",
+                            "letterSpacing": "0.04rem",
+                            "textTransform": "uppercase",
+                            "textAlign": "center",
+                        },
+                    ),
+                    html.Div(
+                        f"Service {service_no} — {len(directions)} direction(s)",
+                        style={
+                            "color": "#fff",
+                            "fontWeight": "bold",
+                            "fontSize": "0.8125rem",
+                            "textAlign": "center",
+                        },
+                    ),
+                ],
+                style={"marginBottom": "0.5rem"},
             ),
             *result_items
         ]
@@ -766,16 +781,12 @@ def register_bus_service_callbacks(app):
     """
     @app.callback(
         Output('bus-services-count-value', 'children'),
-        [Input('bus-arrival-page-interval', 'n_intervals', allow_optional=True),
-         Input('transport-interval', 'n_intervals')],
+        Input('transport-interval', 'n_intervals'),
         State('navigation-tabs', 'value')
     )
-    def update_bus_services_count(_bus_interval, _transport_interval, active_tab):
-        """
-        Update bus services count display using async data fetching.
-        Updates from both bus-arrival-page-interval and transport-interval.
-        """
-        if active_tab not in ('transport', 'bus-arrival'):
+    def update_bus_services_count(_transport_interval, active_tab):
+        """Update the Road & Transport bus-services metric."""
+        if active_tab != 'transport':
             return no_update
 
         # Fetch bus services asynchronously (more time-sensitive than static stops).
@@ -814,17 +825,31 @@ def register_bus_service_callbacks(app):
     @app.callback(
         Output("bus-route-markers", "children"),
         [Input({"type": "bus-route-toggle", "direction": ALL, "service": ALL}, "n_clicks"),
-         Input("bus-service-search-btn", "n_clicks")],
+         Input("bus-service-search-btn", "n_clicks"),
+         Input("bus-service-search-input", "n_submit"),
+         Input("bus-stop-search-btn", "n_clicks"),
+         Input("bus-stop-search-input", "n_submit")],
         [State({"type": "bus-route-toggle", "direction": ALL, "service": ALL}, "id"),
          State("bus-service-search-input", "value")],
         prevent_initial_call=True
     )
-    def update_bus_route_markers(_toggle_clicks, _search_clicks, toggle_ids, search_value):
+    def update_bus_route_markers(
+        _toggle_clicks,
+        _service_search_clicks,
+        _service_search_submit,
+        _stop_search_clicks,
+        _stop_search_submit,
+        toggle_ids,
+        search_value,
+    ):
         """Update bus route markers on the map based on toggle states."""
-        # If triggered by search button, clear all markers
+        # A new service or stop search supersedes the previous route display.
         if callback_context.triggered:
             trigger_id = callback_context.triggered[0]['prop_id']
-            if 'bus-service-search-btn' in trigger_id:
+            if (
+                'bus-service-search-' in trigger_id
+                or 'bus-stop-search-' in trigger_id
+            ):
                 return []
 
         # No valid input

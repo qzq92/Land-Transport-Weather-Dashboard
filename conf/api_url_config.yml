@@ -1,6 +1,0 @@
-# URL
-BUS_STOPS_API: http://datamall2.mytransport.sg/ltaodataservice/BusStops
-TAXI_STANDS_API: http://datamall2.mytransport.sg/ltaodataservice/TaxiStands
-BICYCLE_PARKING_API: http://datamall2.mytransport.sg/ltaodataservice/BicycleParkingv2
-TRAFFIC_IMAGES_API: http://datamall2.mytransport.sg/ltaodataservice/Traffic-Imagesv2
-CARPARK_AVAILABILITY_API: https://api.data.gov.sg/v1/transport/carpark-availability

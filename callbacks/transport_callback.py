@@ -1,10 +1,6 @@
 """
 Callback functions for handling transport information.
-References:
-- Taxi: https://api.data.gov.sg/v1/transport/taxi-availability
-- Traffic Cameras: https://api.data.gov.sg/v1/transport/traffic-images
-- ERP Gantries: https://data.gov.sg/datasets/d_753090823cc9920ac41efaa6530c5893/view
-- PUB CCTV: https://data.gov.sg/datasets/d_1de1c45043183bec57e762d01c636eee/view
+Endpoint URLs are defined in conf.api_urls.
 """
 import re
 import os
@@ -25,28 +21,34 @@ from utils.data_download_helper import fetch_erp_gantry_data
 from utils.map_utils import SG_MAP_CENTER
 from callbacks.map_callback import _haversine_distance_m
 from components.metric_card import create_metric_value_display
+from components.transport_metrics_view import LAYER_CHIP_LABELS
+from components.nearby_list_items import (
+    nearby_compact_row,
+    nearby_empty_message,
+    nearby_section_title,
+)
 from conf.cache_config import TTL_NEARBY_FACILITIES_CALLBACKS
+from conf.api_urls import (
+    BUS_ROUTES_URL,
+    BUS_SERVICES_URL,
+    BUS_STOPS_URL,
+    EVC_BATCH_URL,
+    EV_CHARGING_URL,
+    FAULTY_TRAFFIC_LIGHTS_URL,
+    HAWKER_CENTRES_POLL_DOWNLOAD_URL,
+    LEAFLET_MARKER_ICON_GREEN_URL,
+    LEAFLET_MARKER_SHADOW_URL,
+    ONEMAP_REVGEOCODE_URL,
+    PARKS_POLL_DOWNLOAD_URL,
+    RECYCLING_BINS_POLL_DOWNLOAD_URL,
+    SPORTS_FIELDS_POLL_DOWNLOAD_URL,
+    TAXI_API_URL,
+    TAXI_STANDS_URL,
+    TRAFFIC_IMAGES_API_URL,
+    TRAFFIC_INCIDENTS_URL,
+    VMS_URL,
+)
 
-# API URLs
-TAXI_API_URL = "https://api.data.gov.sg/v1/transport/taxi-availability"
-TRAFFIC_IMAGES_API_URL = "https://api.data.gov.sg/v1/transport/traffic-images"
-TRAFFIC_INCIDENTS_URL = "https://datamall2.mytransport.sg/ltaodataservice/TrafficIncidents"
-FAULTY_TRAFFIC_LIGHTS_URL = "https://datamall2.mytransport.sg/ltaodataservice/FaultyTrafficLights"
-BICYCLE_PARKING_URL = "https://datamall2.mytransport.sg/ltaodataservice/BicycleParkingv2"
-VMS_URL = "https://datamall2.mytransport.sg/ltaodataservice/VMS"
-EV_CHARGING_URL = "https://datamall2.mytransport.sg/ltaodataservice/EVChargingPoints"
-EVC_BATCH_URL = "https://datamall2.mytransport.sg/ltaodataservice/EVCBatch"
-BUS_STOPS_URL = "https://datamall2.mytransport.sg/ltaodataservice/BusStops"
-BUS_ROUTES_URL = "https://datamall2.mytransport.sg/ltaodataservice/BusRoutes"
-BUS_SERVICES_URL = "https://datamall2.mytransport.sg/ltaodataservice/BusServices"
-PARKS_DATASET_ID = "d_99b71f5d34cf57a3a592fbfdef1f42b6"
-SPORTS_FIELDS_DATASET_ID = "d_f71b449b4b43a69b5ecfe411b440d249"
-PARKS_POLL_DOWNLOAD_URL = (
-    f"https://api-open.data.gov.sg/v1/public/api/datasets/{PARKS_DATASET_ID}/poll-download"
-)
-SPORTS_FIELDS_POLL_DOWNLOAD_URL = (
-    f"https://api-open.data.gov.sg/v1/public/api/datasets/{SPORTS_FIELDS_DATASET_ID}/poll-download"
-)
 NEARBY_FACILITIES_RETRY_ON_429_SECONDS = 5 * 60
 NEARBY_FACILITIES_MIN_ZOOM = 12
 
@@ -73,6 +75,8 @@ _LTA_CAMERA_ID_MAPPING_LOADED: bool = False
 _nearby_facilities_cache: Dict[str, Dict[str, Any]] = {
     "parks": {"points": [], "timestamp": 0.0, "retry_after": 0.0},
     "sports_fields": {"points": [], "timestamp": 0.0, "retry_after": 0.0},
+    "recycling_bins": {"points": [], "timestamp": 0.0, "retry_after": 0.0},
+    "hawker_centres": {"points": [], "timestamp": 0.0, "retry_after": 0.0},
 }
 _nearby_facilities_cache_lock = threading.Lock()
 
@@ -291,6 +295,18 @@ def fetch_sports_fields_data_async() -> List[Dict[str, Any]]:
     return _fetch_nearby_facility_points_with_cache("sports_fields", SPORTS_FIELDS_POLL_DOWNLOAD_URL)
 
 
+@run_in_thread
+def fetch_recycling_bins_data_async() -> List[Dict[str, Any]]:
+    """Fetch normalized Recycling Bins points with cache and 429 cooldown logic."""
+    return _fetch_nearby_facility_points_with_cache("recycling_bins", RECYCLING_BINS_POLL_DOWNLOAD_URL)
+
+
+@run_in_thread
+def fetch_hawker_centres_data_async() -> List[Dict[str, Any]]:
+    """Fetch normalized Hawker Centres points with cache and 429 cooldown logic."""
+    return _fetch_nearby_facility_points_with_cache("hawker_centres", HAWKER_CENTRES_POLL_DOWNLOAD_URL)
+
+
 def _resolve_nearby_center(viewport: Optional[Dict[str, Any]], location_data: Optional[Dict[str, Any]]) -> Optional[Tuple[float, float]]:
     """Resolve map center from viewport first, then selected location store."""
     if isinstance(viewport, dict):
@@ -316,45 +332,15 @@ def _build_facility_list_column(
     notice_text: Optional[str],
 ) -> List[html.Div]:
     """Build nearby facility list panel content."""
-    title_component = html.H4(
-        title,
-        style={
-            "textAlign": "center",
-            "marginBottom": "0.625rem",
-            "color": "#fff",
-            "fontWeight": "700",
-            "fontSize": "0.875rem",
-        },
-    )
+    title_component = nearby_section_title(title)
 
     if center is None:
-        return [
-            title_component,
-            html.P(
-                "Select a location to view nearest locations",
-                style={
-                    "textAlign": "center",
-                    "padding": "0.9375rem",
-                    "color": "#999",
-                    "fontSize": "0.75rem",
-                    "fontStyle": "italic",
-                },
-            ),
-        ]
+        return [title_component, nearby_empty_message()]
 
     if not points:
         children: List[html.Div] = [
             title_component,
-            html.P(
-                "No data available",
-                style={
-                    "textAlign": "center",
-                    "padding": "0.9375rem",
-                    "color": "#999",
-                    "fontSize": "0.75rem",
-                    "fontStyle": "italic",
-                },
-            ),
+            nearby_empty_message("No data available"),
         ]
         if notice_text:
             children.append(
@@ -384,45 +370,8 @@ def _build_facility_list_column(
     for item in nearest_points:
         distance_m = _haversine_distance_m(center_lat, center_lon, item["lat"], item["lon"])
         distance_text = f"{int(distance_m)}m" if distance_m < 1000 else f"{distance_m / 1000:.2f}km"
-        details_text = item.get("address") or item.get("details") or "No additional details"
-
         list_cards.append(
-            html.Div(
-                [
-                    html.Div(
-                        item.get("name", "Unnamed location"),
-                        style={
-                            "fontSize": "0.8125rem",
-                            "color": "#fff",
-                            "fontWeight": "600",
-                            "marginBottom": "0.25rem",
-                        },
-                    ),
-                    html.Div(
-                        f"Distance: {distance_text}",
-                        style={
-                            "fontSize": "0.75rem",
-                            "color": "#60a5fa",
-                            "fontWeight": "500",
-                            "marginBottom": "0.125rem",
-                        },
-                    ),
-                    html.Div(
-                        details_text,
-                        style={
-                            "fontSize": "0.7rem",
-                            "color": "#ccc",
-                        },
-                    ),
-                ],
-                style={
-                    "padding": "0.625rem 0.75rem",
-                    "borderBottom": "0.0625rem solid #444",
-                    "marginBottom": "0.375rem",
-                    "backgroundColor": "#1a1a1a",
-                    "borderRadius": "0.25rem",
-                },
-            )
+            nearby_compact_row(item.get("name", "Unnamed location"), distance_text)
         )
 
     output_children: List[html.Div] = [title_component, *list_cards]
@@ -450,7 +399,7 @@ def _build_facility_markers(
     marker_color: str,
     zoom: Optional[int],
 ) -> List[Any]:
-    """Build marker cluster for nearby facilities with zoom gating."""
+    """Build DivMarker children for nearby facilities with zoom gating."""
     current_zoom = int(zoom) if isinstance(zoom, (int, float)) else 11
     if current_zoom < NEARBY_FACILITIES_MIN_ZOOM:
         return []
@@ -483,9 +432,7 @@ def _build_facility_markers(
             )
         )
 
-    if not markers:
-        return []
-    return [dl.MarkerClusterGroup(children=markers)]
+    return markers
 
 
 def _load_lta_camera_id_mapping() -> Dict[str, str]:
@@ -833,7 +780,7 @@ def create_cctv_markers(camera_data):
             )
         )
 
-        icon_url = "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png"
+        icon_url = LEAFLET_MARKER_ICON_GREEN_URL
         
         markers.append(
             dl.Marker(
@@ -850,7 +797,7 @@ def create_cctv_markers(camera_data):
                 ],
                 icon={
                     "iconUrl": icon_url,
-                    "shadowUrl": "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+                    "shadowUrl": LEAFLET_MARKER_SHADOW_URL,
                     "iconSize": [25, 41],
                     "iconAnchor": [12, 41],
                     "popupAnchor": [1, -34],
@@ -1099,7 +1046,7 @@ def fetch_taxi_stands_data_async():
     if _road_infra_cache['taxi_stands'] is not None:
         return _road_infra_cache['taxi_stands']
     
-    taxi_stands_url = "https://datamall2.mytransport.sg/ltaodataservice/TaxiStands"
+    taxi_stands_url = TAXI_STANDS_URL
     api_key = os.getenv("LTA_API_KEY")
     
     if not api_key:
@@ -2297,7 +2244,7 @@ def get_postal_code_from_coords(lat: float = None, lon: float = None, location_d
         import requests
         try:
             # OneMap reverse geocoding API
-            url = f"https://www.onemap.gov.sg/api/public/revgeocode?latitude={lat}&longitude={lon}"
+            url = f"{ONEMAP_REVGEOCODE_URL}?latitude={lat}&longitude={lon}"
             
             api_token = os.getenv("ONEMAP_API_KEY")
             headers = {}
@@ -3764,7 +3711,7 @@ def register_transport_callbacks(app):
                 "fontSize": "0.75rem",
                 "fontWeight": "600",
             }
-            text = "Hide Current Taxi Availability/Stands"
+            text = LAYER_CHIP_LABELS["taxi"]
         else:
             # Inactive state - outline
             style = {
@@ -3777,7 +3724,7 @@ def register_transport_callbacks(app):
                 "fontSize": "0.75rem",
                 "fontWeight": "600",
             }
-            text = "Show Current Taxi Availability/Stands"
+            text = LAYER_CHIP_LABELS["taxi"]
         
         return new_state, style, text
     
@@ -3881,7 +3828,7 @@ def register_transport_callbacks(app):
                 "fontSize": "0.75rem",
                 "fontWeight": "600",
             }
-            text = "Hide LTA Traffic Cameras Location"
+            text = LAYER_CHIP_LABELS["cctv"]
         else:
             # Inactive state - outline
             style = {
@@ -3894,7 +3841,7 @@ def register_transport_callbacks(app):
                 "fontSize": "0.75rem",
                 "fontWeight": "600",
             }
-            text = "Show LTA Traffic Cameras Location"
+            text = LAYER_CHIP_LABELS["cctv"]
         
         return new_state, style, text
 
@@ -3955,7 +3902,7 @@ def register_transport_callbacks(app):
                 "fontSize": "0.75rem",
                 "fontWeight": "600",
             }
-            text = "Hide ERP Gantries Location"
+            text = LAYER_CHIP_LABELS["erp"]
         else:
             # Inactive state - outline
             style = {
@@ -3968,7 +3915,7 @@ def register_transport_callbacks(app):
                 "fontSize": "0.75rem",
                 "fontWeight": "600",
             }
-            text = "Show ERP Gantries Location"
+            text = LAYER_CHIP_LABELS["erp"]
 
         return new_state, style, text
 
@@ -4032,7 +3979,7 @@ def register_transport_callbacks(app):
                 "fontSize": "0.75rem",
                 "fontWeight": "600",
             }
-            text = "Hide Traffic Incidents"
+            text = LAYER_CHIP_LABELS["incidents"]
         else:
             # Inactive state - outline
             style = {
@@ -4045,7 +3992,7 @@ def register_transport_callbacks(app):
                 "fontSize": "0.75rem",
                 "fontWeight": "600",
             }
-            text = "Show Traffic Incidents"
+            text = LAYER_CHIP_LABELS["incidents"]
 
         return new_state, style, text
 
@@ -4252,26 +4199,8 @@ def register_transport_callbacks(app):
         else:
             if not location_data:
                 return [
-                    html.H4(
-                        "Nearby 300m Taxi Stands",
-                        style={
-                            "textAlign": "center",
-                            "marginBottom": "0.625rem",
-                            "color": "#fff",
-                            "fontWeight": "700",
-                            "fontSize": "0.875rem"
-                        }
-                    ),
-                    html.P(
-                        "Select a location to view nearest taxi stands",
-                        style={
-                            "textAlign": "center",
-                            "padding": "0.9375rem",
-                            "color": "#999",
-                            "fontSize": "0.75rem",
-                            "fontStyle": "italic"
-                        }
-                    )
+                    nearby_section_title("Nearby 300m Taxi Stands"),
+                    nearby_empty_message(),
                 ], []
 
             try:
@@ -4335,53 +4264,14 @@ def register_transport_callbacks(app):
             taxi_code = stand.get('taxi_code', 'N/A')
             name = stand.get('name', 'N/A')
             distance_m = stand.get('distance_m', 0)
-            lat = stand.get('latitude', 0)
-            lon = stand.get('longitude', 0)
 
             if distance_m < 1000:
                 distance_str = f"{int(distance_m)}m"
             else:
                 distance_str = f"{distance_m/1000:.2f}km"
 
-            location_str = f"{lat:.6f}, {lon:.6f}" if lat and lon else "N/A"
-
             stand_items.append(
-                html.Div(
-                    [
-                        html.Div(
-                            f"{taxi_code} ({name})",
-                            style={
-                                "fontSize": "0.8125rem",
-                                "color": "#fff",
-                                "fontWeight": "600",
-                                "marginBottom": "0.25rem"
-                            }
-                        ),
-                        html.Div(
-                            f"Distance: {distance_str}",
-                            style={
-                                "fontSize": "0.75rem",
-                                "color": "#FFD700",
-                                "fontWeight": "500",
-                                "marginBottom": "2px"
-                            }
-                        ),
-                        html.Div(
-                            f"Location: {location_str}",
-                            style={
-                                "fontSize": "0.75rem",
-                                "color": "#ccc",
-                            }
-                        )
-                    ],
-                    style={
-                        "padding": "0.625rem 0.75rem",
-                        "borderBottom": "0.0625rem solid #444",
-                        "marginBottom": "0.375rem",
-                        "backgroundColor": "#1a1a1a",
-                        "borderRadius": "0.25rem"
-                    }
-                )
+                nearby_compact_row(f"{taxi_code} ({name})", distance_str)
             )
 
         # Return stand items with H4 title
@@ -4431,26 +4321,8 @@ def register_transport_callbacks(app):
         else:
             if not location_data:
                 return [
-                    html.H4(
-                        "Nearby 300m Bicycle Parking",
-                        style={
-                            "textAlign": "center",
-                            "marginBottom": "0.625rem",
-                            "color": "#fff",
-                            "fontWeight": "700",
-                            "fontSize": "0.875rem"
-                        }
-                    ),
-                    html.P(
-                        "Select a location to view nearest bicycle parking",
-                        style={
-                            "textAlign": "center",
-                            "padding": "0.9375rem",
-                            "color": "#999",
-                            "fontSize": "0.75rem",
-                            "fontStyle": "italic"
-                        }
-                    )
+                    nearby_section_title("Nearby 300m Bicycle Parking"),
+                    nearby_empty_message(),
                 ], []
 
             # Fallback to stored lat/lon (e.g., from search)
@@ -4516,7 +4388,6 @@ def register_transport_callbacks(app):
 
         for parking in nearby_parking:
             description = parking.get('description', 'N/A')
-            rack_type = parking.get('rack_type', 'N/A')
             rack_count = parking.get('rack_count', 'N/A')
             distance_m = parking.get('distance_m', 0)
 
@@ -4528,50 +4399,7 @@ def register_transport_callbacks(app):
 
             # Create card for each bicycle parking location
             parking_items.append(
-                html.Div(
-                    [
-                        html.Div(
-                            description,
-                            style={
-                                "fontSize": "0.8125rem",
-                                "color": "#fff",
-                                "fontWeight": "600",
-                                "marginBottom": "0.25rem"
-                            }
-                        ),
-                        html.Div(
-                            f"RackType: {rack_type}",
-                            style={
-                                "fontSize": "0.75rem",
-                                "color": "#ccc",
-                                "marginBottom": "0.125rem"
-                            }
-                        ),
-                        html.Div(
-                            f"RackCount: {rack_count}",
-                            style={
-                                "fontSize": "0.75rem",
-                                "color": "#ccc",
-                                "marginBottom": "0.25rem"
-                            }
-                        ),
-                        html.Div(
-                            f"Distance: {distance_str}",
-                            style={
-                                "fontSize": "0.75rem",
-                                "color": "#60a5fa",
-                                "fontWeight": "500"
-                            }
-                        )
-                    ],
-                    style={
-                        "padding": "0.625rem 0.75rem",
-                        "borderBottom": "0.0625rem solid #444",
-                        "marginBottom": "0.375rem",
-                        "backgroundColor": "#1a1a1a",
-                        "borderRadius": "0.25rem"
-                    }
-                )
+                nearby_compact_row(description, distance_str, extra=f"{rack_count} racks")
             )
 
         # Return parking items with H4 title
@@ -4609,26 +4437,8 @@ def register_transport_callbacks(app):
         """
         if not location_data:
             return [
-                html.H4(
-                    "Nearby EV Charging Points",
-                    style={
-                        "textAlign": "center",
-                        "marginBottom": "0.625rem",
-                        "color": "#fff",
-                        "fontWeight": "700",
-                        "fontSize": "0.875rem"
-                    }
-                ),
-                html.P(
-                    "Select a location to view nearby EV charging points",
-                    style={
-                        "textAlign": "center",
-                        "padding": "0.9375rem",
-                        "color": "#999",
-                        "fontSize": "0.75rem",
-                        "fontStyle": "italic"
-                    }
-                )
+                nearby_section_title("Nearby EV Charging Points"),
+                nearby_empty_message(),
             ], []
 
         try:
@@ -4782,64 +4592,19 @@ def register_transport_callbacks(app):
             
             # For the list display, we might want to show a summary or the first charging point
             charging_points = loc.get('chargingPoints', [])
-            cp_details = []
-            
-            if isinstance(charging_points, list) and charging_points:
+            total = 0
+            available = 0
+            if isinstance(charging_points, list):
+                total = len(charging_points)
                 for cp in charging_points:
-                    cp_status_raw = cp.get('status') or cp.get('Status', '')
-                    if cp_status_raw == '1':
-                        cp_status = "Available"
-                        cp_color = "#4CAF50"  # Green
-                    elif cp_status_raw == '0':
-                        cp_status = "Occupied"
-                        cp_color = "#ff6b6b"  # Red
-                    else:
-                        cp_status = cp_status_raw or "N/A"
-                        cp_color = "#999"  # Gray
-                    
-                    operator = cp.get('operator') or cp.get('Operator', 'N/A')
-                    position = cp.get('position') or cp.get('Position', 'N/A')
-                    
-                    cp_details.append(
-                        html.Div(
-                            [
-                                html.Div(
-                                    [
-                                        html.Span(f"{cp_status}", style={"color": cp_color, "fontWeight": "bold"}),
-                                        html.Span(f" | {operator}", style={"color": "#ccc", "fontSize": "0.7rem"}),
-                                    ],
-                                    style={"marginBottom": "2px"}
-                                ),
-                                html.Div(f"Pos: {position}", style={"color": "#aaa", "fontSize": "0.65rem"})
-                            ],
-                            style={"marginTop": "4px", "paddingLeft": "8px", "borderLeft": f"2px solid {cp_color}"}
-                        )
-                    )
-
-            # Create card for each EV charging location
-            charging_items.append(
-                html.Div(
-                    [
-                        html.Div(
-                            address,
-                            style={
-                                "fontSize": "0.8125rem",
-                                "color": "#fff",
-                                "fontWeight": "600",
-                                "marginBottom": "0.25rem"
-                            }
-                        ),
-                        html.Div(cp_details)
-                    ],
-                    style={
-                        "padding": "0.625rem 0.75rem",
-                        "borderBottom": "0.0625rem solid #444",
-                        "marginBottom": "0.375rem",
-                        "backgroundColor": "#1a1a1a",
-                        "borderRadius": "0.25rem"
-                    }
-                )
+                    if not isinstance(cp, dict):
+                        continue
+                    if (cp.get('status') or cp.get('Status', '')) == '1':
+                        available += 1
+            status_text = (
+                f"{available} of {total} available" if total else "No chargers listed"
             )
+            charging_items.append(nearby_compact_row(address, status_text))
 
         # Return all charging items and markers
         # Return charging items with H4 title
@@ -4940,15 +4705,103 @@ def register_transport_callbacks(app):
         )
 
     @app.callback(
+        [Output("nearby-recycling-bins-toggle-state", "data"),
+         Output("nearby-recycling-bins-toggle-btn", "style"),
+         Output("nearby-recycling-bins-toggle-btn", "children")],
+        Input("nearby-recycling-bins-toggle-btn", "n_clicks"),
+        State("nearby-recycling-bins-toggle-state", "data"),
+        prevent_initial_call=True,
+    )
+    def toggle_nearby_recycling_bins(_n_clicks: Optional[int], current_state: bool) -> Tuple[bool, Dict[str, Any], str]:
+        """Toggle Recycling Bins map overlay on nearby transport page."""
+        new_state = not bool(current_state)
+        if new_state:
+            return (
+                True,
+                {
+                    "backgroundColor": "#f97316",
+                    "border": "0.125rem solid #f97316",
+                    "borderRadius": "0.25rem",
+                    "color": "#fff",
+                    "cursor": "pointer",
+                    "padding": "0.25rem 0.625rem",
+                    "fontSize": "0.75rem",
+                    "fontWeight": "600",
+                },
+                "Hide Recycling Bins",
+            )
+        return (
+            False,
+            {
+                "backgroundColor": "transparent",
+                "border": "0.125rem solid #f97316",
+                "borderRadius": "0.25rem",
+                "color": "#f97316",
+                "cursor": "pointer",
+                "padding": "0.25rem 0.625rem",
+                "fontSize": "0.75rem",
+                "fontWeight": "600",
+            },
+            "Show Recycling Bins",
+        )
+
+    @app.callback(
+        [Output("nearby-hawker-centres-toggle-state", "data"),
+         Output("nearby-hawker-centres-toggle-btn", "style"),
+         Output("nearby-hawker-centres-toggle-btn", "children")],
+        Input("nearby-hawker-centres-toggle-btn", "n_clicks"),
+        State("nearby-hawker-centres-toggle-state", "data"),
+        prevent_initial_call=True,
+    )
+    def toggle_nearby_hawker_centres(_n_clicks: Optional[int], current_state: bool) -> Tuple[bool, Dict[str, Any], str]:
+        """Toggle Hawker Centres map overlay on nearby transport page."""
+        new_state = not bool(current_state)
+        if new_state:
+            return (
+                True,
+                {
+                    "backgroundColor": "#e11d48",
+                    "border": "0.125rem solid #e11d48",
+                    "borderRadius": "0.25rem",
+                    "color": "#fff",
+                    "cursor": "pointer",
+                    "padding": "0.25rem 0.625rem",
+                    "fontSize": "0.75rem",
+                    "fontWeight": "600",
+                },
+                "Hide Hawker Centres",
+            )
+        return (
+            False,
+            {
+                "backgroundColor": "transparent",
+                "border": "0.125rem solid #e11d48",
+                "borderRadius": "0.25rem",
+                "color": "#e11d48",
+                "cursor": "pointer",
+                "padding": "0.25rem 0.625rem",
+                "fontSize": "0.75rem",
+                "fontWeight": "600",
+            },
+            "Show Hawker Centres",
+        )
+
+    @app.callback(
         [
             Output("nearby-parks-markers", "children"),
             Output("nearby-sports-fields-markers", "children"),
+            Output("nearby-recycling-bins-markers", "children"),
+            Output("nearby-hawker-centres-markers", "children"),
             Output("nearby-transport-parks-column", "children"),
             Output("nearby-transport-sports-fields-column", "children"),
+            Output("nearby-transport-recycling-bins-column", "children"),
+            Output("nearby-transport-hawker-centres-column", "children"),
         ],
         [
             Input("nearby-parks-toggle-state", "data"),
             Input("nearby-sports-fields-toggle-state", "data"),
+            Input("nearby-recycling-bins-toggle-state", "data"),
+            Input("nearby-hawker-centres-toggle-state", "data"),
             Input("nearby-transport-map", "viewport"),
             Input("nearby-transport-location-store", "data"),
             Input("nearby-transport-interval", "n_intervals"),
@@ -4958,18 +4811,21 @@ def register_transport_callbacks(app):
     def update_nearby_green_facilities(
         show_parks: bool,
         show_sports_fields: bool,
+        show_recycling_bins: bool,
+        show_hawker_centres: bool,
         viewport: Optional[Dict[str, Any]],
         location_data: Optional[Dict[str, Any]],
         _n_intervals: int,
         active_tab: str,
     ):
         """
-        Update nearby Parks@SG and SportsFields@SG panels and optional map overlays.
+        Update nearby facilities panels and optional map overlays for Parks@SG,
+        SportsFields@SG, Recycling Bins, and Hawker Centres.
 
         Uses daily cache and 429 cooldown-aware fetch to avoid repeated upstream polling.
         """
         if active_tab != "nearby-transport":
-            return no_update, no_update, no_update, no_update
+            return (no_update,) * 8
 
         _ = _n_intervals  # Trigger for cache eligibility checks.
         center = _resolve_nearby_center(viewport, location_data)
@@ -4977,11 +4833,17 @@ def register_transport_callbacks(app):
 
         parks_future = fetch_parks_data_async()
         sports_future = fetch_sports_fields_data_async()
+        recycling_future = fetch_recycling_bins_data_async()
+        hawker_future = fetch_hawker_centres_data_async()
         parks_points = parks_future.result() if parks_future else []
         sports_points = sports_future.result() if sports_future else []
+        recycling_points = recycling_future.result() if recycling_future else []
+        hawker_points = hawker_future.result() if hawker_future else []
 
         parks_notice = _get_facility_retry_notice("parks", "Parks@SG")
         sports_notice = _get_facility_retry_notice("sports_fields", "SportsFields@SG")
+        recycling_notice = _get_facility_retry_notice("recycling_bins", "Recycling Bins")
+        hawker_notice = _get_facility_retry_notice("hawker_centres", "Hawker Centres")
 
         parks_column = _build_facility_list_column(
             title="Nearby Parks (Top 5)",
@@ -4995,6 +4857,18 @@ def register_transport_callbacks(app):
             center=center,
             notice_text=sports_notice,
         )
+        recycling_column = _build_facility_list_column(
+            title="Nearby Recycling Bins (Top 5)",
+            points=recycling_points,
+            center=center,
+            notice_text=recycling_notice,
+        )
+        hawker_column = _build_facility_list_column(
+            title="Nearby Hawker Centres (Top 5)",
+            points=hawker_points,
+            center=center,
+            notice_text=hawker_notice,
+        )
 
         parks_markers = (
             _build_facility_markers(parks_points, marker_color="#22c55e", zoom=zoom)
@@ -5006,8 +4880,21 @@ def register_transport_callbacks(app):
             if show_sports_fields
             else []
         )
+        recycling_markers = (
+            _build_facility_markers(recycling_points, marker_color="#f97316", zoom=zoom)
+            if show_recycling_bins
+            else []
+        )
+        hawker_markers = (
+            _build_facility_markers(hawker_points, marker_color="#e11d48", zoom=zoom)
+            if show_hawker_centres
+            else []
+        )
 
-        return parks_markers, sports_markers, parks_column, sports_column
+        return (
+            parks_markers, sports_markers, recycling_markers, hawker_markers,
+            parks_column, sports_column, recycling_column, hawker_column,
+        )
 
     # VMS (Variable Message Signs) callbacks
     @app.callback(
@@ -5034,7 +4921,7 @@ def register_transport_callbacks(app):
                 "fontSize": "0.75rem",
                 "fontWeight": "600",
             }
-            text = "Hide VMS Display boards Locations"
+            text = LAYER_CHIP_LABELS["vms"]
         else:
             # Inactive state - outline
             style = {
@@ -5047,7 +4934,7 @@ def register_transport_callbacks(app):
                 "fontSize": "0.75rem",
                 "fontWeight": "600",
             }
-            text = "Show VMS Display boards Locations"
+            text = LAYER_CHIP_LABELS["vms"]
         
         return new_state, style, text
 
@@ -5094,25 +4981,30 @@ def register_transport_callbacks(app):
 
     @app.callback(
         [Output('bus-stops-markers', 'children'),
-         Output('bus-stops-count-value', 'children'),
          Output('bus-stop-zoom-message', 'style'),
-         Output('bus-stop-zoom-message', 'children'),
-         Output('bus-stops-disclaimer', 'style')],
+         Output('bus-stop-zoom-message', 'children')],
         [Input('bus-stops-toggle-state', 'data', allow_optional=True),
          Input('bus-arrival-map', 'zoom', allow_optional=True),
          Input('bus-arrival-map', 'center', allow_optional=True),
          Input('bus-arrival-page-interval', 'n_intervals', allow_optional=True)],
-        State('navigation-tabs', 'value'),
+        [State('navigation-tabs', 'value'),
+         State('transit-sub-tabs', 'value', allow_optional=True)],
         prevent_initial_call=True
     )
-    def update_bus_stops_display(show_bus_stops: bool, zoom: Optional[int], center: Optional[List], _bus_interval: int, active_tab: str):
+    def update_bus_stops_display(
+        show_bus_stops: bool,
+        zoom: Optional[int],
+        center: Optional[List],
+        _bus_interval: int,
+        active_tab: str,
+        transit_sub_tab: Optional[str],
+    ):
         """
-        Update bus stops markers, count display, and zoom feedback.
+        Update Transit bus-stop markers and zoom feedback.
         Only renders bus stops within the current viewport when zoomed to level 15+.
-        Updates from bus-arrival-page-interval.
         """
-        if active_tab != 'bus-arrival':
-            return no_update, no_update, no_update, no_update, no_update
+        if active_tab != 'transit' or transit_sub_tab != 'transit-bus':
+            return no_update, no_update, no_update
         
         # Default zoom and center if not available
         current_zoom = zoom if zoom is not None else 11
@@ -5158,48 +5050,25 @@ def register_transport_callbacks(app):
         }
         overlay_hide = {"display": "none"}
         
-        # Always fetch data to calculate total count
-        future = fetch_bus_stops_data_async()
-        data: Optional[Dict[str, Any]] = future.result() if future else None
-        
-        # Calculate total count (always shown in metric card)
-        bus_stops_count = 0
-        if isinstance(data, dict):
-            bus_stops_list = data.get('value', [])
-            if isinstance(bus_stops_list, list):
-                bus_stops_count = len(bus_stops_list)
-        
-        # Count card always shows total count
-        count_card = html.Div(
-            html.Span(f"{bus_stops_count}", style={"color": "#4169E1"}),
-            style={
-                "backgroundColor": "rgb(58, 74, 90)",
-                "padding": "0.25rem 0.5rem",
-                "borderRadius": "0.25rem",
-            }
-        )
-        
-        # Disclaimer styles
-        disclaimer_hide = {"display": "none"}
-        disclaimer_show = {"display": "block"}
-        
-        # If toggle is OFF, return empty markers and hide disclaimer
+        # If toggle is OFF, return empty markers
         if not show_bus_stops:
-            return [], count_card, overlay_hide, "", disclaimer_hide
+            return [], overlay_hide, ""
             
         # Toggle is ON - Check zoom level
         if current_zoom < 15:
             overlay_text = f"Zoom in to level 15+ to view bus stops (Current: {current_zoom})"
-            return [], count_card, overlay_show, overlay_text, disclaimer_show
+            return [], overlay_show, overlay_text
             
         # Toggle is ON and Zoom is >= 15 - Filter and render markers within viewport
+        future = fetch_bus_stops_data_async()
+        data: Optional[Dict[str, Any]] = future.result() if future else None
         filtered_stops = filter_bus_stops_by_viewport(data, center_lat, center_lon, current_zoom)
         
         # Create filtered data dict for marker creation
         filtered_data = {'value': filtered_stops} if filtered_stops else None
         
         markers = create_bus_stops_circle_markers(filtered_data)
-        return markers, count_card, overlay_hide, "", disclaimer_show
+        return markers, overlay_hide, ""
 
     @app.callback(
         [Output('bus-stops-toggle-state', 'data'),
@@ -5267,7 +5136,7 @@ def register_transport_callbacks(app):
                 "fontSize": "0.75rem",
                 "fontWeight": "600",
             }
-            text = "Hide SPF Speed Camera Locations"
+            text = LAYER_CHIP_LABELS["speed"]
         else:
             # Inactive state - outline
             style = {
@@ -5280,7 +5149,7 @@ def register_transport_callbacks(app):
                 "fontSize": "0.75rem",
                 "fontWeight": "600",
             }
-            text = "Show SPF Speed Camera Locations"
+            text = LAYER_CHIP_LABELS["speed"]
         
         return new_state, style, text
 
@@ -5321,7 +5190,9 @@ def register_transport_callbacks(app):
     @app.callback(
         [Output('transport-bus-stops-markers', 'children'),
          Output('transport-bus-stop-zoom-message', 'style'),
-         Output('transport-bus-stop-zoom-message', 'children')],
+         Output('transport-bus-stop-zoom-message', 'children'),
+         Output('bus-stops-count-value', 'children'),
+         Output('bus-stops-disclaimer', 'style')],
         [Input('transport-bus-stops-toggle-state', 'data'),
          Input('transport-map', 'zoom'),
          Input('transport-map', 'center'),
@@ -5330,10 +5201,10 @@ def register_transport_callbacks(app):
     )
     def update_transport_bus_stops_display(show_bus_stops: bool, zoom: Optional[int], center: Optional[List], _n_intervals: int, active_tab: str):
         """
-        Update bus stops markers on transport map.
+        Update bus stops markers, count, and disclaimer on the Road & Transport map.
         """
         if active_tab != 'transport':
-            return no_update, no_update, no_update
+            return no_update, no_update, no_update, no_update, no_update
         #Only renders bus stops within the current viewport when zoomed to level 15+.
 
         _ = _n_intervals  # Used for periodic refresh
@@ -5381,26 +5252,42 @@ def register_transport_callbacks(app):
             "border": "0.0625rem solid #fbbf24",
         }
         overlay_hide = {"display": "none"}
+        disclaimer_hide = {"display": "none"}
+        disclaimer_show = {"display": "block"}
+
+        future = fetch_bus_stops_data_async()
+        data: Optional[Dict[str, Any]] = future.result() if future else None
+        bus_stops_count = 0
+        if isinstance(data, dict):
+            bus_stops_list = data.get('value', [])
+            if isinstance(bus_stops_list, list):
+                bus_stops_count = len(bus_stops_list)
+        count_card = html.Div(
+            html.Span(f"{bus_stops_count}", style={"color": "#4169E1"}),
+            style={
+                "backgroundColor": "rgb(58, 74, 90)",
+                "padding": "0.25rem 0.5rem",
+                "borderRadius": "0.25rem",
+            }
+        )
         
-        # If toggle is OFF, return empty markers
+        # If toggle is OFF, return empty markers and hide disclaimer
         if not show_bus_stops:
-            return [], overlay_hide, ""
+            return [], overlay_hide, "", count_card, disclaimer_hide
             
         # Toggle is ON - Check zoom level
         if current_zoom < 15:
             overlay_text = f"Zoom in to level 15+ to view bus stops (Current: {current_zoom})"
-            return [], overlay_show, overlay_text
+            return [], overlay_show, overlay_text, count_card, disclaimer_show
             
         # Toggle is ON and Zoom is >= 15 - Filter and render markers within viewport
-        future = fetch_bus_stops_data_async()
-        data: Optional[Dict[str, Any]] = future.result() if future else None
         filtered_stops = filter_bus_stops_by_viewport(data, center_lat, center_lon, current_zoom)
         
         # Create filtered data dict for marker creation
         filtered_data = {'value': filtered_stops} if filtered_stops else None
         
         markers = create_bus_stops_circle_markers(filtered_data)
-        return markers, overlay_hide, ""
+        return markers, overlay_hide, "", count_card, disclaimer_show
 
     @app.callback(
         [Output('transport-bus-stops-toggle-state', 'data'),
@@ -5438,7 +5325,7 @@ def register_transport_callbacks(app):
         }
         
         button_style = active_style if new_state else inactive_style
-        button_text = "Hide Bus Stop Locations" if new_state else "Show Bus Stop Locations"
+        button_text = LAYER_CHIP_LABELS["bus"]
         
         return new_state, button_style, button_text
 
@@ -5535,7 +5422,7 @@ def register_transport_callbacks(app):
                 "fontSize": "0.75rem",
                 "fontWeight": "600",
             }
-            text = "Hide EV Charging Points"
+            text = LAYER_CHIP_LABELS["ev"]
         else:
             # Inactive state - outline
             style = {
@@ -5548,7 +5435,7 @@ def register_transport_callbacks(app):
                 "fontSize": "0.75rem",
                 "fontWeight": "600",
             }
-            text = "Show EV Charging Points"
+            text = LAYER_CHIP_LABELS["ev"]
         
         return new_state, style, text
 
@@ -5607,211 +5494,3 @@ def register_transport_callbacks(app):
         else:
             print("load_ev_charging_points_from_file returned None")
             return []
-
-
-def register_traffic_conditions_callbacks(app):
-    """
-    Register callbacks for traffic conditions page.
-    
-    Args:
-        app: Dash app instance
-    """
-    from callbacks.traffic_conditions_callback import (
-        register_traffic_conditions_callbacks as _register_traffic_conditions_callbacks,
-    )
-
-    return _register_traffic_conditions_callbacks(app)
-
-    @app.callback(
-        Output('traffic-conditions-content', 'children'),
-        [Input('traffic-conditions-interval', 'n_intervals'),
-         Input('navigation-tabs', 'value')]
-    )
-    def update_traffic_conditions_grid(n_intervals: int, tab_value: str) -> html.Div:
-        """
-        Update traffic conditions grid with all LTA traffic camera feeds.
-        Displays cameras in a 6-column grid with location descriptions.
-        
-        Args:
-            n_intervals: Interval counter for auto-refresh (used to trigger updates)
-            tab_value: Current tab value to determine if page is visible
-        
-        Returns:
-            HTML Div containing the camera grid
-        """
-        _ = n_intervals  # Used for periodic refresh
-        
-        # Only update if the traffic conditions tab is active
-        if not tab_value or tab_value != 'traffic-conditions':
-            return no_update
-        
-        try:
-            # Fetch traffic camera data
-            data = fetch_traffic_cameras()
-            
-            if not data:
-                return html.Div(
-                    html.P(
-                        "No traffic camera data available",
-                        style={
-                            "textAlign": "center",
-                            "color": "#999",
-                            "padding": "2rem",
-                            "fontSize": "0.875rem",
-                        }
-                    )
-                )
-            
-            camera_data = parse_traffic_camera_data(data)
-            
-            if not camera_data:
-                return html.Div(
-                    html.P(
-                        "No traffic camera data available",
-                        style={
-                            "textAlign": "center",
-                            "color": "#999",
-                            "padding": "2rem",
-                            "fontSize": "0.875rem",
-                        }
-                    )
-                )
-
-        except Exception as e:
-            print(f"Error fetching traffic camera data: {e}")
-            import traceback
-            traceback.print_exc()
-            return html.Div(
-                html.P(
-                    f"Error loading traffic camera data: {str(e)}",
-                    style={
-                        "textAlign": "center",
-                        "color": "#ff6b6b",
-                        "padding": "2rem",
-                        "fontSize": "0.875rem",
-                    }
-                )
-            )
-        
-        try:
-            camera_id_mapping = _load_lta_camera_id_mapping()
-
-            camera_cards = []
-            sorted_cameras = sorted(camera_data.items(), key=lambda x: x[0])
-            
-            for camera_id, info in sorted_cameras:
-                try:
-                    image_url = info.get('image_url', '')
-                    timestamp = info.get('timestamp', '')
-                    
-                    location_desc = camera_id_mapping.get(str(camera_id)) or camera_id_mapping.get(camera_id)
-                    if not location_desc:
-                        location_desc = f"Camera {camera_id}"
-                    
-                    datetime_text = ""
-                    if timestamp:
-                        try:
-                            if isinstance(timestamp, str):
-                                parsed_datetime = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
-                                datetime_text = parsed_datetime.strftime("%Y-%m-%d %H:%M:%S")
-                            else:
-                                datetime_text = str(timestamp)
-                        except (ValueError, AttributeError):
-                            datetime_text = str(timestamp) if timestamp else ""
-
-                    card_children = [
-                        html.Div(
-                            style={
-                                "width": "100%",
-                                "backgroundColor": "#000",
-                                "borderRadius": "0.25rem",
-                                "overflow": "hidden",
-                                "display": "flex",
-                                "alignItems": "center",
-                                "justifyContent": "center",
-                                "position": "relative",
-                            },
-                            children=[
-                                html.Img(
-                                    src=image_url if image_url else "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3ENo Image%3C/text%3E%3C/svg%3E",
-                                    alt=f"Camera {camera_id}",
-                                    style={
-                                        "width": "100%",
-                                        "height": "auto",
-                                        "display": "block",
-                                    }
-                                )
-                            ]
-                        ),
-                    ]
-
-                    card_children.extend([
-                        html.Div(
-                            location_desc,
-                            style={
-                                "color": "#fff",
-                                "fontSize": "0.75rem",
-                                "fontWeight": "500",
-                                "textAlign": "center",
-                                "lineHeight": "1.3",
-                                "minHeight": "2.5rem",
-                                "display": "flex",
-                                "alignItems": "center",
-                                "justifyContent": "center",
-                            }
-                        ),
-                        html.Div(
-                            datetime_text if datetime_text else "Time: N/A",
-                            style={
-                                "color": "#999",
-                                "fontSize": "0.625rem",
-                                "textAlign": "center",
-                            }
-                        ),
-                    ])
-                    
-                    camera_card = html.Div(
-                        style={
-                            "backgroundColor": "#1a2a3a",
-                            "borderRadius": "0.5rem",
-                            "padding": "0.5rem",
-                            "display": "flex",
-                            "flexDirection": "column",
-                            "gap": "0.5rem",
-                            "border": "0.125rem solid #3a4a5a",
-                        },
-                        children=card_children,
-                    )
-                    
-                    camera_cards.append(camera_card)
-                except Exception as e:
-                    print(f"Error creating card for camera {camera_id}: {e}")
-                    continue
-            
-            # Return grid container with 4 columns
-            return html.Div(
-                style={
-                    "display": "grid",
-                    "gridTemplateColumns": "repeat(4, 1fr)",
-                    "gap": "1rem",
-                    "width": "100%",
-                },
-                children=camera_cards
-            )
-        except Exception as e:
-            print(f"Error creating traffic conditions grid: {e}")
-            import traceback
-            traceback.print_exc()
-            return html.Div(
-                html.P(
-                    f"Error displaying traffic cameras: {str(e)}",
-                    style={
-                        "textAlign": "center",
-                        "color": "#ff6b6b",
-                        "padding": "2rem",
-                        "fontSize": "0.875rem",
-                    }
-                )
-            )
-
-

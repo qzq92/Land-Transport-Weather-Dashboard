@@ -10,8 +10,8 @@ from urllib.parse import urlparse
 
 import requests
 
+from conf.api_urls import EVC_BATCH_URL, EV_CHARGING_URL, ONEMAP_REVGEOCODE_URL
 from utils.async_fetcher import run_in_thread
-from utils.transport.constants import EVC_BATCH_URL, EV_CHARGING_URL
 
 
 def _project_root() -> Path:
@@ -24,7 +24,7 @@ def get_postal_code_from_coords(lat: Optional[float] = None, lon: Optional[float
         return ""
 
     try:
-        url = f"https://www.onemap.gov.sg/api/public/revgeocode?latitude={lat}&longitude={lon}"
+        url = f"{ONEMAP_REVGEOCODE_URL}?latitude={lat}&longitude={lon}"
         api_token = os.getenv("ONEMAP_API_KEY")
         headers = {"Authorization": api_token} if api_token else {}
         response = requests.get(url, headers=headers, timeout=10)

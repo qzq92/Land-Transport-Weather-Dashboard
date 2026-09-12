@@ -1,6 +1,6 @@
 """
 Callback functions for handling nearest MRT/LRT station display using OneMap Nearby Transport API.
-Reference: https://www.onemap.gov.sg/apidocs/nearbytransport
+See ONEMAP_NEAREST_MRT_STOPS_URL in conf.api_urls.
 """
 import requests
 from dash.dependencies import Input, Output
@@ -8,6 +8,12 @@ from dash import html
 from callbacks.map_callback import _haversine_distance_m
 from callbacks.mrt_crowd_callback import fetch_all_station_crowd_data
 from utils.async_fetcher import run_in_thread
+from conf.api_urls import ONEMAP_NEAREST_MRT_STOPS_URL
+from components.nearby_list_items import (
+    nearby_compact_row,
+    nearby_empty_message,
+    nearby_section_title,
+)
 #from auth.onemap_api import get_onemap_token
 import os
 
@@ -33,7 +39,6 @@ CROWD_LABELS = {
 def fetch_nearby_mrt_stations_async(lat: float, lon: float, radius_m: int = 500) -> list:
     """
     Fetch nearest MRT/LRT stations using OneMap Nearby Transport API.
-    Reference: https://www.onemap.gov.sg/apidocs/nearbytransport
     
     Uses the getNearestMrtStops endpoint which returns MRT/LRT stations within radius.
     
@@ -47,7 +52,10 @@ def fetch_nearby_mrt_stations_async(lat: float, lon: float, radius_m: int = 500)
     """
     try:
         # OneMap Nearby Transport API endpoint for MRT/LRT stations
-        url = f"https://www.onemap.gov.sg/api/public/nearbysvc/getNearestMrtStops?latitude={lat}&longitude={lon}&radius_in_meters={radius_m}"
+        url = (
+            f"{ONEMAP_NEAREST_MRT_STOPS_URL}?latitude={lat}&longitude={lon}"
+            f"&radius_in_meters={radius_m}"
+        )
 
         print(url)
         
@@ -270,26 +278,8 @@ def register_mrt_callbacks(app):
         """
         if not search_value:
             return [
-                html.H4(
-                    "Nearest MRT (1KM radius) with crowd level",
-                    style={
-                        "textAlign": "center",
-                        "marginBottom": "0.625rem",
-                        "color": "#fff",
-                        "fontWeight": "700",
-                        "fontSize": "0.875rem"
-                    }
-                ),
-                html.P(
-                    "Select a location to view nearest MRT stations",
-                    style={
-                        "textAlign": "center",
-                        "color": "#999",
-                        "fontSize": "0.75rem",
-                        "fontStyle": "italic",
-                        "padding": "0.9375rem"
-                    }
-                )
+                nearby_section_title("Nearest MRT (1KM radius) with crowd level"),
+                nearby_empty_message(),
             ]
         
         try:
@@ -388,55 +378,19 @@ def register_mrt_callbacks(app):
             crowd_color = CROWD_COLORS.get(crowd_level, CROWD_COLORS['NA'])
             crowd_label = CROWD_LABELS.get(crowd_level, 'Not Available')
             
+            crowd_badge = html.Span(
+                crowd_label,
+                style={
+                    "fontSize": "0.6875rem",
+                    "color": crowd_color,
+                    "fontWeight": "700",
+                    "padding": "0.125rem 0.375rem",
+                    "borderRadius": "0.1875rem",
+                    "backgroundColor": f"{crowd_color}22",
+                },
+            )
             station_items.append(
-                html.Div(
-                    [
-                        html.Div(
-                            [
-                                html.Span(
-                                    name,
-                                    style={
-                                        "fontWeight": "600",
-                                        "fontSize": "14px",
-                                        "color": "#fff",
-                                    }
-                                ),
-                                html.Span(
-                                    crowd_label,
-                                    style={
-                                        "fontSize": "11px",
-                                        "color": crowd_color,
-                                        "fontWeight": "700",
-                                        "marginLeft": "8px",
-                                        "padding": "2px 6px",
-                                        "borderRadius": "3px",
-                                        "backgroundColor": f"{crowd_color}22",
-                                    }
-                                )
-                            ],
-                            style={
-                                "display": "flex",
-                                "alignItems": "center",
-                                "marginBottom": "4px"
-                            }
-                        ),
-                        html.Div(
-                            f"Distance: {distance_str}",
-                            style={
-                                "fontSize": "12px",
-                                "color": "#60a5fa",
-                                "fontWeight": "500"
-                            }
-                        )
-                    ],
-                    style={
-                        "padding": "10px 12px",
-                        "borderBottom": "1px solid #444",
-                        "marginBottom": "6px",
-                        "backgroundColor": "#1a1a1a",
-                        "borderRadius": "4px"
-                    }
-                )
+                nearby_compact_row(name, distance_str, extra=crowd_badge)
             )
         
         # Return all station items with H4 title

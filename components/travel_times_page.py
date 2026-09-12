@@ -3,94 +3,51 @@ Component for the estimated travel times page.
 Displays expressway travel times from LTA DataMall API.
 """
 from dash import html, dcc
-from conf.page_layout_config import PAGE_PADDING, PAGE_HEIGHT
 from conf.cache_config import INTERVAL_TRAVEL_TIMES_MS
+from components.travel_times_board import EXPRESSWAY_FILTER_OPTIONS
 
 
-def travel_times_page():
-    """
-    Create the estimated travel times page layout.
-    Displays a table of expressway travel times.
-
-    Returns:
-        HTML Div containing the travel times page
-    """
+def travel_times_view():
+    """Create the reusable estimated expressway travel-times view."""
     return html.Div(
-        id="travel-times-page",
-        style={
-            "display": "none",  # Hidden by default
-            "padding": PAGE_PADDING,
-            "height": PAGE_HEIGHT,
-            "width": "100%",
-        },
+        className="travel-times-page",
         children=[
             html.Div(
-                style={
-                    "display": "flex",
-                    "flexDirection": "column",
-                    "height": "100%",
-                    "gap": "0.75rem",
-                },
+                className="travel-times-toolbar",
                 children=[
-                    # Header
-                    html.Div(
+                    html.H4("Estimated Expressway Travel Times"),
+                    dcc.Dropdown(
+                        id="travel-times-expressway-filter",
+                        options=EXPRESSWAY_FILTER_OPTIONS,
+                        value="all",
+                        clearable=False,
+                        style={"width": "16rem", "fontSize": "0.8125rem"},
+                    ),
+                    html.Span(
+                        id="travel-times-last-updated",
+                        className="travel-times-updated",
+                    ),
+                ],
+            ),
+            html.Div(
+                id="travel-times-table-container",
+                className="travel-times-table",
+                children=[
+                    html.P(
+                        "Loading travel times...",
                         style={
-                            "display": "flex",
-                            "alignItems": "center",
-                            "justifyContent": "space-between",
-                            "padding": "0.5rem 1rem",
-                            "backgroundColor": "#1a2a3a",
-                            "borderRadius": "0.5rem",
-                            "borderBottom": "0.0625rem solid #4a5a6a",
+                            "color": "#94a3b8",
+                            "textAlign": "center",
+                            "fontSize": "0.875rem",
                         },
-                        children=[
-                            html.H4(
-                                "🚗 Estimated Expressway Travel Times",
-                                style={
-                                    "margin": "0",
-                                    "color": "#fff",
-                                    "fontWeight": "600",
-                                    "fontSize": "1.125rem",
-                                }
-                            ),
-                            html.Span(
-                                id="travel-times-last-updated",
-                                style={
-                                    "color": "#999",
-                                    "fontSize": "0.75rem",
-                                }
-                            ),
-                        ]
-                    ),
-                    # Table container
-                    html.Div(
-                        id="travel-times-table-container",
-                        style={
-                            "flex": "1",
-                            "backgroundColor": "#2a3a4a",
-                            "borderRadius": "0.5rem",
-                            "padding": "1rem",
-                            "overflowY": "auto",
-                        },
-                        children=[
-                            html.P(
-                                "Loading travel times...",
-                                style={
-                                    "color": "#999",
-                                    "textAlign": "center",
-                                    "fontSize": "0.875rem",
-                                }
-                            )
-                        ]
-                    ),
-                    # Interval for auto-refresh
-                    dcc.Interval(
-                        id="travel-times-interval",
-                        interval=INTERVAL_TRAVEL_TIMES_MS,
-                        n_intervals=0
-                    ),
-                ]
-            )
+                    )
+                ],
+            ),
+            dcc.Interval(
+                id="travel-times-interval",
+                interval=INTERVAL_TRAVEL_TIMES_MS,
+                n_intervals=0,
+                disabled=True,
+            ),
         ]
     )
-
