@@ -1,0 +1,16 @@
+---
+alwaysApply: true
+---
+
+- Only modify code directly relevant to the specific request. Avoid changing unrelated functionality.
+- Never replace code with placeholders like `// ... rest of the processing ...`. Always include complete code.
+- Break problems into smaller steps. Think through each step separately before implementing.
+- Always provide a complete PLAN with REASONING based on evidence from code and logs before making changes.
+- Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
+- All script files (.py, .ts, .js, .kt, .java) should not exceed 700 lines.
+- Use PEP8 standard for python programming
+- Always follows best software development practices by following DRY (Don't Repeat Yourself), KISS (Keep It Simple, Stupid) and SOLID Design principles
+- Ensure unit test is implemented and tested with every case.
+- Maintain readable README files to simplify understanding.
+- For dockerbuild script, reduce the overall build size by avoiding  unnecessary layer building, combining relevant logic in 1 single line if possible
+- Update the README file if there are changes to the application. Otherwise leave it as it is. ALWAYS ensure that the README is easily understood developers on what it is how it works, together with the minimal tech stack required.
