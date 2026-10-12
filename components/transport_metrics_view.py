@@ -15,7 +15,7 @@ LAYER_CHIP_LABELS = {
     "taxi": "Taxi",
     "cctv": "Cameras",
     "erp": "ERP",
-    "incidents": "Incidents",
+    "incidents": "Road alerts",
     "vms": "VMS",
     "speed": "Speed",
     "ev": "EV",
@@ -77,14 +77,33 @@ def _metrics_grid():
             ),
             _metric_tile(
                 "traffic-incidents-card",
-                "Incidents",
+                "Road alerts",
                 "traffic-incidents-count-value",
                 "#FF9800",
                 extra=[
+                    dcc.RadioItems(
+                        id="traffic-alert-filter",
+                        options=[
+                            {"label": "All", "value": "all"},
+                            {"label": "Incidents", "value": "incidents"},
+                            {"label": "Faults", "value": "fault"},
+                            {"label": "Maintenance", "value": "maintenance"},
+                        ],
+                        value="all",
+                        inline=True,
+                        className="traffic-alert-filters",
+                        inputClassName="traffic-alert-filter-input",
+                        labelClassName="traffic-alert-filter-label",
+                    ),
                     html.Div(
                         id="traffic-incidents-messages",
-                        style={"maxHeight": "6rem", "overflowY": "auto", "display": "none"},
-                    )
+                        className="traffic-alert-list",
+                        style={"display": "none"},
+                    ),
+                    html.Div(
+                        id="traffic-alerts-freshness",
+                        className="traffic-alerts-freshness",
+                    ),
                 ],
             ),
             _metric_tile(
@@ -204,7 +223,7 @@ def _layer_toggles():
                 LAYER_CHIP_LABELS["incidents"],
                 "traffic-incidents-toggle-btn",
                 "#FF9800",
-                "Show Traffic Incidents",
+                "Show road incidents and traffic signal alerts",
             ),
             _layer_chip(
                 LAYER_CHIP_LABELS["vms"],

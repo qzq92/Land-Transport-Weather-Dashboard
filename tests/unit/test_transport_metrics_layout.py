@@ -19,6 +19,8 @@ REQUIRED_IDS = [
     "ev-charging-points-count-value",
     "traffic-incidents-count-value",
     "traffic-incidents-messages",
+    "traffic-alert-filter",
+    "traffic-alerts-freshness",
     "bus-stops-count-value",
     "bus-stops-disclaimer",
     "bus-services-count-value",

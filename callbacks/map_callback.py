@@ -359,13 +359,13 @@ def register_search_callbacks(app):
         """
         if n_clicks is None or n_clicks == 0:
             # Default state: hidden
-            return "🚧 Show Traffic Incidents"
+            return "🚧 Show Road Alerts"
 
         # Show text based on current state (before toggle)
         # If currently visible (True), show "Hide", otherwise show "Show"
         if current_state:
-            return "🚧 Hide Traffic Incidents"
-        return "🚧 Show Traffic Incidents"
+            return "🚧 Hide Road Alerts"
+        return "🚧 Show Road Alerts"
 
     # Traffic Incidents markers callback
     @app.callback(

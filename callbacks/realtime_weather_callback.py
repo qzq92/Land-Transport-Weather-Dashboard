@@ -13,6 +13,10 @@ from utils.realtime_weather_api import (
     fetch_realtime_data
 )
 from utils.transport.incidents import fetch_faulty_traffic_lights_data_async, fetch_traffic_incidents_data_async
+from utils.transport.faulty_lights import (
+    normalize_faulty_lights,
+    summarize_faulty_lights,
+)
 from utils.weather_indices_wbgt import fetch_wbgt_data_async, format_wbgt_display, create_wbgt_markers
 from components.metric_card import create_metric_value_display
 
@@ -1592,37 +1596,8 @@ def format_traffic_incidents_indicator(data, faulty_lights_data=None):
                 # Default to Miscellaneous for unclassified incidents
                 incident_counts['Miscellaneous'] += 1
 
-    # Count faulty traffic lights if data is provided
-    faulty_lights_count = 0
-    if faulty_lights_data:
-        faulty_lights = []
-        if isinstance(faulty_lights_data, dict):
-            if 'value' in faulty_lights_data:
-                faulty_lights = faulty_lights_data.get('value', [])
-            elif 'data' in faulty_lights_data:
-                faulty_lights = faulty_lights_data.get('data', [])
-            elif isinstance(faulty_lights_data.get('items'), list):
-                faulty_lights = faulty_lights_data.get('items', [])
-            elif isinstance(faulty_lights_data, list):
-                faulty_lights = faulty_lights_data
-            else:
-                for key, value in faulty_lights_data.items():
-                    if isinstance(value, list):
-                        faulty_lights = value
-                        break
-        
-        # Count unique NodeID instances
-        node_ids = set()
-        for light in faulty_lights:
-            if isinstance(light, dict):
-                node_id = (
-                    light.get('NodeID')
-                )
-                if node_id:
-                    node_ids.add(str(node_id))
-        
-        if node_ids:
-            faulty_lights_count = len(node_ids)
+    signal_alerts = normalize_faulty_lights(faulty_lights_data)
+    signal_counts = summarize_faulty_lights(signal_alerts)
 
     # Import create_metric_card (create_metric_value_display already imported at top)
     from components.metric_card import create_metric_card
@@ -1647,17 +1622,53 @@ def format_traffic_incidents_indicator(data, faulty_lights_data=None):
             category_card.children[0].children[1].children = [create_metric_value_display(str(count), color="#FF9800")]
             metric_cards.append(category_card)
     
-    # Add Faulty Traffic Lights if count > 0
-    if faulty_lights_count > 0:
-        faulty_lights_card = create_metric_card(
-            card_id="traffic-faulty-lights-card",
-            label="🚦 Faulty Traffic Lights",
-            value_id="traffic-faulty-lights-value",
-            initial_value=str(faulty_lights_count)
+    if signal_counts["faults"] > 0:
+        fault_starts = [
+            alert["start"]
+            for alert in signal_alerts
+            if alert["status"] == "fault" and alert.get("start")
+        ]
+        oldest_suffix = (
+            f" · since {min(fault_starts).strftime('%d %b %H:%M')}"
+            if fault_starts else ""
         )
-        # Replace the value display with orange-colored value
-        faulty_lights_card.children[0].children[1].children = [create_metric_value_display(str(faulty_lights_count), color="#FF9800")]
-        metric_cards.append(faulty_lights_card)
+        fault_card = create_metric_card(
+            card_id="traffic-signal-faults-card",
+            label=f"🚦 Signal faults{oldest_suffix}",
+            value_id="traffic-signal-faults-value",
+            initial_value=str(signal_counts["faults"])
+        )
+        fault_card.children[0].children[1].children = [
+            create_metric_value_display(
+                str(signal_counts["faults"]),
+                color="#EF4444",
+            )
+        ]
+        metric_cards.append(fault_card)
+
+    if signal_counts["maintenance"] > 0:
+        maintenance_ends = [
+            alert["end"]
+            for alert in signal_alerts
+            if alert["status"] == "maintenance" and alert.get("end")
+        ]
+        end_suffix = (
+            f" · until {min(maintenance_ends).strftime('%d %b %H:%M')}"
+            if maintenance_ends else ""
+        )
+        maintenance_card = create_metric_card(
+            card_id="traffic-signal-maintenance-card",
+            label=f"🛠 Signal maintenance{end_suffix}",
+            value_id="traffic-signal-maintenance-value",
+            initial_value=str(signal_counts["maintenance"])
+        )
+        maintenance_card.children[0].children[1].children = [
+            create_metric_value_display(
+                str(signal_counts["maintenance"]),
+                color="#FCD34D",
+            )
+        ]
+        metric_cards.append(maintenance_card)
     
     # If no incidents, show a message
     if not metric_cards:

@@ -370,7 +370,7 @@ app.layout = html.Div(
                                             }
                                         ),
                                         html.Button(
-                                            "🚧 Show Traffic Incidents",
+                                            "🚧 Show Road Alerts",
                                             id="toggle-main-traffic-incidents",
                                             n_clicks=0,
                                             style={
@@ -558,7 +558,7 @@ app.layout = html.Div(
                                                     },
                                                     children=[
                                                         html.Span(
-                                                            "🚦 Traffic incident/ traffic light issues",
+                                                            "🚦 Road incidents & signal faults",
                                                             style={
                                                                 "color": "#fff",
                                                                 "fontWeight": "600",

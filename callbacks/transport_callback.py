@@ -21,6 +21,7 @@ from utils.data_download_helper import fetch_erp_gantry_data
 from utils.map_utils import SG_MAP_CENTER
 from callbacks.map_callback import _haversine_distance_m
 from components.metric_card import create_metric_value_display
+from components.traffic_alerts import filter_alert_content
 from components.transport_metrics_view import LAYER_CHIP_LABELS
 from components.nearby_list_items import (
     nearby_compact_row,
@@ -34,7 +35,6 @@ from conf.api_urls import (
     BUS_STOPS_URL,
     EVC_BATCH_URL,
     EV_CHARGING_URL,
-    FAULTY_TRAFFIC_LIGHTS_URL,
     HAWKER_CENTRES_POLL_DOWNLOAD_URL,
     LEAFLET_MARKER_ICON_GREEN_URL,
     LEAFLET_MARKER_SHADOW_URL,
@@ -47,6 +47,15 @@ from conf.api_urls import (
     TRAFFIC_IMAGES_API_URL,
     TRAFFIC_INCIDENTS_URL,
     VMS_URL,
+)
+from utils.transport.faulty_lights import (
+    locate_faulty_lights,
+    normalize_faulty_lights,
+    summarize_faulty_lights,
+)
+from utils.transport.incidents import fetch_faulty_traffic_lights_data_async
+from utils.transport.markers import (
+    create_traffic_incidents_markers as create_shared_traffic_alert_markers,
 )
 
 NEARBY_FACILITIES_RETRY_ON_429_SECONDS = 5 * 60
@@ -2180,30 +2189,6 @@ def create_vms_markers(vms_data: Optional[Dict[str, Any]]) -> List[dl.CircleMark
     return markers
 
 
-@run_in_thread
-def fetch_faulty_traffic_lights_data_async():
-    """
-    Fetch faulty traffic lights asynchronously from LTA DataMall API.
-    Uses 2-minute caching.
-    
-    Returns:
-        Future object. Call .result() to get the data.
-    """
-    api_key = os.getenv("LTA_API_KEY")
-    
-    if not api_key:
-        print("Warning: LTA_API_KEY not found in environment variables")
-        return None
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "AccountKey": api_key,
-        "Content-Type": "application/json"
-    }
-    
-    return fetch_url_2min_cached(FAULTY_TRAFFIC_LIGHTS_URL, headers)
-
-
 def get_postal_code_from_coords(lat: float = None, lon: float = None, location_data: Optional[Dict[str, Any]] = None) -> str:
     """
     Get postal code from location data (extracted from search value) or coordinates.
@@ -4001,16 +3986,23 @@ def register_transport_callbacks(app):
          Output('traffic-incidents-count-value', 'children'),
          Output('traffic-incidents-messages', 'children'),
          Output('traffic-incidents-messages', 'style'),
-         Output('traffic-incidents-legend', 'style')],
+         Output('traffic-incidents-legend', 'style'),
+         Output('traffic-alerts-freshness', 'children')],
         [Input('traffic-incidents-toggle-state', 'data'),
-         Input('transport-interval', 'n_intervals')],
+         Input('transport-interval', 'n_intervals'),
+         Input('traffic-alert-filter', 'value')],
         State('navigation-tabs', 'value')
     )
-    def update_traffic_incidents_display(show_incidents, n_intervals, active_tab):
-        """Update Traffic Incidents markers and count display."""
+    def update_traffic_incidents_display(
+        show_incidents,
+        n_intervals,
+        alert_filter,
+        active_tab,
+    ):
+        """Update the combined road incident and signal-alert display."""
         _ = n_intervals
         if active_tab != 'transport':
-            return no_update, no_update, no_update, no_update, no_update
+            return (no_update,) * 6
 
         # Always fetch data to display counts
         future_incidents = fetch_traffic_incidents_data_async()
@@ -4018,29 +4010,32 @@ def register_transport_callbacks(app):
         incidents_data = future_incidents.result() if future_incidents else None
         faulty_lights_data = future_faulty.result() if future_faulty else None
         
-        # Extract count (always calculate)
-        incidents = []
-        if isinstance(incidents_data, dict):
-            if "value" in incidents_data:
-                incidents = incidents_data.get("value", [])
-            elif isinstance(incidents_data, list):
-                incidents = incidents_data
-        elif isinstance(incidents_data, list):
-            incidents = incidents_data
-        
-        faulty_lights = []
-        if faulty_lights_data:
-            if isinstance(faulty_lights_data, dict):
-                if "value" in faulty_lights_data:
-                    faulty_lights = faulty_lights_data.get("value", [])
-                elif isinstance(faulty_lights_data, list):
-                    faulty_lights = faulty_lights_data
-            elif isinstance(faulty_lights_data, list):
-                faulty_lights = faulty_lights_data
-        
-        total_count = len(incidents) + len(faulty_lights)
+        incidents = (
+            incidents_data.get("value", [])
+            if isinstance(incidents_data, dict)
+            else (incidents_data or [])
+        )
+        incidents = [
+            incident for incident in incidents
+            if isinstance(incident, dict)
+        ]
+        signal_alerts = normalize_faulty_lights(faulty_lights_data)
+        if show_incidents and alert_filter != "incidents":
+            signal_alerts = locate_faulty_lights(signal_alerts)
+        signal_counts = summarize_faulty_lights(signal_alerts)
+        total_count = len(incidents) + signal_counts["total"]
         count_value = html.Div(
-            html.Span(f"{total_count}", style={"color": "#FF9800"}),
+            children=[
+                html.Span(f"{total_count} total", style={"color": "#FF9800"}),
+                html.Span(
+                    (
+                        f" · {len(incidents)} incidents"
+                        f" · {signal_counts['faults']} faults"
+                        f" · {signal_counts['maintenance']} maintenance"
+                    ),
+                    className="traffic-alert-card-meta",
+                ),
+            ],
             style={
                 "backgroundColor": "rgb(58, 74, 90)",
                 "padding": "0.25rem 0.5rem",
@@ -4048,87 +4043,31 @@ def register_transport_callbacks(app):
             }
         )
 
-        # Collect all incident messages
-        message_items = []
-        for incident in incidents:
-            if not isinstance(incident, dict):
-                continue
-            incident_message = (
-                incident.get('Message') or
-                incident.get('message') or
-                incident.get('Type') or
-                incident.get('type') or
-                incident.get('IncidentType') or
-                incident.get('incidentType') or
-                'Unknown Incident'
-            )
-            message_items.append(
-                html.Div(
-                    html.Span(
-                        f"• {incident_message}",
-                        style={
-                            "color": "#ccc",
-                            "fontSize": "0.6875rem",
-                            "lineHeight": "1.4",
-                        }
-                    ),
-                    style={
-                        "padding": "0.25rem 0",
-                        "borderBottom": "0.0625rem solid rgba(255, 255, 255, 0.1)",
-                    }
-                )
-            )
-        
-        # Add faulty traffic lights messages
-        for light in faulty_lights:
-            if not isinstance(light, dict):
-                continue
-            node_id = (
-                light.get('NodeID') or
-                light.get('nodeID') or
-                light.get('node_id') or
-                'N/A'
-            )
-            message_items.append(
-                html.Div(
-                    html.Span(
-                        f"• Faulty Traffic Light (Node ID: {node_id})",
-                        style={
-                            "color": "#ccc",
-                            "fontSize": "0.6875rem",
-                            "lineHeight": "1.4",
-                        }
-                    ),
-                    style={
-                        "padding": "0.25rem 0",
-                        "borderBottom": "0.0625rem solid rgba(255, 255, 255, 0.1)",
-                    }
-                )
-            )
-        
-        # Messages container
+        message_items = filter_alert_content(
+            incidents,
+            signal_alerts,
+            alert_filter or "all",
+        )
         if message_items:
-            messages_display = html.Div(
-                message_items,
-                style={
-                    "padding": "8px",
-                    "backgroundColor": "rgb(58, 74, 90)",
-                    "borderRadius": "0.25rem",
-                }
-            )
+            messages_display = html.Div(message_items)
             messages_style = {
-                "maxHeight": "150px",
+                "maxHeight": "10rem",
                 "overflowY": "auto",
                 "display": "block",
             }
         else:
+            empty_text = (
+                "Road-alert data unavailable"
+                if incidents_data is None and faulty_lights_data is None
+                else "No alerts match this filter"
+            )
             messages_display = html.Div(
                 html.Span(
-                    "No incidents reported",
-                style={
-                    "color": "#999",
+                    empty_text,
+                    style={
+                        "color": "#999",
                         "fontSize": "11px",
-                    "fontStyle": "italic",
+                        "fontStyle": "italic",
                     }
                 ),
                 style={
@@ -4141,6 +4080,9 @@ def register_transport_callbacks(app):
                 "overflowY": "auto",
                 "display": "block",
             }
+        freshness = (
+            f"Checked {datetime.now().strftime('%H:%M')} · updates every 2 min"
+        )
 
         # Legend style based on toggle state
         if show_incidents:
@@ -4170,12 +4112,30 @@ def register_transport_callbacks(app):
 
         # Only show markers if toggle is on
         if not show_incidents:
-            return [], count_value, messages_display, messages_style, legend_style
+            return (
+                [],
+                count_value,
+                messages_display,
+                messages_style,
+                legend_style,
+                freshness,
+            )
 
-        # Create markers
-        markers = create_traffic_incidents_markers(incidents_data, faulty_lights_data)
+        markers = create_shared_traffic_alert_markers(
+            incidents_data,
+            faulty_lights_data,
+            normalized_alerts=signal_alerts,
+            alert_filter=alert_filter or "all",
+        )
 
-        return markers, count_value, messages_display, messages_style, legend_style
+        return (
+            markers,
+            count_value,
+            messages_display,
+            messages_style,
+            legend_style,
+            freshness,
+        )
 
     # Callback for nearby transport page - taxi stands (within 300m)
     @app.callback(

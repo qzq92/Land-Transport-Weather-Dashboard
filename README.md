@@ -28,11 +28,11 @@ Non-main tabs are built on first visit (`callbacks/tab_navigation_callback.py`).
 
 Six top-level tabs (`components/banner_component.py`):
 
-1. **Main Dashboard** — PSI average, flood/lightning counts, 24-hour forecast, traffic incidents, MRT/LRT line status, dengue/zika counts, location search, nearby MRT / bus / HDB carpark, and checkpoint camera stills.
+1. **Main Dashboard** — PSI average, flood/lightning counts, 24-hour forecast, compact road-incident / signal-fault / scheduled-maintenance summaries, MRT/LRT line status, dengue/zika counts, location search, nearby MRT / bus / HDB carpark, and checkpoint camera stills.
 2. **Weather metrics and sensor locations** — Live temperature, rainfall, humidity, wind, WBGT, lightning, and flood alerts, plus sensor-location toggles.
 3. **Daily Health and Environmental Watch** — UV trend, regional PSI (map boxes or table), dengue/zika polygons. The right panel is a PSI colour strip with a “How are these colours decided?” expander (`components/air_quality_legend.py`). Bands live in `conf/weather_indices_config.py`.
 4. **Road & Transport** — Inner tabs:
-   - **Metrics & Map** — taxis, cameras, ERP gantries, taxi stands, bus stops (zoom 15+), VMS, line status.
+   - **Metrics & Map** — taxis, cameras, ERP gantries, taxi stands, bus stops (zoom 15+), VMS, line status, and a filterable Road alerts panel for incidents, signal faults, and scheduled maintenance.
    - **Expressway Travel Times** — LTA EstTravelTimes chains grouped by expressway and direction.
    - **Traffic Cameras** — full camera grid (some LTA feeds are being switched off).
 5. **Transit** — Inner tabs:
@@ -68,9 +68,9 @@ Live and dataset APIs are listed in `conf/api_urls.py`. Sign-up and deprecation 
 
 **Data.gov.sg** — weather V2 (temperature, rainfall, humidity, wind), lightning, flood alerts, UV, WBGT, PSI, 2-hour and 24-hour forecasts, taxi availability, traffic images. Poll/initiate-download datasets: HDB carparks, speed cameras, ERP gantries, parks, sports fields, recycling bins, hawker centres, dengue and zika clusters.
 
-**LTA DataMall** — bus stops/routes/services/arrivals, taxi stands, bicycle parking, carpark availability, expressway travel times, platform crowd (forecast and realtime), train service alerts plus GTFS-Realtime alerts and trip updates, traffic incidents, faulty traffic lights, VMS, EV charging.
+**LTA DataMall** — bus stops/routes/services/arrivals, taxi stands, bicycle parking, carpark availability, expressway travel times, platform crowd (forecast and realtime), train service alerts plus GTFS-Realtime alerts and trip updates, traffic incidents, faulty traffic lights, VMS, EV charging. Faulty-light alerts use the documented `/FaultyTrafficLights` endpoint. `EndDate` distinguishes scheduled maintenance from an unscheduled fault; `Type` 4 is a blackout and type 13 is flashing yellow.
 
-**OneMap** — night map tiles, address search, nearest bus stops and MRT stations.
+**OneMap** — night map tiles, address search, nearest bus stops and MRT stations. LTA faulty-light alerts do not contain coordinates, so their junction descriptions are geocoded through OneMap and labelled **Approximate location**. Alerts that cannot be geocoded remain visible in the Road alerts list.
 
 Station coordinates also use `MRTLRTStations.csv`. A few Thomson–East Coast / Punggol Coast points are mapped manually.
 

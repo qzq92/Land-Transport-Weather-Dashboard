@@ -67,6 +67,81 @@
   line-height: 1.2;
 }
 
+#traffic-incidents-card {
+  grid-column: 1 / -1;
+}
+
+.traffic-alert-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.2rem;
+}
+
+.traffic-alert-filter-label {
+  background: #1f3040;
+  border: 0.0625rem solid #64748b;
+  border-radius: 999px;
+  color: #cbd5e1;
+  cursor: pointer;
+  font-size: 0.625rem;
+  padding: 0.15rem 0.4rem;
+}
+
+.traffic-alert-filter-input {
+  margin-right: 0.2rem;
+}
+
+.traffic-alert-list {
+  max-height: 10rem;
+  overflow-y: auto;
+}
+
+.traffic-alert-card {
+  border-bottom: 0.0625rem solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.35rem 0;
+}
+
+.traffic-alert-card-title {
+  color: #f8fafc;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.traffic-alert-card-meta,
+.traffic-alerts-freshness {
+  color: #94a3b8;
+  font-size: 0.625rem;
+  line-height: 1.3;
+}
+
+.traffic-alert-badge {
+  border-radius: 999px;
+  display: inline-block;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  margin-right: 0.3rem;
+  padding: 0.1rem 0.35rem;
+  text-transform: uppercase;
+}
+
+.traffic-alert-badge--fault {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+.traffic-alert-badge--maintenance {
+  background: #78350f;
+  color: #fde68a;
+}
+
+.traffic-alerts-freshness {
+  margin-top: 0.25rem;
+}
+
 .transport-metric-note {
   color: #fbbf24;
   font-size: 0.625rem;

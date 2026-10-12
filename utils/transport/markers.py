@@ -7,6 +7,10 @@ from dash import html
 import dash_leaflet as dl
 
 from utils.transport.cache import load_lta_camera_id_mapping
+from utils.transport.faulty_lights import (
+    locate_faulty_lights,
+    normalize_faulty_lights,
+)
 from conf.api_urls import LEAFLET_MARKER_ICON_GREEN_URL, LEAFLET_MARKER_SHADOW_URL
 
 
@@ -133,59 +137,99 @@ def create_bus_stops_circle_markers(bus_stops_data: Optional[Dict[str, Any]]) ->
 def create_traffic_incidents_markers(
     incidents_data: Optional[Dict[str, Any]],
     faulty_lights_data: Optional[Dict[str, Any]] = None,
-) -> List[dl.CircleMarker]:
-    """Create map markers for traffic incidents and faulty traffic lights."""
-    markers: List[dl.CircleMarker] = []
+    normalized_alerts: Optional[List[Dict[str, Any]]] = None,
+    alert_filter: str = "all",
+) -> List[Any]:
+    """Create shared markers for road incidents and signal alerts."""
+    markers: List[Any] = []
 
     incidents = incidents_data.get("value", []) if isinstance(incidents_data, dict) else (incidents_data or [])
-    for incident in incidents:
-        if not isinstance(incident, dict):
-            continue
-        try:
-            lat = float(incident.get("Latitude") or incident.get("latitude") or incident.get("Lat") or 0)
-            lon = float(incident.get("Longitude") or incident.get("longitude") or incident.get("Lon") or 0)
-            if lat == 0 or lon == 0:
+    if alert_filter in ("all", "incidents"):
+        for incident in incidents:
+            if not isinstance(incident, dict):
                 continue
-        except (TypeError, ValueError):
-            continue
+            try:
+                lat = float(incident.get("Latitude") or incident.get("latitude") or incident.get("Lat") or 0)
+                lon = float(incident.get("Longitude") or incident.get("longitude") or incident.get("Lon") or 0)
+                if lat == 0 or lon == 0:
+                    continue
+            except (TypeError, ValueError):
+                continue
 
-        message = incident.get("Message") or incident.get("message") or incident.get("Type") or "Traffic incident"
+            message = incident.get("Message") or incident.get("message") or incident.get("Type") or "Traffic incident"
+            markers.append(
+                dl.CircleMarker(
+                    center=[lat, lon],
+                    radius=8,
+                    color="#F97316",
+                    fill=True,
+                    fillColor="#F97316",
+                    fillOpacity=0.85,
+                    weight=2,
+                    children=[
+                        dl.Tooltip(f"Road incident: {message}"),
+                        dl.Popup(
+                            html.Div(
+                                [
+                                    html.Strong("Road incident"),
+                                    html.P(str(message)),
+                                ]
+                            )
+                        ),
+                    ],
+                )
+            )
+
+    signal_alerts = normalized_alerts
+    if signal_alerts is None:
+        signal_alerts = locate_faulty_lights(
+            normalize_faulty_lights(faulty_lights_data)
+        )
+    for alert in signal_alerts:
+        status = alert.get("status", "fault")
+        if alert_filter in ("fault", "maintenance") and status != alert_filter:
+            continue
+        if alert_filter == "incidents":
+            continue
+        lat = alert.get("latitude")
+        lon = alert.get("longitude")
+        if not lat or not lon:
+            continue
+        color = "#EF4444" if status == "fault" else "#FCD34D"
+        start = alert.get("start")
+        end = alert.get("end")
+        time_text = (
+            start.strftime("%d %b %Y, %H:%M")
+            if isinstance(start, datetime)
+            else "Unavailable"
+        )
+        if isinstance(end, datetime):
+            time_text = f"{time_text} – {end.strftime('%d %b %Y, %H:%M')}"
+        status_label = "Maintenance" if status == "maintenance" else "Fault"
+        popup_lines = [
+            html.Strong(f"{status_label}: {alert.get('type_label')}"),
+            html.P(alert.get("location") or "Location unavailable"),
+            html.Small(time_text),
+        ]
+        if alert.get("node_id"):
+            popup_lines.append(html.Small(f"Node {alert['node_id']}"))
+        if alert.get("location_is_approximate"):
+            popup_lines.append(html.Em("Approximate location from OneMap"))
         markers.append(
             dl.CircleMarker(
                 center=[lat, lon],
                 radius=8,
-                color="#F97316",
+                color=color,
                 fill=True,
-                fillColor="#F97316",
-                fillOpacity=0.85,
-                weight=2,
-                children=[dl.Tooltip(f"🚦 {message}")],
-            )
-        )
-
-    faulty_lights = faulty_lights_data.get("value", []) if isinstance(faulty_lights_data, dict) else (faulty_lights_data or [])
-    for light in faulty_lights:
-        if not isinstance(light, dict):
-            continue
-        try:
-            lat = float(light.get("Latitude") or light.get("latitude") or 0)
-            lon = float(light.get("Longitude") or light.get("longitude") or 0)
-            if lat == 0 or lon == 0:
-                continue
-        except (TypeError, ValueError):
-            continue
-
-        message = light.get("Message") or light.get("message") or "Faulty traffic light"
-        markers.append(
-            dl.CircleMarker(
-                center=[lat, lon],
-                radius=7,
-                color="#FCD34D",
-                fill=True,
-                fillColor="#FCD34D",
+                fillColor=color,
                 fillOpacity=0.9,
                 weight=2,
-                children=[dl.Tooltip(f"🚥 {message}")],
+                children=[
+                    dl.Tooltip(
+                        f"{status_label}: {alert.get('location')}"
+                    ),
+                    dl.Popup(html.Div(popup_lines)),
+                ],
             )
         )
     return markers
