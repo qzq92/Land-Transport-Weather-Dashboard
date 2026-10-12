@@ -41,7 +41,7 @@ Six top-level tabs (`components/banner_component.py`):
 6. **Nearby Facilities** — Address search in the left panel. Type at least 3 characters, then press **Enter** or **Search** (not on every keystroke). One match is selected automatically; several matches appear in a dropdown. Lists show the nearest 5 as compact name + distance rows; addresses and extra detail stay in map popups. Inner tabs:
    - **Getting around** — bus stops, MRT/LRT, taxi stands (default).
    - **Park and charge** — HDB carparks, bicycle parking, EV chargers.
-   - **Amenities** — parks, sports fields, recycling bins, hawker centres, plus map overlay toggles.
+   - **Food & Amenities** — official NEA hawker-centre locations, parks, sports fields, recycling bins, plus map overlay toggles. The hawker dataset does not provide crowd levels, ratings, or opening hours.
 
 ## Project layout
 
@@ -66,7 +66,7 @@ data/                  # Downloaded CSVs / JSON (created at runtime)
 
 Live and dataset APIs are listed in `conf/api_urls.py`. Sign-up and deprecation notes: [Data.gov.sg developer guide](https://guide.data.gov.sg/developers).
 
-**Data.gov.sg** — weather V2 (temperature, rainfall, humidity, wind), lightning, flood alerts, UV, WBGT, PSI, 2-hour and 24-hour forecasts, taxi availability, traffic images. Poll/initiate-download datasets: HDB carparks, speed cameras, ERP gantries, parks, sports fields, recycling bins, hawker centres, dengue and zika clusters.
+**Data.gov.sg** — weather V2 (temperature, rainfall, humidity, wind), lightning, flood alerts, UV, WBGT, PSI, 2-hour and 24-hour forecasts, taxi availability, traffic images. Poll/initiate-download datasets: HDB carparks, speed cameras, ERP gantries, parks, sports fields, recycling bins, the [NEA Hawker Centres dataset](https://data.gov.sg/datasets/d_4a086da0a5553be1d89383cd90d07ecd/view), dengue and zika clusters.
 
 **LTA DataMall** — bus stops/routes/services/arrivals, taxi stands, bicycle parking, carpark availability, expressway travel times, platform crowd (forecast and realtime), train service alerts plus GTFS-Realtime alerts and trip updates, traffic incidents, faulty traffic lights, VMS, EV charging. Faulty-light alerts use the documented `/FaultyTrafficLights` endpoint. `EndDate` distinguishes scheduled maintenance from an unscheduled fault; `Type` 4 is a blackout and type 13 is flashing yellow.
 

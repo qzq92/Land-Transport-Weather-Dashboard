@@ -436,6 +436,13 @@ html, body, #root {
   margin-top: 0.2rem;
 }
 
+.nearby-source-note {
+  background-color: #243447;
+  border-left: 0.1875rem solid #e11d48;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.625rem;
+}
+
 /* General input text color - ensure all input fields have white text */
 input[type="text"],
 input[type="search"],

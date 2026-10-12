@@ -1,9 +1,6 @@
 """EV charging point data helpers."""
 
-import csv
-import json
 import os
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.parse import urlparse
@@ -156,44 +153,3 @@ def fetch_evc_batch_async(
     except (requests.exceptions.RequestException, ValueError, OSError) as error:
         print(f"Error fetching EVCBatch data: {error}")
         return None
-
-
-def _evc_file_path() -> Optional[Path]:
-    data_dir = _project_root() / "data"
-    for ext in ("json", "csv", "xml"):
-        path = data_dir / f"EVCBatch.{ext}"
-        if path.exists():
-            return path
-    return None
-
-
-@run_in_thread
-def load_ev_charging_points_from_file() -> Optional[Dict[str, Any]]:
-    """Load EVCBatch data from the downloaded file."""
-    path = _evc_file_path()
-    if not path:
-        return None
-
-    if path.suffix == ".json":
-        with open(path, "r", encoding="utf-8") as file:
-            return json.load(file)
-    if path.suffix == ".csv":
-        with open(path, "r", encoding="utf-8") as file:
-            return {"value": {"evLocationsData": list(csv.DictReader(file))}}
-    if path.suffix == ".xml":
-        root = ET.parse(path).getroot()
-        return {"value": {"evLocationsData": [child.attrib for child in root]}}
-    return None
-
-
-def count_ev_charging_points() -> int:
-    """Count EV charging point rows from the downloaded EVCBatch file."""
-    future = load_ev_charging_points_from_file()
-    data = future.result() if future else None
-    if not data:
-        return 0
-    value = data.get("value", {})
-    if isinstance(value, dict):
-        locations = value.get("evLocationsData", [])
-        return len(locations) if isinstance(locations, list) else 0
-    return 0

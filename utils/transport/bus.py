@@ -1,13 +1,17 @@
 """Bus stop, route, and service data helpers."""
 
-import math
 import os
 from concurrent.futures import Future, as_completed
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from conf.api_urls import BUS_ROUTES_URL, BUS_SERVICES_URL, BUS_STOPS_URL
-from utils.async_fetcher import _executor, fetch_url, fetch_url_10min_cached, run_in_thread
+from utils.async_fetcher import (
+    _executor,
+    fetch_url,
+    fetch_url_10min_cached,
+    run_in_thread,
+)
 from utils.transport.cache import _road_infra_cache
 
 
@@ -117,55 +121,3 @@ def fetch_bus_services_data_async() -> Optional[Dict[str, Any]]:
     if headers is None:
         return None
     return fetch_url_10min_cached(BUS_SERVICES_URL, headers=headers)
-
-
-def get_bus_services_count() -> int:
-    """Return the number of unique bus services from bus routes."""
-    routes_data = fetch_bus_routes_data()
-    if not routes_data or "value" not in routes_data:
-        return 0
-    return len({route.get("ServiceNo", "") for route in routes_data.get("value", []) if route.get("ServiceNo")})
-
-
-def get_bus_stops_count() -> int:
-    """Return the total number of bus stops from cached/monthly bus-stop data."""
-    stops_data = fetch_bus_stops_data()
-    if not stops_data or "value" not in stops_data:
-        return 0
-    stops = stops_data.get("value", [])
-    return len(stops) if isinstance(stops, list) else 0
-
-
-def calculate_bus_stop_viewport_bounds(
-    center: List[float],
-    zoom: int,
-    map_width_px: int = 800,
-    map_height_px: int = 600,
-) -> Tuple[float, float, float, float]:
-    """Approximate map viewport bounds for filtering bus stops."""
-    lat, lon = center
-    meters_per_pixel = 156543.03392 * math.cos(math.radians(lat)) / (2 ** zoom)
-    half_width_m = (map_width_px / 2) * meters_per_pixel
-    half_height_m = (map_height_px / 2) * meters_per_pixel
-    lat_delta = half_height_m / 111320
-    lon_delta = half_width_m / (111320 * math.cos(math.radians(lat)))
-    return lat - lat_delta, lat + lat_delta, lon - lon_delta, lon + lon_delta
-
-
-def filter_bus_stops_by_viewport(
-    bus_stops: List[Dict[str, Any]],
-    center: List[float],
-    zoom: int,
-) -> List[Dict[str, Any]]:
-    """Filter bus stops to the current viewport."""
-    min_lat, max_lat, min_lon, max_lon = calculate_bus_stop_viewport_bounds(center, zoom)
-    filtered = []
-    for stop in bus_stops:
-        try:
-            lat = float(stop.get("Latitude"))
-            lon = float(stop.get("Longitude"))
-        except (TypeError, ValueError):
-            continue
-        if min_lat <= lat <= max_lat and min_lon <= lon <= max_lon:
-            filtered.append(stop)
-    return filtered

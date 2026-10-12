@@ -7,7 +7,6 @@ then fetch the actual data from that URL.
 """
 import os
 import time
-import glob
 import requests
 from typing import Optional, Dict, Any
 from utils.async_fetcher import fetch_url
@@ -160,24 +159,6 @@ def get_cached_dataset(dataset_id: str, cache_ttl: int = DEFAULT_CACHE_TTL) -> O
     return None
 
 
-def clear_dataset_cache(dataset_id: Optional[str] = None):
-    """
-    Clear cache for a specific dataset or all datasets.
-
-    Args:
-        dataset_id: Dataset ID to clear. If None, clears all caches.
-    """
-    if dataset_id is None:
-        _dataset_caches.clear()
-        print("All dataset caches cleared")
-    else:
-        if dataset_id in _dataset_caches:
-            del _dataset_caches[dataset_id]
-            print(f"Cache cleared for dataset {dataset_id}")
-        else:
-            print(f"No cache found for dataset {dataset_id}")
-
-
 # Convenience functions for specific datasets
 def fetch_erp_gantry_data(use_cache: bool = True) -> Optional[Dict[str, Any]]:
     """
@@ -194,76 +175,6 @@ def fetch_erp_gantry_data(use_cache: bool = True) -> Optional[Dict[str, Any]]:
         dataset_name='ERP Gantry',
         use_cache=use_cache
     )
-
-
-def fetch_pub_cctv_data(use_cache: bool = True) -> Optional[Dict[str, Any]]:
-    """
-    Fetch PUB CCTV GeoJSON data.
-
-    Args:
-        use_cache: Whether to use caching (default: True)
-
-    Returns:
-        Dictionary containing GeoJSON data or None if error
-    """
-    return fetch_dataset_via_initiate_download(
-        dataset_id=DATASET_IDS['PUB_CCTV'],
-        dataset_name='PUB CCTV',
-        use_cache=use_cache
-    )
-
-
-def clear_csv_files(data_dir: Optional[str] = None, project_root: Optional[str] = None) -> int:
-    """
-    Clear all CSV files in the data directory.
-
-    Args:
-        data_dir: Optional full path to data directory.
-                 If None, uses data/ relative to project root
-        project_root: Optional project root directory. If None, auto-detects from this file's location
-
-    Returns:
-        Number of CSV files deleted
-    """
-    # Determine data directory path
-    if data_dir is None:
-        if project_root is None:
-            # Get project root (parent of utils folder)
-            current_file_dir = os.path.dirname(os.path.abspath(__file__))
-            project_root = os.path.dirname(current_file_dir)
-        data_dir = os.path.join(project_root, 'data')
-
-    if not os.path.exists(data_dir):
-        print(f"Data directory does not exist: {data_dir}")
-        return 0
-
-    # Find all CSV files
-    csv_pattern = os.path.join(data_dir, '*.csv')
-    csv_files = glob.glob(csv_pattern)
-
-    # Files to preserve (sourced online, should not be deleted)
-    preserved_files = ['MRTStations.csv']
-
-    deleted_count = 0
-    for csv_file in csv_files:
-        # Skip preserved files
-        if os.path.basename(csv_file) in preserved_files:
-            print(f"Preserving CSV file: {os.path.basename(csv_file)}")
-            continue
-        
-        try:
-            os.remove(csv_file)
-            print(f"Deleted CSV file: {os.path.basename(csv_file)}")
-            deleted_count += 1
-        except Exception as e:
-            print(f"Error deleting {csv_file}: {e}")
-
-    if deleted_count > 0:
-        print(f"Cleared {deleted_count} CSV file(s) from data directory")
-    else:
-        print("No CSV files found to clear")
-
-    return deleted_count
 
 
 def download_hdb_carpark_csv(

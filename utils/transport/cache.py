@@ -6,17 +6,11 @@ from typing import Dict
 import pandas as pd
 
 _road_infra_cache = {
-    "erp_gantries": None,
     "taxi_stands": None,
-    "traffic_incidents": None,
-    "faulty_traffic_lights": None,
-    "vms": None,
     "bus_stops": None,
     "bus_stops_bucket": None,
     "bus_routes": None,
     "bus_routes_bucket": None,
-    "bus_services": None,
-    "speed_camera_df": None,
 }
 
 _LTA_CAMERA_ID_MAPPING: Dict[str, str] = {}

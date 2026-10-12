@@ -39,50 +39,6 @@ def query_traffic_metadata() -> Dict:
     return all_traffic_metadata_dict
 
 
-def get_camera_feed(metadata_dict: Dict, camera_id: str, agent_id: str="qzq_dev"):
-    """Fetch a traffic camera image stream for a specific camera ID.
-
-    Args:
-        metadata_dict: Camera metadata keyed by camera ID.
-        camera_id: Target camera ID to fetch.
-        agent_id: Base user-agent prefix for the outbound request.
-
-    Returns:
-        Raw response stream when successful, otherwise `None`.
-    """
-    try:
-        # Extract the camera id from metadata_dict to obtain its metadata of interest
-        print(f"Extracting camera id: {camera_id}")
-        specific_camera_metadata_dict = metadata_dict[camera_id]
-
-    except KeyError:
-        print("Invalid id received. No information obtained")
-        return None
-
-    # Randomised agent id
-    rand_agent_id = agent_id + str(np.random.randint(0,500))
-    try:
-        response = requests.get(specific_camera_metadata_dict["image_url"],
-                        stream=True,
-                        headers={'User-agent': rand_agent_id},
-                        timeout=5
-                        )
-
-        # Raise if HTTPError occured
-        response.raise_for_status()
-        # Write to a file if success and log the stat
-        return response.raw
-    except requests.exceptions.HTTPError as errh:
-        print(errh)
-    except requests.exceptions.ConnectionError as errc:
-        print(errc)
-    except requests.exceptions.Timeout as errt:
-        print(errt)
-    except requests.exceptions.RequestException as err:
-        print(err)
-    return None
-
-
 @run_in_thread
 def get_camera_image_base64_async(metadata_dict: Dict, camera_id: str, agent_id: str = "test_qzq") -> str:
     """
@@ -133,54 +89,6 @@ def get_camera_image_base64_async(metadata_dict: Dict, camera_id: str, agent_id:
     except (IOError, ValueError, AttributeError, requests.exceptions.RequestException) as error:
         print(f"Error converting image to base64 for camera {camera_id}: {error}")
         return None
-
-
-def format_metadata_text(metadata_dict, camera_id):
-    """
-    Format metadata text for display under camera image.
-
-    Args:
-        metadata_dict: Dictionary containing all camera metadata
-        camera_id: Camera ID to get metadata for
-
-    Returns:
-        Formatted metadata string with datetime and location (camera ID and lat/lon excluded)
-    """
-    try:
-        if not metadata_dict or camera_id not in metadata_dict:
-            return "Metadata unavailable"
-
-        camera_meta = metadata_dict[camera_id]
-        timestamp = camera_meta.get('timestamp', 'N/A')
-        location = "Causeway" if camera_id=="2701" else "Second Link"
-
-        # Format timestamp (assuming ISO format like "2024-01-01T12:00:00+08:00")
-        formatted_time = ""
-        if timestamp and timestamp != 'N/A':
-            try:
-                if isinstance(timestamp, str):
-                    # Try to parse and format the timestamp
-                    parsed_datetime = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
-                    formatted_time = parsed_datetime.strftime("%Y-%m-%d %H:%M:%S")
-                else:
-                    formatted_time = str(timestamp)
-            except (ValueError, AttributeError):
-                formatted_time = str(timestamp) if timestamp else ""
-
-        # Build metadata text (excluding camera ID and lat/lon)
-        metadata_parts = []
-        
-        # Add datetime if available
-        if formatted_time:
-            metadata_parts.append(f"Time: {formatted_time}")
-        
-        # Add location
-        metadata_parts.append(location)
-
-        return " | ".join(metadata_parts)
-    except (KeyError, AttributeError, TypeError, ValueError) as error:
-        print(f"Error formatting metadata: {error}")
-        return "Metadata unavailable"
 
 
 def register_camera_feed_callbacks(app):

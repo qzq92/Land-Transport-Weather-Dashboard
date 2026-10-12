@@ -116,6 +116,8 @@ def test_search_lives_in_sidebar_and_amenity_toggles_are_not_on_the_map():
     assert find_by_id(map_panel, "nearby-transport-overlay-controls") is None
     assert find_by_id(amenities_tab, "nearby-parks-toggle-btn") is not None
     assert find_by_id(amenities_tab, "nearby-hawker-centres-toggle-btn") is not None
+    assert "Food places" in flatten_text(amenities_tab)
+    assert "Crowd levels" in " ".join(flatten_text(amenities_tab))
 
 
 def test_sidebar_is_wider_and_content_uses_full_height():

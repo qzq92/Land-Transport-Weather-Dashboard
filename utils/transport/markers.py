@@ -6,12 +6,10 @@ from typing import Any, Dict, List, Optional
 from dash import html
 import dash_leaflet as dl
 
-from utils.transport.cache import load_lta_camera_id_mapping
 from utils.transport.faulty_lights import (
     locate_faulty_lights,
     normalize_faulty_lights,
 )
-from conf.api_urls import LEAFLET_MARKER_ICON_GREEN_URL, LEAFLET_MARKER_SHADOW_URL
 
 
 def create_taxi_markers(data: Optional[Dict[str, Any]]) -> List[dl.CircleMarker]:
@@ -37,70 +35,6 @@ def create_taxi_markers(data: Optional[Dict[str, Any]]) -> List[dl.CircleMarker]
                     weight=1,
                 )
             )
-    return markers
-
-
-def create_cctv_markers(camera_data: Dict[str, Dict[str, Any]]) -> List[dl.Marker]:
-    """Create CCTV camera markers with image popups."""
-    markers = []
-    camera_id_mapping = load_lta_camera_id_mapping()
-    icon_url = LEAFLET_MARKER_ICON_GREEN_URL
-
-    for camera_id, info in camera_data.items():
-        lat = info.get("lat")
-        lon = info.get("lon")
-        if lat is None or lon is None:
-            continue
-
-        image_url = info.get("image_url", "")
-        timestamp = info.get("timestamp", "")
-        location_desc = camera_id_mapping.get(str(camera_id), f"Camera {camera_id}")
-        datetime_text = ""
-        if timestamp:
-            try:
-                parsed_datetime = datetime.fromisoformat(str(timestamp).replace("Z", "+00:00"))
-                datetime_text = parsed_datetime.strftime("%Y-%m-%d %H:%M:%S")
-            except (ValueError, AttributeError):
-                datetime_text = str(timestamp)
-
-        popup_children = [html.Strong(location_desc, style={"fontSize": "0.875rem"})]
-        if datetime_text:
-            popup_children.append(
-                html.Div(
-                    f"Time: {datetime_text}",
-                    style={"fontSize": "0.75rem", "color": "#888", "marginTop": "0.25rem"},
-                )
-            )
-        popup_children.append(
-            html.Img(
-                src=image_url,
-                style={
-                    "width": "17.5rem",
-                    "height": "auto",
-                    "marginTop": "0.5rem",
-                    "borderRadius": "0.25rem",
-                },
-            )
-        )
-
-        tooltip_text = "\n".join([location_desc] + ([f"Time: {datetime_text}"] if datetime_text else []))
-        markers.append(
-            dl.Marker(
-                position=[lat, lon],
-                children=[
-                    dl.Tooltip(tooltip_text),
-                    dl.Popup(html.Div(popup_children, style={"textAlign": "center"}), maxWidth=320),
-                ],
-                icon={
-                    "iconUrl": icon_url,
-                    "shadowUrl": LEAFLET_MARKER_SHADOW_URL,
-                    "iconSize": [25, 41],
-                    "iconAnchor": [12, 41],
-                    "popupAnchor": [1, -34],
-                    "shadowSize": [41, 41],
-                },
-            )
-        )
     return markers
 
 

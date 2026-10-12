@@ -181,15 +181,17 @@ def _amenity_overlay_controls():
             "flexWrap": "wrap",
         },
         children=[
+            _amenity_toggle_button(
+                "nearby-hawker-centres-toggle-btn",
+                "Show Hawker Centres",
+                "#e11d48",
+            ),
             _amenity_toggle_button("nearby-parks-toggle-btn", "Show Parks@SG", "#22c55e"),
             _amenity_toggle_button(
                 "nearby-sports-fields-toggle-btn", "Show SportsFields@SG", "#a78bfa"
             ),
             _amenity_toggle_button(
                 "nearby-recycling-bins-toggle-btn", "Show Recycling Bins", "#f97316"
-            ),
-            _amenity_toggle_button(
-                "nearby-hawker-centres-toggle-btn", "Show Hawker Centres", "#e11d48"
             ),
         ],
     )
@@ -387,7 +389,7 @@ def nearby_transport_page():
                                         ),
                                     ),
                                     dcc.Tab(
-                                        label="Amenities",
+                                        label="Food & Amenities",
                                         value="nearby-amenities",
                                         style=NEARBY_SUBTAB_STYLE,
                                         selected_style=NEARBY_SUBTAB_SELECTED_STYLE,
@@ -395,6 +397,32 @@ def nearby_transport_page():
                                             style=TAB_GROUP_STYLE,
                                             children=[
                                                 _amenity_overlay_controls(),
+                                                html.Div(
+                                                    [
+                                                        html.Strong(
+                                                            "Food places",
+                                                            style={
+                                                                "color": "#fff",
+                                                                "fontSize": "0.8125rem",
+                                                            },
+                                                        ),
+                                                        html.P(
+                                                            (
+                                                                "Official NEA hawker-centre locations "
+                                                                "near the selected place. Crowd levels, "
+                                                                "ratings, and opening hours are not "
+                                                                "inferred from this dataset."
+                                                            ),
+                                                            style={
+                                                                "color": "#cbd5e1",
+                                                                "fontSize": "0.6875rem",
+                                                                "lineHeight": "1.4",
+                                                                "margin": "0.25rem 0 0",
+                                                            },
+                                                        ),
+                                                    ],
+                                                    className="nearby-source-note",
+                                                ),
                                                 _facility_column("nearby-transport-parks-column"),
                                                 _facility_column(
                                                     "nearby-transport-sports-fields-column"
