@@ -1,0 +1,113 @@
+name: lta-transport-dashboard
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+      target: runtime
+    init: true
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:8080/healthz >/dev/null || exit 1",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+      target: runtime
+    init: true
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    expose:
+      - "8000"
+    environment:
+      BACKEND_APP_NAME: "${BACKEND_APP_NAME:-LTA Transport Dashboard API}"
+      BACKEND_API_PREFIX: "${BACKEND_API_PREFIX:-/api/v1}"
+      BACKEND_CORS_ORIGINS: '${BACKEND_CORS_ORIGINS:-["http://localhost:5173"]}'
+      BACKEND_HTTP_TIMEOUT_SECONDS: "${BACKEND_HTTP_TIMEOUT_SECONDS:-15}"
+      BACKEND_HTTP_MAX_CONNECTIONS: "${BACKEND_HTTP_MAX_CONNECTIONS:-100}"
+      BACKEND_HTTP_MAX_KEEPALIVE_CONNECTIONS: "${BACKEND_HTTP_MAX_KEEPALIVE_CONNECTIONS:-20}"
+      BACKEND_REDIS_URL: "redis://redis:6379/0"
+      BACKEND_REDIS_REQUIRED: "${BACKEND_REDIS_REQUIRED:-false}"
+      BACKEND_REDIS_TIMEOUT_SECONDS: "${BACKEND_REDIS_TIMEOUT_SECONDS:-1}"
+      BACKEND_CACHE_VERSION: "${BACKEND_CACHE_VERSION:-v1}"
+      BACKEND_CACHE_TTL_SECONDS: "${BACKEND_CACHE_TTL_SECONDS:-120}"
+      BACKEND_CACHE_STALE_SECONDS: "${BACKEND_CACHE_STALE_SECONDS:-3600}"
+      BACKEND_CACHE_TTL_JITTER_RATIO: "${BACKEND_CACHE_TTL_JITTER_RATIO:-0.1}"
+      BACKEND_CACHE_LOCK_SECONDS: "${BACKEND_CACHE_LOCK_SECONDS:-15}"
+      BACKEND_CACHE_LOCK_WAIT_SECONDS: "${BACKEND_CACHE_LOCK_WAIT_SECONDS:-1}"
+      BACKEND_DATA_GOV_API_KEY: "${BACKEND_DATA_GOV_API_KEY:-}"
+      BACKEND_LTA_API_KEY: "${BACKEND_LTA_API_KEY:-}"
+      BACKEND_ONEMAP_API_KEY: "${BACKEND_ONEMAP_API_KEY:-}"
+      BACKEND_ONEMAP_EMAIL: "${BACKEND_ONEMAP_EMAIL:-}"
+      BACKEND_ONEMAP_EMAIL_PASSWORD: "${BACKEND_ONEMAP_EMAIL_PASSWORD:-}"
+    read_only: true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os, urllib.request; prefix=os.getenv('BACKEND_API_PREFIX', '/api/v1'); urllib.request.urlopen(f'http://127.0.0.1:8000{prefix}/health/ready', timeout=3)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+
+  redis:
+    image: redis:7.4-alpine
+    init: true
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --save
+      - "60"
+      - "1"
+    expose:
+      - "6379"
+    volumes:
+      - redis-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  redis-data:

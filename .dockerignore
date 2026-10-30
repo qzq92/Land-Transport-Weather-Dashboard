@@ -1,66 +1,60 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-*.egg-info/
-dist/
-build/
-*.egg
-
-# Virtual environments
-venv/
-env/
-ENV/
-.venv
-
-# IDE
+# Version-control and editor metadata
+.git/
+.github/
+.cursor/
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# Git
-.git/
-.gitignore
-.gitattributes
-
-# Environment variables
+# Local secrets (retain the documented sample)
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
-# Logs
+# Python build and runtime output
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+ENV/
+build/
+dist/
+
+# Frontend dependencies and output
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+*.tsbuildinfo
+
+# Runtime and local output
 logs/
 *.log
+data/*
+!data/lta_camera_id_mapping.csv
+model_weights/
 
-# Jupyter Notebooks
+# Development-only content
+tests/
 notebooks/
 *.ipynb
 .ipynb_checkpoints/
 
-# OS
+# OS metadata
 .DS_Store
 Thumbs.db
 
-# Docker
-docker/
-.dockerignore
-docker-compose.yml
-
-# Documentation
-README.md
-LICENSE
-*.md
-
-# Test files
-test_*.py
-*_test.py
-tests/
-
-# Data files (if large, consider excluding or mounting as volume)
-# Uncomment if data files are too large
-data/
-
+# Lockfiles are intentionally not ignored. They are part of reproducible builds.
+!uv.lock
+!frontend/package-lock.json

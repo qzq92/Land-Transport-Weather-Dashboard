@@ -1,143 +1,90 @@
-# Plotly Cloud Deployment Guide
+# Deployment Guide
 
-This guide will help you deploy this Dash application to Plotly Cloud.
+The supported deployment is the React, FastAPI, and Redis stack defined in
+`compose.yaml`.
 
-## Prerequisites
+## Start the production stack
 
-1. **Plotly Cloud Account**: Sign up at [Plotly Cloud](https://plotly.com/)
-2. **Git Repository**: Your code should be in a Git repository (GitHub, GitLab, Bitbucket, etc.)
-3. **API Keys**: Ensure you have all required API keys ready
-
-## Pre-Deployment Checklist
-
-### ✅ Code Configuration
-- [x] `server = app.server` is exposed in `app.py` (line 874)
-- [x] `app.run()` is wrapped in `if __name__ == "__main__":` block
-- [x] `gunicorn` is included in `requirements.txt`
-- [x] All dependencies are listed in `requirements.txt`
-
-### ✅ Environment Variables
-You'll need to set these in Plotly Cloud:
-- `DATA_GOV_API` - Your Data.gov.sg API key
-- `LTA_API_KEY` - Your LTA DataMall API key
-
-### ✅ Files to Exclude
-Ensure `.gitignore` includes:
-- `.env` (never commit API keys!)
-- `data/` directory (will be created on first run)
-- `*.pyc` files
-- Virtual environment directories
-
-## Deployment Steps
-
-### 1. Prepare Your Repository
+1. Install Docker Engine with the Compose plugin.
+2. Copy `.env.example` to `.env`.
+3. Set the Data.gov.sg, LTA DataMall, and OneMap credentials.
+4. Build and start all services:
 
 ```bash
-# Ensure all changes are committed
-git add .
-git commit -m "Prepare for Plotly Cloud deployment"
-git push origin main
+docker compose up --build -d
+docker compose ps
 ```
 
-### 2. Connect to Plotly Cloud
+The application is available on `WEB_PORT` (default `8080`). Nginx serves the
+React build, proxies `/api/*` to FastAPI, and provides SPA fallback for
+client-side routes. FastAPI and Redis are not published on host ports.
 
-1. Log in to [Plotly Cloud](https://plotly.com/)
-2. Navigate to your workspace
-3. Click **"Create App"** or **"New App"**
-4. Select **"Connect to Git Repository"**
-5. Authorize Plotly Cloud to access your repository
-6. Select your repository and branch (usually `main` or `master`)
+## Services
 
-### 3. Configure Environment Variables
+- `web`: unprivileged Nginx serving the static React build on port 8080.
+- `api`: FastAPI/Uvicorn on the internal port 8000.
+- `redis`: Redis 7 with AOF persistence in the `redis-data` named volume.
 
-1. In your Plotly Cloud app settings, go to **"Environment Variables"**
-2. Add the following variables:
+All containers use health checks, read-only root filesystems, temporary `/tmp`
+mounts, restart policies, and `no-new-privileges`.
 
-```
-DATA_GOV_API=your_data_gov_api_key_here
-LTA_API_KEY=your_lta_api_key_here
-```
+## Health and readiness
 
-**Important**: Never commit these keys to your repository!
+- `GET /healthz` verifies Nginx.
+- `GET /api/v1/health/live` verifies the API process.
+- `GET /api/v1/health/ready` verifies required dependencies.
+- `docker compose ps` reports container health.
 
-### 4. Deploy
+Redis remains a shared expiring cache, not the permanent source of record. To
+stop without deleting cache data, run `docker compose down`. Only use
+`docker compose down -v` when cache loss is intentional.
 
-1. Plotly Cloud will automatically detect your Dash app
-2. Click **"Deploy"** or **"Build"**
-3. Monitor the build logs for any errors
-4. The app will be available at `https://your-app-name.plotly.com`
+## Configuration and secrets
 
-## Post-Deployment
+Provider credentials are API-only environment variables:
 
-### First Startup Behavior
+- `BACKEND_DATA_GOV_API_KEY`
+- `BACKEND_LTA_API_KEY`
+- `BACKEND_ONEMAP_EMAIL` and `BACKEND_ONEMAP_EMAIL_PASSWORD`, or
+  `BACKEND_ONEMAP_API_KEY`
 
-On first deployment, the app will automatically:
-- Create the `data/` directory
-- Download HDB carpark information (if file doesn't exist)
-- Download speed camera locations (if file doesn't exist)
-- Initialize OneMap API authentication
-- Start fetching and caching data from APIs
+Key runtime settings include:
 
-### Monitoring
+- `BACKEND_REDIS_URL`
+- `BACKEND_REDIS_REQUIRED`
+- `BACKEND_CORS_ORIGINS`
+- `BACKEND_HTTP_TIMEOUT_SECONDS`
+- `BACKEND_CACHE_TTL_SECONDS`
+- `BACKEND_CACHE_STALE_SECONDS`
+- `BACKEND_CACHE_TTL_JITTER_RATIO`
+- `BACKEND_CACHE_LOCK_SECONDS`
 
-- Check build logs for any startup errors
-- Monitor app performance in Plotly Cloud dashboard
-- Verify all API calls are working correctly
-- Check that environment variables are properly set
+Use a deployment secret manager rather than baking `.env` into an image.
+Production traffic is same-origin. CORS accepts explicit development origins
+only and never allows `*`.
 
-## Troubleshooting
+## Verification
 
-### Common Issues
-
-1. **Build Fails**
-   - Check that all dependencies in `requirements.txt` are valid
-   - Verify Python version compatibility
-   - Check build logs for specific error messages
-
-2. **API Calls Fail**
-   - Verify environment variables are set correctly
-   - Check API key validity
-   - Review app logs for authentication errors
-
-3. **Data Files Not Downloading**
-   - Check network connectivity
-   - Verify API endpoints are accessible
-   - Review startup logs for download errors
-
-4. **App Crashes on Startup**
-   - Check that `server = app.server` is exposed
-   - Verify `app.run()` is only called in `if __name__ == "__main__":` block
-   - Review error logs in Plotly Cloud dashboard
-
-## Application Architecture
-
-### Async API Pattern
-
-All API calls use the `@run_in_thread` decorator pattern:
-
-```python
-from utils.async_fetcher import run_in_thread
-
-@run_in_thread
-def fetch_data_async():
-    # API call implementation
-    return data
-
-# Usage in callbacks
-future = fetch_data_async()
-data = future.result() if future else None
+```bash
+docker compose build
+docker compose up -d
+docker compose ps
+docker compose exec api python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready')"
 ```
 
-This ensures:
-- Non-blocking API calls
-- Improved responsiveness
-- Better scalability
-- Consistent async pattern across all API calls
+Run the repository test suites before promotion:
 
-## Support
+```bash
+uv sync --all-groups
+uv run pytest
+docker run --rm -v "${PWD}/frontend:/app" -v /app/node_modules -w /app node:22.20-alpine sh -c "npm ci && npm run lint && npm test && npm run build"
+```
 
-For issues specific to:
-- **Plotly Cloud**: Contact Plotly Cloud support
-- **API Access**: Contact respective API providers (Data.gov.sg, OneMap, LTA)
-- **Application Code**: Review logs and check GitHub issues
+## Monitoring and rollback
 
+Monitor provider latency and errors, cache hit rate, stale responses, Redis
+memory, and API response time. API cache metadata identifies hits, misses,
+degraded Redis access, and stale fallback.
+
+The web and API containers are stateless. Roll back by deploying the previous
+image versions; the Redis cache can remain in place because keys are versioned.

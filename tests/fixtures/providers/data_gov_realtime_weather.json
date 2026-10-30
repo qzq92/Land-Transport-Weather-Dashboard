@@ -1,0 +1,27 @@
+{
+  "code": 0,
+  "data": {
+    "readings": [
+      {
+        "timestamp": "2026-10-30T12:00:00+08:00",
+        "data": [
+          {
+            "stationId": "S24",
+            "value": 29.4
+          }
+        ]
+      }
+    ],
+    "stations": [
+      {
+        "id": "S24",
+        "name": "Changi",
+        "location": {
+          "latitude": 1.3678,
+          "longitude": 103.9826
+        }
+      }
+    ]
+  },
+  "errorMsg": ""
+}

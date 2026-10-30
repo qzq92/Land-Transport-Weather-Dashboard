@@ -1,8 +1,47 @@
-model_weights/
-.venv
-uv.lock
-*.pyc
-.DS_Store
+# Local secrets and machine-only files
 .env
+.env.*
+!.env.example
 api_key.py
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+ENV/
+build/
+dist/
+
+# Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+*.tsbuildinfo
+
+# Runtime output and large local artifacts
+logs/*
+!logs/.gitkeep
 data/
+model_weights/
+*.log
+
+# Editors and operating systems
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Keep dependency locks in version control.
+!uv.lock
+!frontend/package-lock.json

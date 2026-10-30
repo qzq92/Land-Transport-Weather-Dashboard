@@ -1,167 +1,267 @@
 # Land Transport and Weather Dashboard
 
-A Dash app for Singapore that pulls near real-time weather, health, and land-transport data onto interactive maps. Use it to scan alerts, search nearby facilities, and check bus, rail, and road conditions in one place.
+A React and FastAPI application for Singapore that presents near real-time weather, health, and land-transport data on interactive maps. Redis shares queried results across API workers so browser refreshes do not multiply requests to Data.gov.sg, LTA DataMall, or OneMap.
 
 ## How it works
 
-`app.py` starts the Dash server, registers callbacks, and downloads static datasets on first run (HDB carpark, speed cameras, EV charging batch). Pages live in `components/`. Callbacks in `callbacks/` stay thin and call helpers in `utils/`. Runtime URLs and dataset IDs live in `conf/api_urls.py` — do not hardcode API hosts elsewhere (`tests/unit/test_api_urls.py` fails the build if they leak).
+The TypeScript client in `frontend/` calls versioned JSON endpoints under `/api/v1`. The FastAPI service in `backend/` validates query parameters, normalizes provider responses, and uses Redis for cache-aside reads, distributed refresh locks, TTL jitter, and bounded stale fallback. Provider credentials remain in the API container and are never sent to the browser.
 
-Maps use OneMap night tiles via **dash-leaflet** `LayerGroup` / `DivMarker` layers. API work runs off the UI thread with `@run_in_thread`. Poll intervals are in `conf/cache_config.py`.
+Nginx serves the built React application and proxies `/api` to FastAPI from
+the same origin. `compose.yaml` starts Nginx, the API, and Redis together.
+The React presentation preserves the original dashboard's compact Open Sans
+styling, gradient banner, glossy six-tab navigation, slate panels, and OneMap
+night map while keeping route-level code splitting and typed data fetching.
 
-Non-main tabs are built on first visit (`callbacks/tab_navigation_callback.py`). After layout changes, restart the app — `dev_tools_hot_reload` is off.
+## Architecture
+
+The production stack has three services:
+
+- **Web (`web`)**: Nginx serves the compiled React files and forwards `/api/*`
+  requests to the API service. It is the only service exposed to the host on
+  port `8080`.
+- **API (`api`)**: FastAPI owns input validation, provider authentication,
+  response normalization, cache policy, and the versioned `/api/v1` contract.
+  It is reachable only inside the Compose network on port `8000`.
+- **Cache (`redis`)**: Redis stores shared, expiring JSON query results and
+  short-lived refresh locks. It is reachable only by the API service.
+
+### Request flow
+
+1. A React page loads its typed query through TanStack Query. Browser state
+   covers navigation and UI controls; it never contains provider credentials or
+   connects to Redis.
+2. The browser requests the same-origin URL, for example
+   `/api/v1/weather/realtime`. Nginx forwards that request to FastAPI.
+3. FastAPI validates parameters, builds a versioned Redis key from normalized
+   request parameters, and checks for a fresh cached result.
+4. On a cache hit, FastAPI returns the normalized response immediately. On a
+   miss, one request acquires a short Redis lock and queries Data.gov.sg, LTA
+   DataMall, or OneMap through the HTTP client. Concurrent requests wait for
+   the cached result rather than duplicating the upstream call.
+5. FastAPI transforms provider payloads into stable view models in
+   `backend/presenters.py`, stores the result with its TTL and stale fallback
+   period, then returns JSON plus cache metadata to React.
+6. React renders the result and shows loading, refresh, stale, empty, or error
+   states based on the typed API response.
+
+### Data ownership and resilience
+
+- **React** owns presentation and short-lived browser query state. TanStack
+  Query reduces unnecessary refetches but Redis remains the cross-user and
+  cross-worker cache.
+- **FastAPI** is the only layer allowed to call external providers or access
+  `BACKEND_*` credentials. It exposes provider-independent API responses, so
+  provider field changes stay isolated from UI components.
+- **Redis** is a cache, not the system of record. It contains no credentials,
+  no browser sessions, and no traffic-camera image bytes. The `redis-data`
+  Docker volume preserves cache contents across normal container restarts.
+- If an upstream provider fails after a successful request, FastAPI can return
+  a bounded stale cached response with `meta.stale=true`. If Redis is optional
+  and unavailable, the API degrades to uncached provider reads and reports the
+  degraded state in response metadata.
 
 ## Tech stack
 
 | Layer | Choice |
 | --- | --- |
-| Runtime | Python **≥ 3.12** |
-| App | [Dash](https://dash.plotly.com/) + [dash-bootstrap-components](https://dash-bootstrap-components.opensource.faculty.ai/) |
-| Maps | [dash-leaflet](https://www.dash-leaflet.com/) ≥ 1.0 (1.1+ has no `MarkerClusterGroup`) |
-| Charts | [Plotly](https://plotly.com/python/) |
-| HTTP / env | `requests`, `python-dotenv` |
-| Data | `pandas`, `numpy`, `pyproj`, `geopy`, `gtfs-realtime-bindings` |
-| Package manager | [uv](https://docs.astral.sh/uv/) |
-| Tests | `pytest` (`uv run pytest tests/unit`) |
-| Deploy | `gunicorn` (see [DEPLOYMENT.md](DEPLOYMENT.md)) |
+| Web | React, TypeScript, Vite, React Router, TanStack Query |
+| Maps / charts | React Leaflet, Plotly React |
+| API | Python **≥ 3.12**, FastAPI, Pydantic, HTTPX |
+| Shared cache | Redis 7 |
+| Package managers | [uv](https://docs.astral.sh/uv/) and npm |
+| Tests | pytest, Vitest, Testing Library |
+| Deploy | Docker Compose and Nginx (see [DEPLOYMENT.md](DEPLOYMENT.md)) |
 
-## Pages
+## Routes
 
-Six top-level tabs (`components/banner_component.py`):
+React Router lazy-loads each view:
 
-1. **Main Dashboard** — PSI average, flood/lightning counts, 24-hour forecast, compact road-incident / signal-fault / scheduled-maintenance summaries, MRT/LRT line status, dengue/zika counts, location search, nearby MRT / bus / HDB carpark, and checkpoint camera stills.
-2. **Weather metrics and sensor locations** — Live temperature, rainfall, humidity, wind, WBGT, lightning, and flood alerts, plus sensor-location toggles.
-3. **Daily Health and Environmental Watch** — UV trend, regional PSI (map boxes or table), dengue/zika polygons. The right panel is a PSI colour strip with a “How are these colours decided?” expander (`components/air_quality_legend.py`). Bands live in `conf/weather_indices_config.py`.
-4. **Road & Transport** — Inner tabs:
-   - **Metrics & Map** — taxis, cameras, ERP gantries, taxi stands, bus stops (zoom 15+), VMS, line status, and a filterable Road alerts panel for incidents, signal faults, and scheduled maintenance.
-   - **Expressway Travel Times** — LTA EstTravelTimes chains grouped by expressway and direction.
-   - **Traffic Cameras** — full camera grid (some LTA feeds are being switched off).
-5. **Transit** — Inner tabs:
-   - **Station Crowd Forecast** — LTA PCD crowd levels by line.
-   - **Bus Arrivals & Services** — search by stop code or service number (searching one box clears the other).
-6. **Nearby Facilities** — Address search in the left panel. Type at least 3 characters, then press **Enter** or **Search** (not on every keystroke). One match is selected automatically; several matches appear in a dropdown. Lists show the nearest 5 as compact name + distance rows; addresses and extra detail stay in map popups. Inner tabs:
-   - **Getting around** — bus stops, MRT/LRT, taxi stands (default).
-   - **Park and charge** — HDB carparks, bicycle parking, EV chargers.
-   - **Food & Amenities** — official NEA hawker-centre locations, parks, sports fields, recycling bins, plus map overlay toggles. The hawker dataset does not provide crowd levels, ratings, or opening hours.
+- `/` — operational overview. Checkpoint cameras (Woodlands Causeway and
+  Tuas Second Link) sit beside a map that starts empty; taxi, camera, incident,
+  and variable-message-sign layers are opt-in. The rail banner stays above
+  every tab and reports only whether train services are operational, with an
+  update time and a line list.
+  The right rail shows flood and lightning counts, average PSI, the next
+  24-hour forecast, incident and faulty-light counts, and dengue/Zika cluster
+  counts.
+- `/weather/realtime` — averaged temperature, rainfall, humidity, wind,
+  lightning, flood, and WBGT readings beside a map. Each sensor type has its
+  own location toggle, and markers stay hidden until that toggle is selected.
+- `/environment` — PSI, UV, and WBGT summaries, an air-quality legend, and
+  toggles for the PSI table and dengue/Zika cluster lists.
+- `/transport` — an operations map with the same opt-in taxi, camera,
+  road-incident, and variable-message-sign layers, plus compact network metrics
+  and advisories.
+- `/transport/travel-times` — expressway travel times.
+- `/transport/cameras` — a dense gallery of traffic-camera images. Names come
+  from `data/lta_camera_id_mapping.csv`.
+- `/transit/crowding` — MRT/LRT station crowd forecast as a station-by-time grid.
+- `/transit/buses` — bus arrival timings for a five-digit stop code, with
+  soonest or service-number sorting, a service filter, and a service-route
+  search. Bus stop locations stay off the map until "Show Bus Stop Locations"
+  is turned on.
+- `/nearby` — address search with Getting around, Park and charge, and
+  Food & Amenities tabs. Each facility type has a show/hide toggle, and its
+  points appear on the map only while that toggle is on.
+
+Every route has typed loading, error, refreshing, stale-data, and empty states.
+Maps use OneMap tiles through React Leaflet. Charts use a lazy route-level
+Plotly basic bundle rather than loading the full chart library on every page.
 
 ## Project layout
 
 ```
-app.py                 # Dash entry, startup downloads, callback registration
-auth/                  # OneMap token
-callbacks/             # Dash callbacks
-components/            # Page and shared UI layouts
+backend/               # FastAPI routes, services, provider clients, Redis cache
+frontend/              # Strict TypeScript React application
+docker/                # API/web images and Nginx configuration
+compose.yaml           # Web, API, and Redis development/production stack
 conf/
-  api_urls.py          # Only source of API bases, endpoints, dataset IDs
-  cache_config.py      # Poll intervals and TTLs
-  weather_indices_config.py  # PSI / pollutant / WBGT bands (not URLs)
-  mrt_line_config.py   # Line colours and names
-  page_layout_config.py
-utils/                 # Fetchers, parsers, map and transport helpers
-tests/unit/            # pytest
-assets/                # CSS, JS, screenshots
-data/                  # Downloaded CSVs / JSON (created at runtime)
+  api_urls.py          # Provider bases, endpoints, and dataset IDs
+data/
+  lta_camera_id_mapping.csv  # Traffic-camera ID to location name
+tests/
+  api/                 # FastAPI route and presenter tests
+  integration/         # Provider-backed route tests
+  contract/            # OpenAPI contract tests
+  fixtures/            # Sanitized provider responses
 ```
 
 ## Data sources
 
-Live and dataset APIs are listed in `conf/api_urls.py`. Sign-up and deprecation notes: [Data.gov.sg developer guide](https://guide.data.gov.sg/developers).
+Provider URLs and dataset IDs remain centralized in `conf/api_urls.py`.
 
-**Data.gov.sg** — weather V2 (temperature, rainfall, humidity, wind), lightning, flood alerts, UV, WBGT, PSI, 2-hour and 24-hour forecasts, taxi availability, traffic images. Poll/initiate-download datasets: HDB carparks, speed cameras, ERP gantries, parks, sports fields, recycling bins, the [NEA Hawker Centres dataset](https://data.gov.sg/datasets/d_4a086da0a5553be1d89383cd90d07ecd/view), dengue and zika clusters.
+- **Data.gov.sg**: realtime temperature, rainfall, humidity, wind, lightning,
+  flood alerts, PSI, UV, WBGT, 2-hour/24-hour forecasts, taxi availability,
+  traffic cameras, dengue/Zika clusters, and public amenities (parks, sports
+  fields, recycling bins, and hawker centres).
+- **LTA DataMall**: traffic incidents, faulty traffic lights, variable message
+  signs, travel times, carpark availability, EV chargers, bus
+  stops/services/arrivals, train status, crowding, and crowd forecasts.
+- **OneMap**: address search, nearby bus stops/MRT stations, authentication,
+  and night map tiles. Every map opens at zoom 13.
+  Marker layers stay off until a page toggle is selected.
 
-**LTA DataMall** — bus stops/routes/services/arrivals, taxi stands, bicycle parking, carpark availability, expressway travel times, platform crowd (forecast and realtime), train service alerts plus GTFS-Realtime alerts and trip updates, traffic incidents, faulty traffic lights, VMS, EV charging. Faulty-light alerts use the documented `/FaultyTrafficLights` endpoint. `EndDate` distinguishes scheduled maintenance from an unscheduled fault; `Type` 4 is a blackout and type 13 is flashing yellow.
+Provider payloads are converted to stable frontend view models in
+`backend/presenters.py`; React does not depend on provider-specific field names.
 
-**OneMap** — night map tiles, address search, nearest bus stops and MRT stations. LTA faulty-light alerts do not contain coordinates, so their junction descriptions are geocoded through OneMap and labelled **Approximate location**. Alerts that cannot be geocoded remain visible in the Road alerts list.
+## Cache behavior
 
-Station coordinates also use `MRTLRTStations.csv`. A few Thomson–East Coast / Punggol Coast points are mapped manually.
-
-## Screenshots
-
-Files in `assets/img/`:
-
-### Main Dashboard
-![Main Dashboard](assets/img/main_page.jpg)
-
-### Weather metrics
-![Weather metrics](assets/img/weather_metrics.jpg)
-
-### Daily Health and Environmental Watch
-![Daily Health](assets/img/daily_health_env_watch.jpg)
-
-### Bus Arrivals & Services (Transit)
-![Bus arrival search](assets/img/bus_arrival_search.jpg)
-
-### Station Crowd Forecast (Transit)
-![Crowd forecast](assets/img/crowd_forecast.jpg)
-
-### Traffic Cameras (Road & Transport)
-![Traffic cameras](assets/img/traffic_conditions_from_lta_traffic_cameras.jpg)
+Redis keys are versioned and parameter-aware. Live arrivals use a short TTL,
+most realtime feeds use two minutes, crowd data uses longer TTLs, and reference
+or dataset responses use hourly/daily TTLs. Fresh values receive TTL jitter to
+avoid synchronized expiry. A short distributed lock coalesces concurrent cache
+misses, while a bounded stale copy is returned when a provider fails. Responses
+include cache state, fetch time, age, stale state, and Redis degradation metadata.
 
 ## Requirements
 
-1. Python 3.12 or newer.
-2. [uv](https://docs.astral.sh/uv/getting-started/installation/).
-3. API credentials in a root `.env` file (see below).
+Recommended: Docker Desktop with Compose. For native development, install
+Python 3.12+, [uv](https://docs.astral.sh/uv/getting-started/installation/),
+Node.js 22+, and Redis 7.
 
 ```bash
-git clone https://github.com/qzq92/Dash-sample-analytics-dashboard-concept.git
-cd Dash-sample-analytics-dashboard-concept
-uv sync
+git clone https://github.com/qzq92/Land-Transport-Weather-Dashboard.git
+cd Land-Transport-Weather-Dashboard
+copy .env.example .env
+docker compose up --build
 ```
 
-`.venv` is gitignored. Run `uv sync` after every clone. Optional: `uv sync --all-groups` for pylint and pytest.
+Open [http://localhost:8080](http://localhost:8080). Compose persists Redis
+data in the named `redis-data` volume and waits for API/Redis health checks.
+FastAPI port 8000 is internal to the Compose network; use
+`http://localhost:8080/api/v1/docs` for API documentation.
+
+`uv.lock` and `frontend/package-lock.json` are committed intentionally.
+Containers isolate the runtime but do not pin transitive dependency versions;
+the API image installs with `uv sync --frozen --no-dev`, and the web image
+uses `npm ci`.
+
+`compose.yaml` is the standard Docker Compose entry point. It builds and
+networks the web and API images, starts Redis, applies health checks, and
+provides the named cache volume.
 
 ### Environment variables
 
 ```env
-DATA_GOV_API=your_data_gov_api_key_here
-ONEMAP_EMAIL=your_onemap_email_here
-ONEMAP_EMAIL_PASSWORD=your_onemap_password_here
-LTA_API_KEY=your_lta_api_key_here
+BACKEND_DATA_GOV_API_KEY=your_data_gov_api_key_here
+BACKEND_LTA_API_KEY=your_lta_api_key_here
+BACKEND_ONEMAP_EMAIL=your_onemap_email_here
+BACKEND_ONEMAP_EMAIL_PASSWORD=your_onemap_password_here
+# Alternatively: BACKEND_ONEMAP_API_KEY=your_onemap_token_here
+BACKEND_REDIS_URL=redis://localhost:6379/0
+BACKEND_REDIS_REQUIRED=false
 ```
 
 | Variable | Where to get it | Used for |
 | --- | --- | --- |
-| `DATA_GOV_API` | [Request a key](https://guide.data.gov.sg/developer-guide/api-overview/how-to-request-an-api-key) | Weather, PSI, UV, WBGT, taxi availability, traffic images, cluster downloads |
-| `ONEMAP_EMAIL` / `ONEMAP_EMAIL_PASSWORD` | [OneMap register](https://www.onemap.gov.sg/apidocs/register) | Address search, nearby bus/MRT, map tiles |
-| `LTA_API_KEY` | [DataMall request form](https://datamall.lta.gov.sg/content/datamall/en/request-for-api.html) | Bus arrivals and routes, carparks, taxi stands, bicycle parking, EV, VMS, travel times, crowd, train alerts (including GTFS) |
+| `BACKEND_DATA_GOV_API_KEY` | [Request a key](https://guide.data.gov.sg/developer-guide/api-overview/how-to-request-an-api-key) | Weather, environment, taxis, cameras, and datasets |
+| `BACKEND_ONEMAP_EMAIL` / `BACKEND_ONEMAP_EMAIL_PASSWORD` | [OneMap register](https://www.onemap.gov.sg/apidocs/register) | Address and nearby searches |
+| `BACKEND_ONEMAP_API_KEY` | OneMap | Optional pre-issued token instead of email/password |
+| `BACKEND_LTA_API_KEY` | [DataMall request form](https://datamall.lta.gov.sg/content/datamall/en/request-for-api.html) | Road, bus, and rail feeds |
+| `BACKEND_REDIS_URL` | Local or managed Redis | Shared expiring query cache |
 
 ## Run locally
 
+Use `docker compose up --build` for the complete stack. Native development:
+
 ```bash
-uv sync
-uv run .\app.py
+uv sync --all-groups
+uv run uvicorn backend.main:app --reload --port 8000
+cd frontend
+npm ci
+npm run dev
 ```
 
-Or activate the venv (`source .venv/bin/activate` on Unix, `.venv\Scripts\activate` on Windows) and run `python app.py`.
-
-Open [http://127.0.0.1:8050/](http://127.0.0.1:8050/). The process binds `0.0.0.0:8050` outside conda.
-
-On first start the app creates `data/` if needed, downloads missing static files, and requests an OneMap token.
+The Vite server runs at `http://localhost:5173` and proxies API requests to
+FastAPI. Start a local Redis instance or set `BACKEND_REDIS_URL`; the API can
+degrade to uncached provider reads when Redis is optional.
 
 ### Tests and lint
 
 ```bash
-uv run pytest tests/unit
-uv run pylint callbacks components conf utils app.py
+uv run pytest
+uv run ruff check backend
+uv run mypy backend
+cd frontend
+npm run lint
+npm test
+npm run build
 ```
 
-CI (`.github/workflows/lint.yml`) runs the same checks on `main_v2`.
+CI runs Python and strict TypeScript checks, Redis integration tests, and
+production container builds on `main`.
 
 ## How development is structured
 
-- Put new HTTP endpoints in `conf/api_urls.py` and import them.
-- Keep fetch/parse logic in `utils/`; callbacks should compose UI from that data.
+- Keep provider URLs centralized in `conf/api_urls.py`.
+- Keep route handlers thin; provider access belongs in backend clients and
+  normalization/caching belongs in services.
+- Keep React server state in TanStack Query and local interaction state inside
+  the smallest relevant component.
+- Keep TypeScript strict and do not use `any` to bypass API contracts.
 - Keep script files at or under 700 lines.
 - Add or update a unit test with each behaviour change.
-- After UI work, restart `uv run .\app.py` and exercise the tab (hot reload is disabled).
+- Never connect the browser directly to Redis or expose provider credentials.
 
 ## Known limitations
 
-- Bus stop markers on Road & Transport appear only at zoom 15+ and only in the current viewport.
-- Stop markers can sit off the kerb when roads are under construction (disclaimer is shown with the layer).
-- Some LTA traffic-camera stills no longer load as feeds are retired.
-- Nearby Facilities search does not query OneMap until Enter or the Search button.
+- Live bus arrivals require a bus stop code. The service box looks up the
+  route, and the filter on the arrival board only narrows services already
+  calling at that stop.
+- Some LTA traffic-camera images may be unavailable as feeds are retired.
+  Unmapped camera IDs fall back to the provider ID when
+  `data/lta_camera_id_mapping.csv` has no name.
+- The rail banner uses LTA's aggregate train-status value. "View all lines"
+  lists each line, but a disruption is not attributed to a specific line.
+- Crowd forecast stays empty when LTA DataMall returns HTTP 403 for the
+  configured key. The station-by-time grid renders once that feed is
+  authorized.
+- Road and nearby pages do not yet include ERP gantries, speed cameras, taxi
+  stands, bicycle parking, or EV-charger map layers.
+- Cache refresh is request-driven. A dedicated refresh worker should be added
+  only if production measurements show unacceptable cold-cache latency.
 
 ## Deployment
 
-Plotly Cloud / gunicorn notes are in [DEPLOYMENT.md](DEPLOYMENT.md). Set the same four environment variables in the host.
+Container deployment, health checks, Redis persistence, and rollback guidance
+are in [DEPLOYMENT.md](DEPLOYMENT.md).
