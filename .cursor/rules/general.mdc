@@ -1,16 +1,39 @@
 ---
+description: Project architecture, implementation, security, testing, and assistant conventions
 alwaysApply: true
 ---
 
-- Only modify code directly relevant to the specific request. Avoid changing unrelated functionality.
-- Never replace code with placeholders like `// ... rest of the processing ...`. Always include complete code.
-- Break problems into smaller steps. Think through each step separately before implementing.
-- Always provide a complete PLAN with REASONING based on evidence from code and logs before making changes.
-- Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
-- All script files (.py, .ts, .js, .kt, .java) should not exceed 700 lines.
-- Use PEP8 standard for python programming
-- Always follows best software development practices by following DRY (Don't Repeat Yourself), KISS (Keep It Simple, Stupid) and SOLID Design principles
-- Ensure unit test is implemented and tested with every case.
-- Maintain readable README files to simplify understanding.
-- For dockerbuild script, reduce the overall build size by avoiding  unnecessary layer building, combining relevant logic in 1 single line if possible
-- Update the README file if there are changes to the application. Otherwise leave it as it is. ALWAYS ensure that the README is easily understood developers on what it is how it works, together with the minimal tech stack required.
+# Project assistant rules
+
+## Architecture and implementation
+
+- Detect the framework before implementation and follow existing project conventions.
+- Make minimal, targeted changes; avoid unrelated cleanup.
+- Keep solutions simple, reusable, and aligned with DRY, KISS, and SOLID.
+- Reuse existing libraries and frameworks; do not hardcode configurable values.
+- Break complex work into steps and base plans and reasoning on code or log evidence.
+- Never use placeholder comments or omit required implementation.
+- Keep Python, TypeScript, JavaScript, Kotlin, and Java scripts under 700 lines.
+- Use PEP 8 for Python.
+
+## Security and logging
+
+- Never log or expose PII, tokens, credentials, secrets, or certificates.
+- Handle credentials and configuration safely.
+- Use the existing logging framework with INFO for normal states, WARN for degraded
+  states, and ERROR for failures; prefer structured, non-noisy logs.
+
+## Testing and documentation
+
+- Add unit tests for behavior changes and cover success and failure scenarios.
+- Run appropriate linting, type checking, and tests after substantive changes.
+- Keep README documentation understandable and update it when the application changes.
+- Keep Docker builds small by avoiding unnecessary layers.
+
+## Communication and code output
+
+- Answer first; keep responses concise and do not restate the request.
+- For plans, use numbered actionable steps; for reviews, report issues by severity.
+- For fixes, show only relevant changed code and briefly explain the cause.
+- Match existing indentation and naming; do not add imports unless required.
+- Flag security risks, breaking changes, and correctness caveats.
