@@ -89,6 +89,9 @@ React Router lazy-loads each view:
   own location toggle, and markers stay hidden until that toggle is selected.
 - `/environment` — PSI, UV, and WBGT summaries, an air-quality legend, and
   toggles for the PSI table and dengue/Zika cluster lists.
+- `/healthcare` — official emergency-department queue estimates from
+  participating NHG and NUHS hospitals, including patients waiting and
+  estimated time to see a doctor.
 - `/transport` — an operations map with the same opt-in taxi, camera,
   road-incident, and variable-message-sign layers, plus compact network metrics
   and advisories.
@@ -248,6 +251,10 @@ production container builds on `main`.
 - Live bus arrivals require a bus stop code. The service box looks up the
   route, and the filter on the arrival board only narrows services already
   calling at that stop.
+- Healthcare wait times are scraped from official hospital pages on the
+  server, cached for 30 minutes, and marked with source links. Hospital
+  coverage and fields vary by page; estimates are informational and should
+  not be used to delay emergency care.
 - Some LTA traffic-camera images may be unavailable as feeds are retired.
   Unmapped camera IDs fall back to the provider ID when
   `data/lta_camera_id_mapping.csv` has no name.
