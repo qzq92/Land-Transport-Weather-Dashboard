@@ -7,6 +7,7 @@ const navigation = [
   { to: "/", label: "Main Dashboard", end: true },
   { to: "/weather/realtime", label: "Weather Metrics" },
   { to: "/environment", label: "Daily Health & Environment" },
+  { to: "/healthcare", label: "Healthcare Wait Times" },
   { to: "/transport", label: "Road & Transport" },
   { to: "/transit/crowding", label: "Transit" },
   { to: "/nearby", label: "Nearby Facilities" },

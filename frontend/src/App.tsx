@@ -5,6 +5,7 @@ import { Layout } from "./components/Layout";
 const HomePage = lazy(() => import("./pages/HomePage"));
 const WeatherPage = lazy(() => import("./pages/WeatherPage"));
 const EnvironmentPage = lazy(() => import("./pages/EnvironmentPage"));
+const HealthcarePage = lazy(() => import("./pages/HealthcarePage"));
 const TransportPage = lazy(() => import("./pages/TransportPage"));
 const TravelTimesPage = lazy(() => import("./pages/TravelTimesPage"));
 const CamerasPage = lazy(() => import("./pages/CamerasPage"));
@@ -40,6 +41,7 @@ export function AppRoutes() {
           <Route index element={<HomePage />} />
           <Route path="weather/realtime" element={<WeatherPage />} />
           <Route path="environment" element={<EnvironmentPage />} />
+          <Route path="healthcare" element={<HealthcarePage />} />
           <Route path="transport" element={<TransportPage />} />
           <Route path="transport/travel-times" element={<TravelTimesPage />} />
           <Route path="transport/cameras" element={<CamerasPage />} />

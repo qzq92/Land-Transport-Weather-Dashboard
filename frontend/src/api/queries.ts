@@ -5,6 +5,7 @@ import type {
   BusRouteData,
   BusStopLocations,
   BusesData,
+  HealthcareData,
   NearbyData,
   SearchPlace,
 } from "./schema";
@@ -101,6 +102,15 @@ export function useBusRoute(serviceNo: string) {
     retry: 1,
   });
 }
+
+export const useHealthcareWaitTimes = () =>
+  useQuery<ApiEnvelope<HealthcareData>>({
+    queryKey: ["healthcare", "wait-times"],
+    queryFn: ({ signal }) => api.healthcareWaitTimes(signal),
+    staleTime: 5 * 60_000,
+    refetchInterval: 10 * 60_000,
+    retry: 1,
+  });
 
 export function useNearby(latitude: number, longitude: number) {
   return useQuery<ApiEnvelope<NearbyData>>({

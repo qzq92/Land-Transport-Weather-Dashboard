@@ -213,6 +213,31 @@ export interface NearbyData {
   places: NearbyPlace[];
 }
 
+export interface HealthcareFacility {
+  id: string;
+  hospital: string;
+  cluster: "NHG" | "NUHS";
+  category: "adult" | "children";
+  patients_waiting?: number | null;
+  wait_to_doctor?: string | null;
+  wait_to_doctor_minutes?: number | null;
+  bed_wait?: string | null;
+  bed_wait_minutes?: number | null;
+}
+
+export interface HealthcareSource {
+  id: string;
+  name: string;
+  url: string;
+  state: "available" | "unavailable";
+  error?: string;
+}
+
+export interface HealthcareData {
+  facilities: HealthcareFacility[];
+  sources: HealthcareSource[];
+}
+
 export interface SearchPlace {
   id: string;
   label: string;
@@ -232,6 +257,7 @@ export interface paths {
   "/api/v1/transit/buses": BusesData;
   "/api/v1/transit/bus/locations": BusStopLocations;
   "/api/v1/transit/bus/routes": BusRouteData;
+  "/api/v1/healthcare/wait-times": HealthcareData;
   "/api/v1/nearby": NearbyData;
   "/api/v1/nearby/search": SearchPlace[];
 }

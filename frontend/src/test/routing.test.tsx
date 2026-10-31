@@ -25,6 +25,9 @@ vi.mock("../pages/WeatherPage", () => ({
 vi.mock("../pages/EnvironmentPage", () => ({
   default: () => <h1>Environment route</h1>,
 }));
+vi.mock("../pages/HealthcarePage", () => ({
+  default: () => <h1>Healthcare route</h1>,
+}));
 vi.mock("../pages/TransportPage", () => ({
   default: () => <h1>Transport route</h1>,
 }));
@@ -49,6 +52,7 @@ describe("application routing", () => {
     ["/", "Overview route"],
     ["/weather/realtime", "Weather route"],
     ["/environment", "Environment route"],
+    ["/healthcare", "Healthcare route"],
     ["/transport", "Transport route"],
     ["/transport/travel-times", "Travel times route"],
     ["/transport/cameras", "Cameras route"],

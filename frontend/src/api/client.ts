@@ -109,6 +109,11 @@ export const api = {
       signal,
       timeoutMs: 45_000,
     }),
+  healthcareWaitTimes: (signal?: AbortSignal) =>
+    apiGet("/api/v1/healthcare/wait-times", {
+      signal,
+      timeoutMs: 20_000,
+    }),
   nearby: (
     params: { latitude: number; longitude: number; radius?: number },
     signal?: AbortSignal,

@@ -1053,6 +1053,106 @@ h1 {
   box-shadow: 0 3px 12px rgb(0 0 0 / 24%);
 }
 
+.healthcare-wait-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.65rem;
+}
+
+.healthcare-updated {
+  color: var(--muted);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.healthcare-wait-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+  background: #1a2a3a;
+}
+
+.healthcare-wait-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.healthcare-wait-card h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.healthcare-wait-card .eyebrow {
+  margin-bottom: 0.25rem;
+  font-size: 0.65rem;
+}
+
+.healthcare-wait-card dl {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+}
+
+.healthcare-wait-card dl > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.5rem;
+}
+
+.healthcare-wait-card dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.healthcare-wait-card dd {
+  margin: 0;
+  color: var(--amber);
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.healthcare-disclaimer {
+  margin: 0 0 0.8rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.healthcare-source-list {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.healthcare-source-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.45rem;
+  font-size: 0.78rem;
+}
+
+.source-state {
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.source-state.is-available {
+  color: var(--green);
+}
+
+.source-state.is-unavailable {
+  color: var(--amber);
+}
+
 .table-scroll {
   overflow-x: auto;
 }
