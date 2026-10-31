@@ -17,7 +17,11 @@ from backend.presenters import (
     weather_alerts_view,
     weather_view,
 )
-from backend.station_locations import station_name_for, station_names
+from backend.station_locations import (
+    station_location_records,
+    station_name_for,
+    station_names,
+)
 
 
 def test_hospital_wait_pages_are_normalized() -> None:
@@ -152,6 +156,90 @@ def test_nhg_pages_read_live_queue_labels() -> None:
     assert ktph["updated_at"] == "31 Oct 2026 07:45 PM"
 
 
+def test_updated_at_keeps_only_the_last_updated_datetime() -> None:
+    nuhs = parse_wait_page(
+        (
+            "<table><tr><th></th><th>Alexandra Hospital</th></tr>"
+            "<tr><td>Number of Patients Waiting for Consult</td>"
+            "<td>1 patient(s)</td></tr>"
+            "<tr><td>Estimated Wait Time to See Doctor</td>"
+            "<td>1 hour(s)</td></tr></table>"
+            "<p>Last updated at 25 Oct 2026, 03:02:09 AM.</p>"
+            "<p>The wait times shown are estimates and provided "
+            "for informational purposes.</p>"
+            "<p>1E Kent Ridge Road, NUHS Tower Block, Singapore 119228</p>"
+        ),
+        "nuhs",
+    )[0]
+    ttsh = parse_wait_page(
+        (
+            "<p>Number of patients in queue 2 Patients</p>"
+            "<p>Waiting time to see doctor 10 min</p>"
+            "<p>Last updated at 31 Oct 2026 08:20 PM. Refresh.</p>"
+            "<footer>Contact us after 31 Oct 2026 09:00 PM</footer>"
+        ),
+        "ttsh",
+    )[0]
+    woodlands = parse_wait_page(
+        (
+            "<p>Number of patients in queue 3 Patients</p>"
+            "<p>Waiting time to see doctor 8 mins</p>"
+            "<p>Last updated at 09/06/2026 07:01:20. Refresh.</p>"
+            "<p>More information is available at the hospital site.</p>"
+        ),
+        "woodlands",
+    )[0]
+
+    assert nuhs["updated_at"] == "25 Oct 2026, 03:02:09 AM"
+    assert ttsh["updated_at"] == "31 Oct 2026 08:20 PM"
+    assert woodlands["updated_at"] == "09/06/2026 07:01:20"
+
+
+def test_nhg_updated_at_fills_last_updated_tokens() -> None:
+    ttsh = parse_wait_page(
+        (
+            "<p>Number of patients in queue 8 Patients</p>"
+            "<p>Waiting time to see doctor 22 mins</p>"
+            '<span class="e-site-rich-text">'
+            "Last updated at ##last_Updated_Date## ##last_Updated_Time##."
+            "</span>"
+            '<span class="c-ed-queue-status__refresh">Refresh.</span>'
+            "<script>"
+            '{"history":"31/10/2026 07:39 PM|1|22\\n31/10/2026 04:20 PM|0|0"}'
+            '{"last_Updated_Date":{"value":"31/10/2026"},'
+            '"last_Updated_Time":{"value":"20:00:05"}}'
+            "</script>"
+        ),
+        "ttsh",
+    )[0]
+    woodlands = parse_wait_page(
+        (
+            "<p>Number of patients in queue 9 Patients</p>"
+            "<p>Waiting time to see doctor 65 mins</p>"
+            "<p>Last updated at ##last_Updated_Date## ##last_Updated_Time##. </p>"
+            "<p>Refresh.</p>"
+            '{"last_Updated_Date":{"value":"31/10/2026"},'
+            '"last_Updated_Time":{"value":"21:00:05"}}'
+        ),
+        "woodlands",
+    )[0]
+    ktph = parse_wait_page(
+        (
+            "<p>Number of patients in queue 2 Patients</p>"
+            "<p>Waiting time to see doctor 10 mins</p>"
+            "<p>last updated at ##last_Updated_Date## ##last_Updated_Time##. </p>"
+            "<p>Refresh.</p>"
+            '{"last_Updated_Date":{"value":"31/10/2026"},'
+            '"last_Updated_Time":{"value":"21:00:05"}}'
+        ),
+        "ktph",
+    )[0]
+
+    assert ttsh["updated_at"] == "31/10/2026 20:00:05"
+    assert woodlands["updated_at"] == "31/10/2026 21:00:05"
+    assert ktph["updated_at"] == "31/10/2026 21:00:05"
+
+
 def test_weather_fixture_becomes_typed_sensor_data() -> None:
     fixture = (
         Path(__file__).parents[1]
@@ -197,6 +285,100 @@ def test_search_and_nearby_ignore_records_without_coordinates() -> None:
     assert search[0]["label"].startswith("City Hall")
     assert len(nearby["places"]) == 1
     assert nearby["places"][0]["distance_m"] > 0
+
+
+def test_nearby_places_read_lta_datamall_fields_and_station_csv() -> None:
+    result = nearby_places(
+        1.29375,
+        103.85718,
+        {
+            "bus-stops": {
+                "value": [
+                    {
+                        "BusStopCode": "01012",
+                        "RoadName": "Victoria St",
+                        "Description": "Hotel Grand Pacific",
+                        "Latitude": 1.29685,
+                        "Longitude": 103.853,
+                    },
+                    {
+                        "BusStopCode": "99999",
+                        "Description": "Far away",
+                        "Latitude": 1.45,
+                        "Longitude": 103.82,
+                    },
+                ]
+            },
+            "taxi-stands": {
+                "value": [
+                    {
+                        "TaxiCode": "S0001",
+                        "Latitude": 1.294,
+                        "Longitude": 103.858,
+                        "Name": "Bugis Junction",
+                        "Type": "Stand",
+                    }
+                ]
+            },
+            "carparks": {
+                "value": [
+                    {
+                        "CarParkID": "A12",
+                        "Development": "Suntec City",
+                        "Location": "1.29375 103.85718",
+                        "AvailableLots": 120,
+                    }
+                ]
+            },
+            "bicycle-parking": {
+                "value": [
+                    {
+                        "Description": "Raffles City",
+                        "Latitude": 1.2936,
+                        "Longitude": 103.853,
+                    }
+                ]
+            },
+            "ev-charging": {
+                "value": [
+                    {
+                        "locationId": "EV1",
+                        "name": "Suntec charger",
+                        "latitude": 1.294,
+                        "longtitude": 103.857,
+                    }
+                ]
+            },
+        },
+        radius_m=800,
+    )
+    by_category = {place["category"] for place in result["places"]}
+    names = {place["name"] for place in result["places"]}
+    ids = {place["id"] for place in result["places"]}
+
+    assert {
+        "bus-stops",
+        "taxi-stands",
+        "carparks",
+        "bicycle-parking",
+        "ev-charging",
+        "mrt-stations",
+    } <= by_category
+    assert "Hotel Grand Pacific" in names
+    assert "Bugis Junction" in names
+    assert "Suntec City" in names
+    assert "Raffles City" in names
+    assert "Suntec charger" in names
+    assert "bus-stops-99999" not in ids
+    assert any(
+        place["name"] == "CITY HALL MRT STATION"
+        for place in result["places"]
+        if place["category"] == "mrt-stations"
+    )
+    assert any(
+        record["STN_NAME"] == "CITY HALL MRT STATION"
+        for record in station_location_records()
+    )
 
 
 def test_bus_arrivals_are_grouped_and_load_is_mapped() -> None:
@@ -575,6 +757,118 @@ def test_crowding_view_adds_station_names_from_csv() -> None:
     assert by_station["CC31"]["level"] == "low"
     assert by_station["CE1"]["level"] == "moderate"
     assert by_station["CE2"]["level"] == "high"
+
+
+def test_crowding_view_reads_forecast_start_and_station_fields() -> None:
+    result = crowding_view(
+        {
+            "value": [
+                {
+                    "Date": "2026-09-12T00:00:00+08:00",
+                    "Station": "NS1",
+                    "Start": "2026-09-12T08:00:00+08:00",
+                    "CrowdLevel": "l",
+                },
+                {
+                    "Date": "2026-09-12T00:00:00+08:00",
+                    "Station": "NS1",
+                    "Start": "2026-09-12T08:30:00+08:00",
+                    "CrowdLevel": "NA",
+                },
+            ]
+        }
+    )
+
+    first, second = result["readings"]
+    assert first["station"] == "NS1"
+    assert first["station_name"] == "JURONG EAST MRT STATION"
+    assert first["level"] == "low"
+    assert first["start_time"] == "2026-09-12T08:00:00+08:00"
+    assert first["end_time"] == "2026-09-12T08:30:00+08:00"
+    assert second["level"] == "unknown"
+    assert second["end_time"] == "2026-09-12T09:00:00+08:00"
+
+
+def test_crowding_view_flattens_nested_forecast_stations() -> None:
+    result = crowding_view(
+        {
+            "value": [
+                {
+                    "Date": "2026-09-12T00:00:00+08:00",
+                    "Stations": [
+                        {
+                            "Station": "CC1",
+                            "Start": "2026-09-12T00:00:00+08:00",
+                            "CrowdLevel": "l",
+                        },
+                        {
+                            "Station": "CC2",
+                            "Start": "2026-09-12T00:00:00+08:00",
+                            "CrowdLevel": "h",
+                        },
+                    ],
+                }
+            ]
+        }
+    )
+
+    by_station = {row["station"]: row for row in result["readings"]}
+    assert set(by_station) == {"CC1", "CC2"}
+    assert by_station["CC1"]["station_name"] == "DHOBY GHAUT MRT STATION"
+    assert by_station["CC2"]["station_name"] == "BRAS BASAH MRT STATION"
+    assert by_station["CC1"]["level"] == "low"
+    assert by_station["CC2"]["level"] == "high"
+    assert by_station["CC1"]["start_time"] == "2026-09-12T00:00:00+08:00"
+
+
+def test_crowding_view_flattens_nested_station_intervals() -> None:
+    result = crowding_view(
+        {
+            "value": [
+                {
+                    "Date": "2026-10-31T00:00:00+08:00",
+                    "Stations": [
+                        {
+                            "Station": "SE1",
+                            "Interval": [
+                                {
+                                    "Start": "2026-10-31T00:00:00+08:00",
+                                    "CrowdLevel": "l",
+                                },
+                                {
+                                    "Start": "2026-10-31T00:30:00+08:00",
+                                    "CrowdLevel": "m",
+                                },
+                            ],
+                        },
+                        {
+                            "Station": "SE2",
+                            "Interval": [
+                                {
+                                    "Start": "2026-10-31T00:00:00+08:00",
+                                    "CrowdLevel": "h",
+                                }
+                            ],
+                        },
+                    ],
+                }
+            ]
+        }
+    )
+
+    by_key = {
+        (row["station"], row["start_time"]): row for row in result["readings"]
+    }
+    first = by_key[("SE1", "2026-10-31T00:00:00+08:00")]
+    assert len(by_key) == 3
+    assert first["station_name"] == "COMPASSVALE LRT STATION"
+    assert first["level"] == "low"
+    assert first["end_time"] == "2026-10-31T00:30:00+08:00"
+    assert by_key[("SE1", "2026-10-31T00:30:00+08:00")]["level"] == "moderate"
+    assert by_key[("SE2", "2026-10-31T00:00:00+08:00")]["level"] == "high"
+    assert by_key[("SE2", "2026-10-31T00:00:00+08:00")]["station_name"] == (
+        "RUMBIA LRT STATION"
+    )
 
 
 def test_transport_view_includes_toggleable_road_map_layers() -> None:

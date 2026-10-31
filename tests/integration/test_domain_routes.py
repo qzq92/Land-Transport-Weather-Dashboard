@@ -77,6 +77,7 @@ def test_all_domain_route_families_use_mocked_providers() -> None:
         ("/api/v1/environment", None),
         ("/api/v1/transport", None),
         ("/api/v1/transit/crowding", {"train_line": "EWL"}),
+        ("/api/v1/transit/crowding/forecast", {"train_line": "EWL"}),
         (
             "/api/v1/transit/buses",
             {"stop_code": "01012", "service_no": "36"},
@@ -104,6 +105,21 @@ def test_all_domain_route_families_use_mocked_providers() -> None:
         item for item in requests if item.url.path.endswith("/TrafficIncidents")
     )
     assert lta_request.headers["AccountKey"] == "lta-test"
+    nearby_lta_paths = {item.url.path for item in requests}
+    assert {
+        "/ltaodataservice/BusStops",
+        "/ltaodataservice/TaxiStands",
+        "/ltaodataservice/v3/BicycleParking",
+        "/ltaodataservice/CarParkAvailabilityv2",
+        "/ltaodataservice/EVCBatch",
+    } <= nearby_lta_paths
+    bicycle_request = next(
+        item
+        for item in requests
+        if item.url.path.endswith("/v3/BicycleParking")
+    )
+    assert float(bicycle_request.url.params["Dist"]) == 2.0
+    assert bicycle_request.headers["AccountKey"] == "lta-test"
 
 
 def test_dashboard_keeps_partial_results_when_one_provider_fails() -> None:
@@ -147,6 +163,7 @@ def test_crowding_route_labels_records_with_requested_train_line() -> None:
                             "Station": "CC31 CANTONMENT MRT STATION",
                             "CrowdLevel": "low",
                             "StartTime": "2026-09-12T00:00:00",
+                            "EndTime": "2026-09-12T00:10:00",
                         }
                     ]
                 },
@@ -165,6 +182,52 @@ def test_crowding_route_labels_records_with_requested_train_line() -> None:
     assert reading["line"] == "CCL"
     assert reading["station"] == "CC31"
     assert reading["station_name"] == "CANTONMENT MRT STATION"
+    assert reading["start_time"] == "2026-09-12T00:00:00"
+    assert reading["end_time"] == "2026-09-12T00:10:00"
+
+
+def test_crowding_forecast_route_uses_pcd_forecast() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/PCDForecast"):
+            assert request.url.params["TrainLine"] == "CCL"
+            return httpx.Response(
+                200,
+                json={
+                    "value": [
+                        {
+                            "Date": "2026-09-12T00:00:00+08:00",
+                            "Stations": [
+                                {
+                                    "Station": "CE1",
+                                    "Interval": [
+                                        {
+                                            "Start": "2026-09-12T08:00:00+08:00",
+                                            "CrowdLevel": "m",
+                                        }
+                                    ],
+                                }
+                            ],
+                        }
+                    ]
+                },
+            )
+        return httpx.Response(200, json={"value": []})
+
+    app = make_app(handler)
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/v1/transit/crowding/forecast",
+            params={"train_line": "CCL"},
+        )
+
+    assert response.status_code == 200
+    reading = response.json()["data"]["readings"][0]
+    assert reading["line"] == "CCL"
+    assert reading["station"] == "CE1"
+    assert reading["station_name"] == "BAYFRONT MRT STATION"
+    assert reading["level"] == "moderate"
+    assert reading["start_time"] == "2026-09-12T08:00:00+08:00"
+    assert reading["end_time"] == "2026-09-12T08:30:00+08:00"
 
 
 def test_healthcare_wait_times_route_normalizes_official_pages() -> None:
@@ -223,6 +286,9 @@ def test_healthcare_wait_times_route_normalizes_official_pages() -> None:
                 "<tr><td>Estimated Wait Time to See Doctor</td>"
                 "<td>1 hour(s)</td></tr></table>"
                 "<p>Last updated at 25 Oct 2026, 03:02:09 AM.</p>"
+                "<p>The wait times shown are estimates and provided "
+                "for informational purposes.</p>"
+                "<p>1E Kent Ridge Road, NUHS Tower Block, Singapore 119228</p>"
             ),
         )
 
@@ -266,3 +332,139 @@ def test_healthcare_wait_times_route_normalizes_official_pages() -> None:
     assert ktph["wait_to_doctor"] == "41 mins"
     assert ktph["wait_to_doctor_minutes"] == 41
     assert ktph["updated_at"] == "31 Oct 2026 08:18 PM"
+    nuhs = next(
+        facility
+        for facility in facilities
+        if facility["hospital"] == "Alexandra Hospital"
+    )
+    assert nuhs["updated_at"] == "25 Oct 2026, 03:02:09 AM"
+
+
+def test_nearby_view_uses_lta_datamall_not_onemap() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        path = request.url.path
+        if path.endswith("/BusStops"):
+            return httpx.Response(
+                200,
+                json={
+                    "value": [
+                        {
+                            "BusStopCode": "01012",
+                            "RoadName": "Victoria St",
+                            "Description": "Hotel Grand Pacific",
+                            "Latitude": 1.29685,
+                            "Longitude": 103.853,
+                        }
+                    ]
+                },
+            )
+        if path.endswith("/TaxiStands"):
+            return httpx.Response(
+                200,
+                json={
+                    "value": [
+                        {
+                            "TaxiCode": "S0001",
+                            "Latitude": 1.294,
+                            "Longitude": 103.858,
+                            "Name": "Bugis Junction",
+                            "Type": "Stand",
+                        }
+                    ]
+                },
+            )
+        if path.endswith("/CarParkAvailabilityv2"):
+            return httpx.Response(
+                200,
+                json={
+                    "value": [
+                        {
+                            "CarParkID": "A12",
+                            "Development": "Suntec City",
+                            "Location": "1.29375 103.85718",
+                            "AvailableLots": 120,
+                        }
+                    ]
+                },
+            )
+        if path.endswith("/v3/BicycleParking"):
+            return httpx.Response(
+                200,
+                json={
+                    "value": [
+                        {
+                            "Description": "Raffles City",
+                            "Latitude": 1.2936,
+                            "Longitude": 103.853,
+                        }
+                    ]
+                },
+            )
+        if path.endswith("/EVCBatch"):
+            return httpx.Response(
+                200,
+                json={"Link": "https://download.example/ev.json"},
+            )
+        if "/poll-download" in path:
+            return httpx.Response(
+                200,
+                json={"data": {"url": "https://download.example/amenity.json"}},
+            )
+        if request.url.path.endswith("/ev.json"):
+            return httpx.Response(
+                200,
+                json={
+                    "value": [
+                        {
+                            "locationId": "EV1",
+                            "name": "Suntec charger",
+                            "latitude": 1.294,
+                            "longtitude": 103.857,
+                        }
+                    ]
+                },
+            )
+        if request.url.host == "download.example":
+            return httpx.Response(
+                200,
+                json={"type": "FeatureCollection", "features": []},
+            )
+        return httpx.Response(200, json={"value": []})
+
+    app = make_app(handler)
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/v1/nearby",
+            params={"latitude": 1.29375, "longitude": 103.85718, "radius": 800},
+        )
+
+    assert response.status_code == 200
+    places = response.json()["data"]["places"]
+    by_category = {place["category"] for place in places}
+    names = {place["name"] for place in places}
+    assert {
+        "bus-stops",
+        "taxi-stands",
+        "carparks",
+        "bicycle-parking",
+        "ev-charging",
+        "mrt-stations",
+    } <= by_category
+    assert {
+        "Hotel Grand Pacific",
+        "Bugis Junction",
+        "Suntec City",
+        "Raffles City",
+        "Suntec charger",
+        "CITY HALL MRT STATION",
+    } <= names
+    assert not any("getNearest" in item.url.path for item in requests)
+    bicycle_request = next(
+        item for item in requests if item.url.path.endswith("/v3/BicycleParking")
+    )
+    assert bicycle_request.url.params["Lat"] == "1.29375"
+    assert bicycle_request.url.params["Long"] == "103.85718"
+    assert float(bicycle_request.url.params["Dist"]) == 0.8
