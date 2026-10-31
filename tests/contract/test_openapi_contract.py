@@ -20,6 +20,7 @@ def test_openapi_exposes_required_versioned_operations() -> None:
         "/api/v1/weather/forecasts/{period}",
         "/api/v1/environment/indices/{metric}",
         "/api/v1/environment/clusters/{disease}",
+        "/api/v1/healthcare/wait-times",
         "/api/v1/transport/{resource}",
         "/api/v1/transport/ev/chargers",
         "/api/v1/transit/bus/stops",

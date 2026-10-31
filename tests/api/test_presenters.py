@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from backend.bus_views import bus_service_view, bus_stop_locations, buses_view
+from backend.healthcare import healthcare_view, parse_wait_page
 from backend.presenters import (
     cameras_view,
     environment_view,
@@ -14,6 +15,64 @@ from backend.presenters import (
     weather_alerts_view,
     weather_view,
 )
+
+
+def test_hospital_wait_pages_are_normalized() -> None:
+    fixture_dir = Path(__file__).parents[1] / "fixtures" / "providers"
+    pages = {
+        source: (fixture_dir / filename).read_text(encoding="utf-8")
+        for source, filename in {
+            "ttsh": "ttsh_emergency.html",
+            "woodlands": "woodlands_emergency.html",
+            "nuhs": "nuhs_emergency.html",
+        }.items()
+    }
+    sources = {
+        source: {"name": source.upper(), "url": f"https://{source}.example"}
+        for source in pages
+    }
+
+    result = healthcare_view(pages, sources)
+
+    assert len(result["facilities"]) == 5
+    ttsh = next(item for item in result["facilities"] if item["cluster"] == "NHG")
+    assert ttsh["patients_waiting"] == 3
+    assert ttsh["wait_to_doctor_minutes"] == 19
+    woodlands = next(
+        item for item in result["facilities"] if item["hospital"] == "Woodlands Health"
+    )
+    assert woodlands["wait_to_doctor_minutes"] == 8
+    nuh_children = next(
+        item
+        for item in result["facilities"]
+        if item["hospital"] == "National University Hospital"
+        and item["category"] == "children"
+    )
+    assert nuh_children["patients_waiting"] == 2
+    assert nuh_children["bed_wait_minutes"] == 120
+
+
+def test_unavailable_hospital_source_is_reported() -> None:
+    result = healthcare_view(
+        {
+            "ttsh": (
+                "<p>No. of Patients Awaiting Consultation: 2</p>"
+                "<p>Average Consult Wait Time: 10 min</p>"
+            )
+        },
+        {
+            "ttsh": {"name": "TTSH", "url": "https://ttsh.example"},
+            "nuhs": {"name": "NUHS", "url": "https://nuhs.example"},
+        },
+        {"nuhs": "provider unavailable"},
+    )
+
+    unavailable = next(
+        source for source in result["sources"] if source["id"] == "nuhs"
+    )
+    assert unavailable["state"] == "unavailable"
+    assert unavailable["error"] == "provider unavailable"
+    assert parse_wait_page("<p>unrelated page</p>", "ttsh") == []
 
 
 def test_weather_fixture_becomes_typed_sensor_data() -> None:

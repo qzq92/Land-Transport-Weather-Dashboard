@@ -133,3 +133,45 @@ def test_dashboard_keeps_partial_results_when_one_provider_fails() -> None:
         "Humidity",
         "Wind speed",
     } <= {metric["label"] for metric in body["data"]["metrics"]}
+
+
+def test_healthcare_wait_times_route_normalizes_official_pages() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "www.ttsh.com.sg":
+            return httpx.Response(
+                200,
+                text=(
+                    "<p>No. of Patients Awaiting Consultation: 2</p>"
+                    "<p>Average Consult Wait Time: 10 min</p>"
+                ),
+            )
+        if request.url.host == "www.nhghealth.com.sg":
+            return httpx.Response(
+                200,
+                text=(
+                    "<p>Number of patients in queue 3 Patients</p>"
+                    "<p>Waiting time to see doctor 8 mins</p>"
+                ),
+            )
+        return httpx.Response(
+            200,
+            text=(
+                "<table><tr><th></th><th>Alexandra Hospital</th></tr>"
+                "<tr><td>Number of Patients Waiting for Consult</td>"
+                "<td>1 patient(s)</td></tr>"
+                "<tr><td>Estimated Wait Time to See Doctor</td>"
+                "<td>1 hour(s)</td></tr></table>"
+            ),
+        )
+
+    app = make_app(handler)
+    with TestClient(app) as client:
+        response = client.get("/api/v1/healthcare/wait-times")
+
+    assert response.status_code == 200
+    facilities = response.json()["data"]["facilities"]
+    assert {facility["hospital"] for facility in facilities} == {
+        "Tan Tock Seng Hospital",
+        "Woodlands Health",
+        "Alexandra Hospital",
+    }
