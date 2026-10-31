@@ -409,6 +409,17 @@ async def environment_summary(request: Request) -> ApiResponse:
 
 
 @router.get(
+    "/healthcare/wait-times",
+    response_model=ApiResponse,
+    tags=["healthcare"],
+)
+async def healthcare_wait_times(request: Request) -> ApiResponse:
+    """Return official emergency-department queue estimates."""
+    service = _service(request, "healthcare")
+    return await service.wait_times()
+
+
+@router.get(
     "/transport/ev/chargers",
     response_model=ApiResponse,
     tags=["transport"],

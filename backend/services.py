@@ -3,9 +3,10 @@
 import asyncio
 import time
 from collections.abc import Awaitable, Callable
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
 from backend.cache import JsonCache
+from backend.healthcare import healthcare_view
 from backend.models import ApiResponse
 from backend.settings import Settings
 from backend.upstream import UpstreamClient, UpstreamError
@@ -23,6 +24,7 @@ from conf.api_urls import (
     FLOOD_ALERTS_URL,
     HAWKER_CENTRES_POLL_DOWNLOAD_URL,
     LIGHTNING_URL,
+    NUHS_EMERGENCY_WAIT_URL,
     ONEMAP_NEAREST_BUS_STOPS_URL,
     ONEMAP_NEAREST_MRT_STOPS_URL,
     ONEMAP_SEARCH_URL,
@@ -37,11 +39,13 @@ from conf.api_urls import (
     TRAFFIC_IMAGES_API_URL,
     TRAFFIC_INCIDENTS_URL,
     TRAIN_SERVICE_ALERTS_URL,
+    TTSH_EMERGENCY_WAIT_URL,
     UV_URL,
     VMS_URL,
     WBGT_URL,
     WEATHER_2H_FORECAST_URL,
     WEATHER_24H_FORECAST_URL,
+    WOODLANDS_EMERGENCY_WAIT_URL,
     ZIKA_POLL_DOWNLOAD_URL,
 )
 
@@ -100,6 +104,26 @@ class ProviderService:
                 url,
                 params=params,
                 headers=headers,
+            ),
+            ttl_seconds=ttl,
+            stale_seconds=stale_ttl,
+        )
+
+    async def cached_text(
+        self,
+        namespace: str,
+        url: str,
+        *,
+        ttl: int,
+        stale_ttl: int = 86_400,
+    ) -> ApiResponse:
+        """Fetch and cache an official HTML page as text."""
+        return await self.cache.get_or_fetch(
+            namespace,
+            {"url": url},
+            lambda: self.upstream.get_text(
+                url,
+                headers={"Accept": "text/html"},
             ),
             ttl_seconds=ttl,
             stale_seconds=stale_ttl,
@@ -314,6 +338,66 @@ class EnvironmentService(ProviderService):
             fetch,
             ttl_seconds=86400,
             stale_seconds=604800,
+        )
+
+
+class HealthcareService(ProviderService):
+    """Official hospital emergency queue pages."""
+
+    SOURCES: ClassVar[dict[str, dict[str, str]]] = {
+        "ttsh": {
+            "name": "Tan Tock Seng Hospital",
+            "url": TTSH_EMERGENCY_WAIT_URL,
+        },
+        "woodlands": {
+            "name": "Woodlands Health",
+            "url": WOODLANDS_EMERGENCY_WAIT_URL,
+        },
+        "nuhs": {
+            "name": "NUHS hospitals",
+            "url": NUHS_EMERGENCY_WAIT_URL,
+        },
+    }
+
+    async def wait_times(self) -> ApiResponse:
+        """Fetch, parse, and cache the official hospital wait pages."""
+
+        async def fetch() -> dict[str, Any]:
+            results = await asyncio.gather(
+                *(
+                    self.cached_text(
+                        f"healthcare:wait-times:{source}",
+                        details["url"],
+                        ttl=1_800,
+                        stale_ttl=86_400,
+                    )
+                    for source, details in self.SOURCES.items()
+                ),
+                return_exceptions=True,
+            )
+            pages: dict[str, str] = {}
+            errors: dict[str, str] = {}
+            for source, result in zip(self.SOURCES, results, strict=True):
+                if isinstance(result, BaseException):
+                    errors[source] = str(result)
+                elif isinstance(result.data, str):
+                    pages[source] = result.data
+                else:
+                    errors[source] = "Provider returned a non-text page"
+            view = healthcare_view(pages, self.SOURCES, errors)
+            if not view["facilities"] and errors:
+                raise UpstreamError(
+                    "Hospital waiting-time sources are unavailable",
+                    503,
+                )
+            return view
+
+        return await self.cache.get_or_fetch(
+            "healthcare:wait-times",
+            {"sources": self.SOURCES},
+            fetch,
+            ttl_seconds=1_800,
+            stale_seconds=86_400,
         )
 
 

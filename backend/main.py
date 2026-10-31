@@ -16,6 +16,7 @@ from backend.cache import AsyncRedis, JsonCache
 from backend.routes import router
 from backend.services import (
     EnvironmentService,
+    HealthcareService,
     LocationService,
     TransitService,
     TransportService,
@@ -32,6 +33,7 @@ class Services:
     locations: LocationService
     weather: WeatherService
     environment: EnvironmentService
+    healthcare: HealthcareService
     transport: TransportService
     transit: TransitService
 
@@ -91,6 +93,7 @@ def create_app(
             locations=LocationService(upstream, cache, resolved_settings),
             weather=WeatherService(upstream, cache, resolved_settings),
             environment=EnvironmentService(upstream, cache, resolved_settings),
+            healthcare=HealthcareService(upstream, cache, resolved_settings),
             transport=TransportService(upstream, cache, resolved_settings),
             transit=TransitService(upstream, cache, resolved_settings),
         )
