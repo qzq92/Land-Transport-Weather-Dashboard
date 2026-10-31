@@ -35,6 +35,18 @@ PCD_FORECAST_URL = f"{LTA_DATAMALL_BASE}/PCDForecast"
 PCD_REALTIME_URL = f"{LTA_DATAMALL_BASE}/PCDRealTime"
 TRAIN_SERVICE_ALERTS_URL = f"{LTA_DATAMALL_BASE}/TrainServiceAlerts"
 
+# Official hospital emergency queue pages
+TTSH_EMERGENCY_WAIT_URL = (
+    "https://www.ttsh.com.sg/Patients-and-Visitors/Medical-Services/"
+    "Emergency/Pages/Emergency%20Medicine.aspx"
+)
+WOODLANDS_EMERGENCY_WAIT_URL = (
+    "https://www.nhghealth.com.sg/wh/for-patients-visitors/emergency-care"
+)
+NUHS_EMERGENCY_WAIT_URL = (
+    "https://www.nuhs.edu.sg/patient-care/emergency-department-wait-times"
+)
+
 # OneMap
 ONEMAP_BASE = "https://www.onemap.gov.sg"
 ONEMAP_TOKEN_URL = f"{ONEMAP_BASE}/api/auth/post/getToken"
