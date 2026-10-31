@@ -15,7 +15,7 @@ class UpstreamError(Exception):
 
 
 class UpstreamClient:
-    """Small JSON-only wrapper around a lifespan-owned HTTP client."""
+    """Small wrapper around a lifespan-owned HTTP client."""
 
     def __init__(self, client: httpx.AsyncClient) -> None:
         self.client = client
@@ -34,6 +34,29 @@ class UpstreamClient:
             params=params,
             headers=headers,
         )
+
+    async def get_text(
+        self,
+        url: str,
+        *,
+        headers: dict[str, str] | None = None,
+    ) -> str:
+        """GET and return a successful response body as text."""
+        try:
+            response = await self.client.get(url, headers=headers)
+            response.raise_for_status()
+            return response.text
+        except httpx.HTTPStatusError as error:
+            status = error.response.status_code
+            mapped_status = 503 if status in {408, 425, 429} or status >= 500 else 502
+            raise UpstreamError(
+                f"Upstream provider returned HTTP {status}",
+                mapped_status,
+            ) from error
+        except httpx.TimeoutException as error:
+            raise UpstreamError("Upstream provider timed out", 504) from error
+        except httpx.RequestError as error:
+            raise UpstreamError("Upstream provider is unavailable", 503) from error
 
     async def post_json(
         self,
