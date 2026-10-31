@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   CircleMarker,
   MapContainer,
@@ -9,6 +9,7 @@ import {
 } from "react-leaflet";
 import type { LatLngExpression } from "leaflet";
 import type { GeoPoint } from "../api/schema";
+import { resolveMapCentre } from "../utils/map";
 
 /** A polyline path rendered on the Leaflet map. */
 export interface MapPath {
@@ -27,7 +28,6 @@ interface MapViewProps {
   onSelect?: (point: GeoPoint) => void;
 }
 
-const DEFAULT_CENTRE: [number, number] = [1.3521, 103.8198];
 const categoryColours: Record<string, string> = {
   weather: "#35c9ff",
   "air-temperature": "#3dd68c",
@@ -59,6 +59,13 @@ const categoryColours: Record<string, string> = {
   "hawker-centres": "#d946ef",
 };
 
+function latLngTuple(centre: LatLngExpression): [number, number] {
+  if (Array.isArray(centre)) {
+    return [centre[0], centre[1]];
+  }
+  return [centre.lat, centre.lng];
+}
+
 function MapViewport({
   centre,
   zoom,
@@ -67,13 +74,29 @@ function MapViewport({
   zoom: number;
 }) {
   const map = useMap();
+  const [latitude, longitude] = latLngTuple(centre);
+  const programmedCentre = useRef<[number, number] | null>(null);
   useEffect(() => {
-    map.setView(centre, zoom);
-  }, [centre, map, zoom]);
+    map.invalidateSize();
+    const previous = programmedCentre.current;
+    const centreChanged =
+      previous === null
+      || previous[0] !== latitude
+      || previous[1] !== longitude;
+    programmedCentre.current = [latitude, longitude];
+    if (!centreChanged) {
+      return;
+    }
+    map.setView([latitude, longitude], zoom);
+  }, [latitude, longitude, map, zoom]);
   return null;
 }
 
-/** Renders geographic points, optional paths, and an optional map viewport. */
+/**
+ * Renders geographic points, optional paths, and an optional map viewport.
+ * The mouse wheel zooms the map; programmatic recentring only runs when the
+ * `centre` prop changes so layer toggles and data refreshes keep the view.
+ */
 export function MapView({
   points,
   paths = [],
@@ -87,11 +110,7 @@ export function MapView({
     (point) =>
       Number.isFinite(point.latitude) && Number.isFinite(point.longitude),
   );
-  const mapCentre: LatLngExpression =
-    centre ??
-    (validPoints.length
-      ? [validPoints[0].latitude, validPoints[0].longitude]
-      : DEFAULT_CENTRE);
+  const mapCentre: LatLngExpression = resolveMapCentre(centre);
 
   return (
     <div
@@ -103,7 +122,7 @@ export function MapView({
       <MapContainer
         center={mapCentre}
         zoom={zoom}
-        scrollWheelZoom={false}
+        scrollWheelZoom={true}
         className="map"
       >
         <MapViewport centre={mapCentre} zoom={zoom} />

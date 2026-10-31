@@ -68,8 +68,11 @@ export default function EnvironmentPage() {
       showZikaClusters,
     ],
   );
-  const selectedCluster = mapPoints.find(
-    (point) => point.id === selectedClusterId,
+  const selectedCluster = (data?.clusters ?? []).find(
+    (cluster) =>
+      cluster.id === selectedClusterId
+      && cluster.latitude !== undefined
+      && cluster.longitude !== undefined,
   );
 
   return (
@@ -93,15 +96,10 @@ export default function EnvironmentPage() {
                   unit=" index"
                 />
               </DataPanel>
-              {(["zika", "dengue"] as const)
-                .filter(
-                  (disease) =>
-                    (disease === "zika" && showZikaClusters)
-                    || (disease === "dengue" && showDengueClusters),
-                )
-                .map((disease) => {
-                const clusters = (data.clusters ?? [])
-                  .filter((cluster) => cluster.disease === disease);
+              {(["zika", "dengue"] as const).map((disease) => {
+                const clusters = (data.clusters ?? []).filter(
+                  (cluster) => cluster.disease === disease,
+                );
                 return (
                   <DataPanel
                     key={disease}
@@ -118,7 +116,14 @@ export default function EnvironmentPage() {
                                 cluster.latitude === undefined
                                 || cluster.longitude === undefined
                               }
-                              onClick={() => setSelectedClusterId(cluster.id)}
+                              onClick={() => {
+                                setSelectedClusterId(cluster.id);
+                                if (cluster.disease === "zika") {
+                                  setShowZikaClusters(true);
+                                } else {
+                                  setShowDengueClusters(true);
+                                }
+                              }}
                               type="button"
                             >
                               <span>{cluster.location}</span>
@@ -165,7 +170,8 @@ export default function EnvironmentPage() {
                 </div>
                 <MapView
                   centre={
-                    selectedCluster
+                    selectedCluster?.latitude !== undefined
+                    && selectedCluster.longitude !== undefined
                       ? [selectedCluster.latitude, selectedCluster.longitude]
                       : undefined
                   }

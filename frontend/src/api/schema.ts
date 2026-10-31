@@ -234,13 +234,14 @@ export interface BusRouteData {
   directions: BusRouteDirection[];
 }
 
-/** A nearby facility with its distance from the searched location. */
+/** A nearby facility with distance and optional bus-stop arrival details. */
 export interface NearbyPlace extends GeoPoint {
   distance_m: number;
   address?: string;
+  arrivals?: BusArrival[];
 }
 
-/** Nearby facilities grouped around the selected map centre. */
+/** Nearby facilities and bus arrivals grouped around the selected map centre. */
 export interface NearbyData {
   centre: { latitude: number; longitude: number };
   places: NearbyPlace[];
@@ -293,6 +294,7 @@ export interface paths {
   "/api/v1/transport/travel-times": TravelTimesData;
   "/api/v1/transport/cameras": CamerasData;
   "/api/v1/transit/crowding": CrowdingData;
+  "/api/v1/transit/crowding/forecast": CrowdingData;
   "/api/v1/transit/rail/banner": RailStatus;
   "/api/v1/transit/buses": BusesData;
   "/api/v1/transit/bus/locations": BusStopLocations;

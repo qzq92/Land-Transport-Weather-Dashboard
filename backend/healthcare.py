@@ -19,7 +19,7 @@ class _PageParser(HTMLParser):
         self._cell: list[str] | None = None
         self._ignored_depth = 0
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+    def handle_starttag(self, tag: str, _attrs: list[tuple[str, str | None]]) -> None:
         if tag in {"script", "style", "noscript"}:
             self._ignored_depth += 1
         if self._ignored_depth:
@@ -187,10 +187,8 @@ _NHG_WAIT_VALUE = re.compile(
     r"([\d,]+)\s*(?:minutes?|mins?|mis)|<\s*1\s*(?:hour|hr)s?",
     re.IGNORECASE,
 )
-_NHG_UPDATED = re.compile(
-    r"last updated at\s+(.+?)(?:\.\s*refresh|$)",
-    re.IGNORECASE,
-)
+_LAST_UPDATED = re.compile(r"last updated at\s+", re.IGNORECASE)
+_REFRESH_WORD = re.compile(r"\brefresh\b", re.IGNORECASE)
 _TOKEN_DATE = re.compile(
     r"last[_-]?updated[_-]?date[^>]*>\s*([^<#][^<]*)",
     re.IGNORECASE,
@@ -199,18 +197,26 @@ _TOKEN_TIME = re.compile(
     r"last[_-]?updated[_-]?time[^>]*>\s*([^<#][^<]*)",
     re.IGNORECASE,
 )
+_TOKEN_JSON_VALUE = r"(?:\{\s*['\"]value['\"]\s*:\s*)?['\"]([^'\"#]+)['\"]"
 _TOKEN_JSON_DATE = re.compile(
-    r"['\"]last[_-]?updated[_-]?date['\"]\s*[:=]\s*['\"]([^'\"#]+)['\"]",
+    rf"['\"]last[_-]?updated[_-]?date['\"]\s*[:=]\s*{_TOKEN_JSON_VALUE}",
     re.IGNORECASE,
 )
 _TOKEN_JSON_TIME = re.compile(
-    r"['\"]last[_-]?updated[_-]?time['\"]\s*[:=]\s*['\"]([^'\"#]+)['\"]",
+    rf"['\"]last[_-]?updated[_-]?time['\"]\s*[:=]\s*{_TOKEN_JSON_VALUE}",
     re.IGNORECASE,
 )
+_TOKEN_PLACEHOLDER_DATE = re.compile(r"##last_Updated_Date##", re.IGNORECASE)
+_TOKEN_PLACEHOLDER_TIME = re.compile(r"##last_Updated_Time##", re.IGNORECASE)
 _DATETIME_VALUE = re.compile(
-    r"\d{1,2}[-/\s]\w{3,}[-/\s]\d{2,4}(?:,)?\s+\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?",
+    r"(?:"
+    r"\d{1,2}\s+[A-Za-z]{3,}\s+\d{2,4},?\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AP]M)?"
+    r"|"
+    r"\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AP]M)?"
+    r")",
     re.IGNORECASE,
 )
+_LABELLED_WINDOW = 160
 
 
 def _value_after_label(
@@ -267,22 +273,56 @@ def _token_value(html: str, pattern: re.Pattern[str]) -> str | None:
     return _usable_timestamp(match.group(1)) if match else None
 
 
-def _updated_at(html: str) -> str | None:
-    """Read the official last-updated stamp from page text or CMS tokens."""
-    text = _clean(re.sub(r"<[^>]+>", " ", html))
-    labelled = _NHG_UPDATED.search(text)
-    if labelled:
-        value = _usable_timestamp(labelled.group(1))
-        if value:
-            return value
+def _datetime_from_text(text: str) -> str | None:
+    """Return the first date-and-time stamp in ``text``, if present."""
+    found = _DATETIME_VALUE.search(text)
+    return _usable_timestamp(found.group(0)) if found else None
+
+
+def _cms_tokens(html: str) -> tuple[str | None, str | None]:
+    """Read CMS date and time tokens from markup or Sitecore JSON."""
     date = _token_value(html, _TOKEN_DATE) or _token_value(html, _TOKEN_JSON_DATE)
     time = _token_value(html, _TOKEN_TIME) or _token_value(html, _TOKEN_JSON_TIME)
+    return date, time
+
+
+def _labelled_update_window(text: str) -> str | None:
+    """Return the short sentence after "last updated at", before Refresh."""
+    labelled = _LAST_UPDATED.search(text)
+    if not labelled:
+        return None
+    window = text[labelled.end() : labelled.end() + _LABELLED_WINDOW]
+    refresh = _REFRESH_WORD.search(window)
+    if refresh:
+        window = window[: refresh.start()]
+    return window
+
+
+def _updated_at(html: str) -> str | None:
+    """Read the datetime that follows the page's "last updated at" label.
+
+    Only the date and time are kept. Trailing copy after that stamp, such as
+    "Refresh." or NUHS disclaimer text, is discarded. When the labelled
+    sentence still contains CMS placeholders, those tokens are filled from
+    Sitecore date/time fields on the same page.
+    """
+    text = _clean(re.sub(r"<[^>]+>", " ", html))
+    window = _labelled_update_window(text)
+    date, time = _cms_tokens(html)
+    if window:
+        filled = window
+        if date:
+            filled = _TOKEN_PLACEHOLDER_DATE.sub(date, filled)
+        if time:
+            filled = _TOKEN_PLACEHOLDER_TIME.sub(time, filled)
+        value = _datetime_from_text(filled)
+        if value:
+            return value
     if date and time:
         return f"{date} {time}"
     if date:
         return date
-    found = _DATETIME_VALUE.search(text)
-    return _usable_timestamp(found.group(0)) if found else None
+    return None
 
 
 def _parse_nhg_queue_cards(html: str, *, hospital: str) -> list[dict[str, Any]]:

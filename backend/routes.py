@@ -184,7 +184,7 @@ async def nearby_locations(
     longitude: Longitude,
     radius_m: Annotated[int, Query(ge=50, le=5000)] = 500,
 ) -> ApiResponse:
-    """Find nearby public-transport facilities with OneMap."""
+    """Find nearby public-transport facilities through the legacy OneMap API."""
     service: LocationService = _service(request, "locations")
     return await service.nearby(kind, latitude, longitude, radius_m)
 
@@ -215,24 +215,40 @@ async def nearby_view(
     longitude: Longitude,
     radius: Annotated[int, Query(ge=50, le=5000)] = 2000,
 ) -> ApiResponse:
-    """Combine nearby bus and MRT facilities for the React map."""
-    service: LocationService = _service(request, "locations")
+    """Combine LTA, station-directory, and amenity data within the radius."""
+    locations: LocationService = _service(request, "locations")
+    transit: TransitService = _service(request, "transit")
+    transport: TransportService = _service(request, "transport")
     payloads, metadata = await _collect(
         {
-            "bus-stops": lambda: service.nearby(
-                "bus-stops", latitude, longitude, radius
+            "bus-stops": transit.all_bus_stops,
+            "taxi-stands": transport.taxi_stands,
+            "carparks": transport.all_carparks,
+            "bicycle-parking": lambda: transport.bicycle_parking(
+                latitude, longitude, radius
             ),
-            "mrt-stations": lambda: service.nearby(
-                "mrt-stations", latitude, longitude, radius
-            ),
-            "parks": lambda: service.amenity("parks"),
-            "sports-fields": lambda: service.amenity("sports-fields"),
-            "recycling-bins": lambda: service.amenity("recycling-bins"),
-            "hawker-centres": lambda: service.amenity("hawker-centres"),
+            "ev-charging": transport.ev_chargers_batch,
+            "parks": lambda: locations.amenity("parks"),
+            "sports-fields": lambda: locations.amenity("sports-fields"),
+            "recycling-bins": lambda: locations.amenity("recycling-bins"),
+            "hawker-centres": lambda: locations.amenity("hawker-centres"),
         }
     )
+    nearby_arrivals = await transit.nearby_bus_arrivals(
+        payloads.get("bus-stops"),
+        latitude,
+        longitude,
+        radius,
+    )
+    bus_records = payloads.get("bus-stops")
+    if isinstance(bus_records, dict):
+        for record in bus_records.get("value", []):
+            if isinstance(record, dict):
+                arrivals = nearby_arrivals.get(str(record.get("BusStopCode")))
+                if arrivals is not None:
+                    record["arrivals"] = arrivals.get("arrivals", [])
     return ApiResponse(
-        data=nearby_places(latitude, longitude, payloads),
+        data=nearby_places(latitude, longitude, payloads, radius_m=radius),
         meta=metadata,
     )
 
@@ -590,6 +606,23 @@ async def rail_resource(
     return await service.rail(resource, train_line)
 
 
+async def _crowding_response(
+    request: Request,
+    resource: Literal["crowding", "forecast"],
+    train_line: TrainLine | None,
+) -> ApiResponse:
+    """Normalize platform crowd records and stamp the requested train line."""
+    service: TransitService = _service(request, "transit")
+    response = await service.rail(resource, train_line)
+    crowding = crowding_view(response.data)
+    if train_line:
+        crowding["readings"] = [
+            {**reading, "line": train_line}
+            for reading in crowding["readings"]
+        ]
+    return response.model_copy(update={"data": crowding})
+
+
 @router.get(
     "/transit/crowding",
     response_model=ApiResponse,
@@ -599,16 +632,21 @@ async def crowding_summary(
     request: Request,
     train_line: TrainLine | None = None,
 ) -> ApiResponse:
-    """Return normalized rail crowding records."""
-    service: TransitService = _service(request, "transit")
-    response = await service.rail("crowding", train_line)
-    crowding = crowding_view(response.data)
-    if train_line:
-        crowding["readings"] = [
-            {**reading, "line": reading["line"] or train_line}
-            for reading in crowding["readings"]
-        ]
-    return response.model_copy(update={"data": crowding})
+    """Return normalized realtime rail crowding records."""
+    return await _crowding_response(request, "crowding", train_line)
+
+
+@router.get(
+    "/transit/crowding/forecast",
+    response_model=ApiResponse,
+    tags=["transit"],
+)
+async def crowding_forecast_summary(
+    request: Request,
+    train_line: TrainLine | None = None,
+) -> ApiResponse:
+    """Return normalized 24-hour rail crowd forecasts."""
+    return await _crowding_response(request, "forecast", train_line)
 
 
 @router.get(

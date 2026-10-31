@@ -1,12 +1,12 @@
 """Pure transformations from provider payloads to frontend view models."""
 
 import re
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from math import asin, cos, radians, sin, sqrt
 from typing import Any
 
 from backend.camera_locations import camera_locations
-from backend.station_locations import station_name_for
+from backend.station_locations import station_location_records, station_name_for
 
 
 def _records(payload: Any) -> list[dict[str, Any]]:
@@ -34,17 +34,43 @@ def _number(value: Any) -> float | None:
         return None
 
 
+def _location_pair(value: Any) -> tuple[float | None, float | None]:
+    """Parse an LTA ``lat lon`` or ``lat,lon`` coordinate string."""
+    if not isinstance(value, str):
+        return None, None
+    parts = value.replace(",", " ").split()
+    if len(parts) < 2:
+        return None, None
+    return _number(parts[0]), _number(parts[1])
+
+
 def _coordinate(
     record: dict[str, Any],
 ) -> tuple[float | None, float | None]:
     location = record.get("location")
     source = location if isinstance(location, dict) else record
     latitude = _number(
-        source.get("latitude", source.get("Latitude", source.get("LATITUDE")))
+        source.get(
+            "latitude",
+            source.get("Latitude", source.get("LATITUDE", source.get("lat"))),
+        )
     )
     longitude = _number(
-        source.get("longitude", source.get("Longitude", source.get("LONGITUDE")))
+        source.get(
+            "longitude",
+            source.get(
+                "Longitude",
+                source.get(
+                    "LONGITUDE",
+                    source.get("lon", source.get("longtitude")),
+                ),
+            ),
+        )
     )
+    if latitude is None or longitude is None:
+        latitude, longitude = _location_pair(
+            source.get("Location") or source.get("location")
+        )
     return latitude, longitude
 
 
@@ -53,6 +79,10 @@ def _identifier(record: dict[str, Any], fallback: str) -> str:
         "id",
         "stationId",
         "BusStopCode",
+        "TaxiCode",
+        "CarParkID",
+        "locationId",
+        "STN_NO",
         "CameraID",
         "IncidentID",
         "Name",
@@ -106,10 +136,15 @@ def nearby_places(
     latitude: float,
     longitude: float,
     payloads: dict[str, Any],
+    *,
+    radius_m: int | None = None,
 ) -> dict[str, Any]:
-    """Combine OneMap nearby records into a distance-sorted view."""
+    """Normalize nearby facilities and optional bus arrivals by distance."""
+    merged = dict(payloads)
+    if not _records(merged.get("mrt-stations")):
+        merged["mrt-stations"] = {"value": list(station_location_records())}
     places: list[dict[str, Any]] = []
-    for category, payload in payloads.items():
+    for category, payload in merged.items():
         for index, record in enumerate(_records(payload)):
             item_latitude, item_longitude = _coordinate(record)
             if item_latitude is None or item_longitude is None:
@@ -133,6 +168,8 @@ def nearby_places(
             name = (
                 record.get("name")
                 or record.get("Name")
+                or record.get("Description")
+                or record.get("Development")
                 or properties.get("name")
                 or properties.get("NAME")
                 or properties.get("DESCRIPTION")
@@ -144,6 +181,15 @@ def nearby_places(
             distance = _number(
                 record.get("distance", record.get("Distance"))
             )
+            if distance is None:
+                distance = _distance_m(
+                    latitude,
+                    longitude,
+                    item_latitude,
+                    item_longitude,
+                )
+            if radius_m is not None and distance > radius_m:
+                continue
             places.append(
                 {
                     "id": f"{category}-{_identifier(record, str(index))}",
@@ -151,19 +197,18 @@ def nearby_places(
                     "latitude": item_latitude,
                     "longitude": item_longitude,
                     "category": category,
-                    "distance_m": round(
-                        distance
-                        if distance is not None
-                        else _distance_m(
-                            latitude,
-                            longitude,
-                            item_latitude,
-                            item_longitude,
-                        )
-                    ),
+                    "detail": record.get("BusStopCode")
+                    if category == "bus-stops"
+                    else None,
+                    "distance_m": round(distance),
                     "address": record.get("ADDRESS")
+                    or record.get("address")
                     or record.get("RoadName")
-                    or record.get("ROAD_NAME"),
+                    or record.get("ROAD_NAME")
+                    or record.get("road"),
+                    "arrivals": record.get("arrivals", [])
+                    if category == "bus-stops"
+                    else None,
                 }
             )
     places.sort(key=lambda item: item["distance_m"])
@@ -639,6 +684,36 @@ def cameras_view(payload: Any) -> dict[str, Any]:
     return {"cameras": cameras}
 
 
+_FORECAST_INTERVAL_MINUTES = 30
+
+
+def _first_text(record: dict[str, Any], *keys: str) -> str | None:
+    """Return the first non-empty string field from ``record``."""
+    for key in keys:
+        value = record.get(key)
+        if value not in (None, ""):
+            return str(value)
+    return None
+
+
+def _advance_timestamp(value: str, minutes: int) -> str | None:
+    """Add minutes to an ISO timestamp, preserving the original offset."""
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return (parsed + timedelta(minutes=minutes)).isoformat()
+
+
+def _crowd_interval(record: dict[str, Any]) -> tuple[str | None, str | None]:
+    """Read realtime StartTime/EndTime or forecast Start, defaulting to 30 minutes."""
+    start = _first_text(record, "StartTime", "Start")
+    end = _first_text(record, "EndTime", "End")
+    if start and not end:
+        end = _advance_timestamp(start, _FORECAST_INTERVAL_MINUTES)
+    return start, end
+
+
 def _crowd_station(record: dict[str, Any]) -> tuple[str, str]:
     """Return a station code and official name for a crowd record."""
     raw = str(
@@ -669,6 +744,8 @@ _CROWD_LEVEL_ALIASES = {
 def _crowd_level(raw: str) -> str:
     """Map LTA crowd codes such as l/m/h onto low/moderate/high."""
     normalized = raw.strip().lower()
+    if normalized in {"na", "n/a", "nil"}:
+        return "unknown"
     if normalized in _CROWD_LEVEL_ALIASES:
         return _CROWD_LEVEL_ALIASES[normalized]
     return next(
@@ -681,14 +758,79 @@ def _crowd_level(raw: str) -> str:
     )
 
 
+_NESTED_CROWD_KEYS = (
+    "Stations",
+    "stations",
+    "Intervals",
+    "intervals",
+    "Interval",
+    "interval",
+)
+
+
+def _looks_like_crowd_record(record: dict[str, Any]) -> bool:
+    """Return True when a dict carries station, crowd, or interval fields."""
+    return any(
+        key in record
+        for key in (
+            "Station",
+            "StationCode",
+            "CrowdLevel",
+            "Start",
+            "StartTime",
+            "Interval",
+            "Intervals",
+        )
+    )
+
+
+def _nested_crowd_items(record: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return the first nested station or interval list on ``record``."""
+    for key in _NESTED_CROWD_KEYS:
+        value = record.get(key)
+        if (
+            isinstance(value, list)
+            and value
+            and all(isinstance(item, dict) for item in value)
+            and any(_looks_like_crowd_record(item) for item in value)
+        ):
+            return value
+    return []
+
+
+def _flatten_crowd_record(record: dict[str, Any]) -> list[dict[str, Any]]:
+    """Expand nested Stations/Interval lists into one record per interval."""
+    nested_items = _nested_crowd_items(record)
+    if not nested_items:
+        return [record] if _looks_like_crowd_record(record) else []
+    parent = {
+        key: value
+        for key, value in record.items()
+        if key not in _NESTED_CROWD_KEYS
+    }
+    leaves: list[dict[str, Any]] = []
+    for item in nested_items:
+        leaves.extend(_flatten_crowd_record({**parent, **item}))
+    return leaves
+
+
+def _crowd_records(payload: Any) -> list[dict[str, Any]]:
+    """Flatten nested PCDForecast station/interval lists into leaf records."""
+    expanded: list[dict[str, Any]] = []
+    for record in _records(payload):
+        expanded.extend(_flatten_crowd_record(record))
+    return expanded
+
+
 def crowding_view(payload: Any) -> dict[str, Any]:
     """Normalize LTA platform crowd records."""
     readings = []
-    for index, record in enumerate(_records(payload)):
+    for index, record in enumerate(_crowd_records(payload)):
         level = _crowd_level(
             str(record.get("CrowdLevel") or record.get("Level") or "unknown")
         )
         station, station_name = _crowd_station(record)
+        start_time, end_time = _crowd_interval(record)
         readings.append(
             {
                 "id": _identifier(record, f"crowd-{index}"),
@@ -696,8 +838,8 @@ def crowding_view(payload: Any) -> dict[str, Any]:
                 "station_name": station_name,
                 "line": str(record.get("TrainLine") or record.get("Line") or ""),
                 "level": level,
-                "start_time": record.get("StartTime"),
-                "end_time": record.get("EndTime"),
+                "start_time": start_time,
+                "end_time": end_time,
             }
         )
     return {"readings": readings, "updated_at": datetime.now(UTC).isoformat()}

@@ -47,6 +47,7 @@ export function AppRoutes() {
           <Route path="transport/travel-times" element={<TravelTimesPage />} />
           <Route path="transport/cameras" element={<CamerasPage />} />
           <Route path="transit/crowding" element={<CrowdingPage />} />
+          <Route path="transit/crowding/forecast" element={<CrowdingPage />} />
           <Route path="transit/buses" element={<BusesPage />} />
           <Route path="nearby" element={<NearbyPage />} />
           <Route path="*" element={<NotFoundPage />} />

@@ -99,6 +99,11 @@ export const api = {
       params: { train_line: trainLine },
       signal,
     }),
+  crowdForecast: (trainLine?: string, signal?: AbortSignal) =>
+    apiGet("/api/v1/transit/crowding/forecast", {
+      params: { train_line: trainLine },
+      signal,
+    }),
   railStatus: (signal?: AbortSignal) =>
     apiGet("/api/v1/transit/rail/banner", { signal }),
   buses: (

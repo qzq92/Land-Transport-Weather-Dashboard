@@ -73,11 +73,21 @@ export const useRailStatus = () =>
     ...LIVE_QUERY_OPTIONS,
   });
 
-/** Loads crowd observations for one LTA train-line code. */
-export const useCrowding = (trainLine: string) =>
+/** Loads realtime crowd observations for one LTA train-line code. */
+export const useCrowding = (trainLine: string, enabled = true) =>
   useQuery({
     queryKey: ["transit", "crowding", trainLine],
     queryFn: ({ signal }) => api.crowding(trainLine, signal),
+    enabled,
+    ...LIVE_QUERY_OPTIONS,
+  });
+
+/** Loads 24-hour crowd forecasts for one LTA train-line code. */
+export const useCrowdForecast = (trainLine: string, enabled = true) =>
+  useQuery({
+    queryKey: ["transit", "crowding", "forecast", trainLine],
+    queryFn: ({ signal }) => api.crowdForecast(trainLine, signal),
+    enabled,
     ...LIVE_QUERY_OPTIONS,
   });
 
@@ -124,7 +134,7 @@ export const useHealthcareWaitTimes = () =>
     retry: 1,
   });
 
-/** Loads facilities near the selected coordinates. */
+/** Loads nearby facilities and live bus-stop arrivals. */
 export function useNearby(
   latitude: number,
   longitude: number,

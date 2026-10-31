@@ -65,9 +65,6 @@ export default function TransportPage() {
               <DataPanel title="Road advisories" eyebrow="Current incidents">
                 <AlertList alerts={data.incidents ?? []} />
               </DataPanel>
-              <DataPanel title="Rail advisories" eyebrow="MRT and LRT">
-                <AlertList alerts={data.train_status ?? []} />
-              </DataPanel>
             </aside>
             <DataPanel
               title="Road network map"
@@ -97,6 +94,11 @@ export default function TransportPage() {
                 height={610}
               />
             </DataPanel>
+            <aside className="transport-right-rail">
+              <DataPanel title="Rail advisories" eyebrow="MRT and LRT">
+                <AlertList alerts={data.train_status ?? []} />
+              </DataPanel>
+            </aside>
           </div>
         )}
       </QueryState>

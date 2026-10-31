@@ -57,6 +57,7 @@ describe("application routing", () => {
     ["/transport/travel-times", "Travel times route"],
     ["/transport/cameras", "Cameras route"],
     ["/transit/crowding", "Crowding route"],
+    ["/transit/crowding/forecast", "Crowding route"],
     ["/transit/buses", "Buses route"],
     ["/nearby", "Nearby route"],
   ])("renders %s", async (path, heading) => {

@@ -3,14 +3,18 @@
 import asyncio
 import time
 from collections.abc import Awaitable, Callable
+from math import asin, cos, radians, sin, sqrt
 from typing import Any, ClassVar, Literal
 
+from backend.bus_views import buses_view
 from backend.cache import JsonCache
 from backend.healthcare import healthcare_view
+from backend.lta_pages import paged_lta_values, secure_batch_link
 from backend.models import ApiResponse
 from backend.settings import Settings
 from backend.upstream import UpstreamClient, UpstreamError
 from conf.api_urls import (
+    BICYCLE_PARKING_URL,
     BUS_ARRIVAL_URL,
     BUS_ROUTES_URL,
     BUS_SERVICES_URL,
@@ -19,6 +23,7 @@ from conf.api_urls import (
     DATA_GOV_REALTIME_API_BASE,
     DENGUE_POLL_DOWNLOAD_URL,
     EST_TRAVEL_TIMES_URL,
+    EV_CHARGING_BATCH_URL,
     EV_CHARGING_URL,
     FAULTY_TRAFFIC_LIGHTS_URL,
     FLOOD_ALERTS_URL,
@@ -37,6 +42,7 @@ from conf.api_urls import (
     RECYCLING_BINS_POLL_DOWNLOAD_URL,
     SPORTS_FIELDS_POLL_DOWNLOAD_URL,
     TAXI_API_URL,
+    TAXI_STANDS_URL,
     TRAFFIC_IMAGES_API_URL,
     TRAFFIC_INCIDENTS_URL,
     TRAIN_SERVICE_ALERTS_URL,
@@ -137,7 +143,7 @@ class ProviderService:
 
 
 class LocationService(ProviderService):
-    """OneMap location search and nearby transport."""
+    """OneMap address search and legacy nearby transport endpoints."""
 
     def __init__(
         self,
@@ -177,7 +183,7 @@ class LocationService(ProviderService):
         longitude: float,
         radius_m: int,
     ) -> ApiResponse:
-        """Return nearby bus stops or MRT/LRT stations from OneMap."""
+        """Return legacy OneMap nearby bus-stop or MRT/LRT results."""
         urls = {
             "bus-stops": ONEMAP_NEAREST_BUS_STOPS_URL,
             "mrt-stations": ONEMAP_NEAREST_MRT_STOPS_URL,
@@ -420,7 +426,7 @@ class HealthcareService(ProviderService):
 
         return await self.cache.get_or_fetch(
             "healthcare:wait-times",
-            {"sources": self.SOURCES, "parser": "nhg-cards-v3"},
+            {"sources": self.SOURCES, "parser": "last-updated-datetime-v1"},
             fetch,
             ttl_seconds=1_800,
             stale_seconds=86_400,
@@ -471,9 +477,69 @@ class TransportService(ProviderService):
             ttl=3600,
         )
 
+    async def taxi_stands(self) -> ApiResponse:
+        """Return the LTA taxi-stand directory."""
+        return await self.cached_get(
+            "transport:taxi-stands",
+            TAXI_STANDS_URL,
+            headers=self.lta_headers(),
+            ttl=86400,
+        )
+
+    async def all_carparks(self) -> ApiResponse:
+        """Return every LTA carpark availability page."""
+        return await paged_lta_values(
+            self.cached_get,
+            self.lta_headers(),
+            "transport:carparks",
+            CARPARK_AVAILABILITY_URL,
+            ttl=120,
+            max_skip=5000,
+        )
+
+    async def bicycle_parking(
+        self,
+        latitude: float,
+        longitude: float,
+        radius_m: int,
+    ) -> ApiResponse:
+        """Return LTA bicycle parking within Dist km of a point."""
+        return await self.cached_get(
+            "transport:bicycle-parking",
+            BICYCLE_PARKING_URL,
+            params={
+                "Lat": latitude,
+                "Long": longitude,
+                "Dist": max(radius_m / 1000.0, 0.1),
+            },
+            headers=self.lta_headers(),
+            ttl=600,
+        )
+
+    async def ev_chargers_batch(self) -> ApiResponse:
+        """Return island-wide EV chargers from the LTA EVCBatch listing."""
+
+        async def fetch() -> Any:
+            listing = await self.upstream.get_json(
+                EV_CHARGING_BATCH_URL,
+                headers=self.lta_headers(),
+            )
+            link = secure_batch_link(listing)
+            if link is None:
+                return listing
+            return await self.upstream.get_json(link)
+
+        return await self.cache.get_or_fetch(
+            "transport:ev-chargers",
+            {"url": EV_CHARGING_BATCH_URL, "representation": "file"},
+            fetch,
+            ttl_seconds=3600,
+            stale_seconds=86400,
+        )
+
 
 class TransitService(ProviderService):
-    """Bus and rail transit data."""
+    """Bus and rail transit data, including live nearby bus arrivals."""
 
     async def _paged_values(
         self,
@@ -513,6 +579,70 @@ class TransitService(ProviderService):
             headers=self.lta_headers(),
             ttl=86400,
         )
+
+    async def all_bus_stops(self) -> ApiResponse:
+        """Return every LTA bus-stop directory page."""
+        return await paged_lta_values(
+            self.cached_get,
+            self.lta_headers(),
+            "transit:bus-stops",
+            BUS_STOPS_URL,
+            ttl=86400,
+            max_skip=15000,
+        )
+
+    async def nearby_bus_arrivals(
+        self,
+        stops_payload: Any,
+        latitude: float,
+        longitude: float,
+        radius_m: int,
+    ) -> dict[str, dict[str, Any]]:
+        """Fetch live arrivals for every bus stop within the nearby radius."""
+        payload = stops_payload if isinstance(stops_payload, dict) else {}
+        records = payload.get("value", [])
+        if not isinstance(records, list):
+            return {}
+
+        def distance_m(record: dict[str, Any]) -> float | None:
+            try:
+                other_latitude = float(record["Latitude"])
+                other_longitude = float(record["Longitude"])
+            except (KeyError, TypeError, ValueError):
+                return None
+            delta_latitude = radians(other_latitude - latitude)
+            delta_longitude = radians(other_longitude - longitude)
+            value = (
+                sin(delta_latitude / 2) ** 2
+                + cos(radians(latitude))
+                * cos(radians(other_latitude))
+                * sin(delta_longitude / 2) ** 2
+            )
+            return 2 * 6_371_000 * asin(sqrt(value))
+
+        nearby_codes = [
+            str(record["BusStopCode"])
+            for record in records
+            if isinstance(record, dict)
+            and record.get("BusStopCode")
+            and (distance := distance_m(record)) is not None
+            and distance <= radius_m
+        ]
+        stop_index = {
+            str(record["BusStopCode"]): record
+            for record in records
+            if isinstance(record, dict) and record.get("BusStopCode")
+        }
+        responses = await asyncio.gather(
+            *(self.bus_arrivals(code, None) for code in nearby_codes),
+            return_exceptions=True,
+        )
+        result: dict[str, dict[str, Any]] = {}
+        for code, response in zip(nearby_codes, responses, strict=True):
+            if isinstance(response, BaseException):
+                continue
+            result[code] = buses_view(response.data, code, stop_index)
+        return result
 
     async def bus_stop_index(self) -> dict[str, dict[str, Any]]:
         """Load the cached LTA bus-stop directory, keyed by stop code."""
