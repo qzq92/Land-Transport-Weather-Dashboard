@@ -1,4 +1,4 @@
-# Land Transport and Weather Dashboard
+# Land Transport, Weather and Healthcare Dashboard
 
 A React and FastAPI application for Singapore that presents near real-time weather, health, and land-transport data on interactive maps. Redis shares queried results across API workers so browser refreshes do not multiply requests to Data.gov.sg, LTA DataMall, or OneMap.
 
@@ -89,16 +89,19 @@ React Router lazy-loads each view:
   own location toggle, and markers stay hidden until that toggle is selected.
 - `/environment` — PSI, UV, and WBGT summaries, an air-quality legend, and
   toggles for the PSI table and dengue/Zika cluster lists.
-- `/healthcare` — official emergency-department queue estimates from
-  participating NHG and NUHS hospitals, including patients waiting and
-  estimated time to see a doctor.
+- `/healthcare` — official emergency-department queue estimates in a
+  hospital-by-row table. Each hospital name links to its official source
+  page, and data limitations are shown in a status banner.
 - `/transport` — an operations map with the same opt-in taxi, camera,
   road-incident, and variable-message-sign layers, plus compact network metrics
   and advisories.
 - `/transport/travel-times` — expressway travel times.
 - `/transport/cameras` — a dense gallery of traffic-camera images. Names come
   from `data/lta_camera_id_mapping.csv`.
-- `/transit/crowding` — MRT/LRT station crowd forecast as a station-by-time grid.
+- `/transit/crowding` — MRT/LRT station crowd forecast as a station-by-time grid,
+  with a train-line dropdown that queries the selected LTA `TrainLine`. Station
+  names come from `data/MRTLRTStations.csv`. CE1 is Bayfront (CC34) and CE2 is
+  Marina Bay (CC33).
 - `/transit/buses` — bus arrival timings for a five-digit stop code, with
   soonest or service-number sorting, a service filter, and a service-route
   search. Bus stop locations stay off the map until "Show Bus Stop Locations"
@@ -122,6 +125,7 @@ conf/
   api_urls.py          # Provider bases, endpoints, and dataset IDs
 data/
   lta_camera_id_mapping.csv  # Traffic-camera ID to location name
+  MRTLRTStations.csv         # MRT/LRT station code to name
 tests/
   api/                 # FastAPI route and presenter tests
   integration/         # Provider-backed route tests

@@ -2,24 +2,26 @@ import type { Alert, Metric } from "../api/schema";
 import { MetricCard } from "./MetricCard";
 import { EmptyState } from "./QueryState";
 
+/** Renders a page title with an optional eyebrow and description. */
 export function PageHeader({
   eyebrow,
   title,
   description,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   description: string;
 }) {
   return (
     <header className="page-header">
-      <p className="eyebrow">{eyebrow}</p>
+      {eyebrow && <p className="eyebrow">{eyebrow}</p>}
       <h1>{title}</h1>
       <p>{description}</p>
     </header>
   );
 }
 
+/** Renders a responsive grid of metric cards. */
 export function MetricGrid({ metrics }: { metrics: Metric[] }) {
   if (!metrics.length) return <EmptyState>No metrics reported.</EmptyState>;
   return (
@@ -31,6 +33,7 @@ export function MetricGrid({ metrics }: { metrics: Metric[] }) {
   );
 }
 
+/** Renders an alert list or an empty-state message. */
 export function AlertList({ alerts }: { alerts: Alert[] }) {
   if (!alerts.length) return <EmptyState>No active alerts.</EmptyState>;
   return (

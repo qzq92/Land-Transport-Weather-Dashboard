@@ -33,7 +33,7 @@ class Settings(BaseSettings):
         populate_by_name=True,
     )
 
-    app_name: str = "LTA Transport Dashboard API"
+    app_name: str = "Land Transport, Weather and Healthcare Dashboard API"
     api_prefix: str = "/api/v1"
     cors_origins: OriginList = Field(
         default_factory=lambda: ["http://localhost:3000"]
@@ -61,6 +61,7 @@ class Settings(BaseSettings):
     @field_validator("api_prefix")
     @classmethod
     def validate_api_prefix(cls, value: str) -> str:
+        """Normalize the API prefix and reject the application root."""
         normalized = "/" + value.strip("/")
         if normalized == "/":
             raise ValueError("api_prefix cannot be the root path")
@@ -69,6 +70,7 @@ class Settings(BaseSettings):
     @field_validator("cors_origins")
     @classmethod
     def validate_origins(cls, origins: list[str]) -> list[str]:
+        """Validate explicit, unique HTTP(S) CORS origins."""
         if not origins:
             raise ValueError("at least one CORS origin is required")
         normalized: list[str] = []
@@ -83,6 +85,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_redis_requirement(self) -> "Settings":
+        """Ensure required Redis configuration is complete."""
         if self.redis_required and not self.redis_url:
             raise ValueError("redis_url is required when redis_required is true")
         return self

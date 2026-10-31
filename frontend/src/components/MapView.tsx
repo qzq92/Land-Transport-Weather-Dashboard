@@ -10,6 +10,7 @@ import {
 import type { LatLngExpression } from "leaflet";
 import type { GeoPoint } from "../api/schema";
 
+/** A polyline path rendered on the Leaflet map. */
 export interface MapPath {
   id: string;
   color: string;
@@ -36,6 +37,9 @@ const categoryColours: Record<string, string> = {
   lightning: "#f5d76e",
   flood: "#ff6b6b",
   wbgt: "#ff9f43",
+  psi: "#f5d76e",
+  zika: "#c69cff",
+  dengue: "#ff6b6b",
   incident: "#ff6b6b",
   camera: "#c69cff",
   transit: "#52e0a1",
@@ -69,6 +73,7 @@ function MapViewport({
   return null;
 }
 
+/** Renders geographic points, optional paths, and an optional map viewport. */
 export function MapView({
   points,
   paths = [],

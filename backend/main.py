@@ -47,7 +47,8 @@ def create_app(
     resolved_settings = settings or get_settings()
 
     @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+        """Create and close shared HTTP, Redis, cache, and domain services."""
         timeout = httpx.Timeout(resolved_settings.http_timeout_seconds)
         limits = httpx.Limits(
             max_connections=resolved_settings.http_max_connections,
@@ -62,9 +63,9 @@ def create_app(
             transport=http_transport,
             headers={"User-Agent": "lta-transport-dashboard-api/1.0"},
         )
-        app.state.http_client = http_client
-        app.state.redis = None
-        app.state.redis_error = None
+        application.state.http_client = http_client
+        application.state.redis = None
+        application.state.redis_error = None
 
         redis_client: Redis | None = None
         if resolved_settings.redis_url:
@@ -78,9 +79,9 @@ def create_app(
                 )
                 await candidate.ping()
                 redis_client = candidate
-                app.state.redis = candidate
+                application.state.redis = candidate
             except (RedisError, OSError, ValueError) as error:
-                app.state.redis_error = str(error)
+                application.state.redis_error = str(error)
                 if "candidate" in locals():
                     await candidate.aclose()
 
@@ -89,7 +90,7 @@ def create_app(
             resolved_settings,
         )
         upstream = UpstreamClient(http_client)
-        app.state.services = Services(
+        application.state.services = Services(
             locations=LocationService(upstream, cache, resolved_settings),
             weather=WeatherService(upstream, cache, resolved_settings),
             environment=EnvironmentService(upstream, cache, resolved_settings),
@@ -104,7 +105,7 @@ def create_app(
             if redis_client is not None:
                 await redis_client.aclose()
 
-    app = FastAPI(
+    application = FastAPI(
         title=resolved_settings.app_name,
         version="1.0.0",
         lifespan=lifespan,
@@ -112,8 +113,8 @@ def create_app(
         openapi_url=f"{resolved_settings.api_prefix}/openapi.json",
         redoc_url=None,
     )
-    app.state.settings = resolved_settings
-    app.add_middleware(
+    application.state.settings = resolved_settings
+    application.add_middleware(
         CORSMiddleware,
         allow_origins=resolved_settings.cors_origins,
         allow_credentials=True,
@@ -121,18 +122,19 @@ def create_app(
         allow_headers=["Accept", "Authorization", "Content-Type"],
     )
 
-    @app.exception_handler(UpstreamError)
+    @application.exception_handler(UpstreamError)
     async def handle_upstream_error(
         _request: Request,
         error: UpstreamError,
     ) -> JSONResponse:
+        """Translate an upstream failure into a safe JSON API response."""
         return JSONResponse(
             status_code=error.status_code,
             content={"detail": error.detail},
         )
 
-    app.include_router(router, prefix=resolved_settings.api_prefix)
-    return app
+    application.include_router(router, prefix=resolved_settings.api_prefix)
+    return application
 
 
 app = create_app()

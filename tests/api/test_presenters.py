@@ -7,7 +7,9 @@ from backend.bus_views import bus_service_view, bus_stop_locations, buses_view
 from backend.healthcare import healthcare_view, parse_wait_page
 from backend.presenters import (
     cameras_view,
+    crowding_view,
     environment_view,
+    health_clusters_view,
     nearby_places,
     rail_status_view,
     search_places,
@@ -15,6 +17,7 @@ from backend.presenters import (
     weather_alerts_view,
     weather_view,
 )
+from backend.station_locations import station_name_for, station_names
 
 
 def test_hospital_wait_pages_are_normalized() -> None:
@@ -24,6 +27,7 @@ def test_hospital_wait_pages_are_normalized() -> None:
         for source, filename in {
             "ttsh": "ttsh_emergency.html",
             "woodlands": "woodlands_emergency.html",
+            "ktph": "ktph_emergency.html",
             "nuhs": "nuhs_emergency.html",
         }.items()
     }
@@ -34,14 +38,30 @@ def test_hospital_wait_pages_are_normalized() -> None:
 
     result = healthcare_view(pages, sources)
 
-    assert len(result["facilities"]) == 5
-    ttsh = next(item for item in result["facilities"] if item["cluster"] == "NHG")
+    assert len(result["facilities"]) == 6
+    ttsh = next(
+        item
+        for item in result["facilities"]
+        if item["hospital"] == "Tan Tock Seng Hospital"
+    )
     assert ttsh["patients_waiting"] == 3
     assert ttsh["wait_to_doctor_minutes"] == 19
+    assert ttsh["source_url"] == "https://ttsh.example"
+    assert ttsh["updated_at"] == "31 Oct 2026 08:20 PM"
     woodlands = next(
         item for item in result["facilities"] if item["hospital"] == "Woodlands Health"
     )
     assert woodlands["wait_to_doctor_minutes"] == 8
+    assert woodlands["updated_at"] == "31 Oct 2026 08:15 PM"
+    ktph = next(
+        item
+        for item in result["facilities"]
+        if item["hospital"] == "Khoo Teck Puat Hospital"
+    )
+    assert ktph["patients_waiting"] == 8
+    assert ktph["wait_to_doctor"] == "41 mins"
+    assert ktph["wait_to_doctor_minutes"] == 41
+    assert ktph["updated_at"] == "31 Oct 2026 08:18 PM"
     nuh_children = next(
         item
         for item in result["facilities"]
@@ -50,14 +70,15 @@ def test_hospital_wait_pages_are_normalized() -> None:
     )
     assert nuh_children["patients_waiting"] == 2
     assert nuh_children["bed_wait_minutes"] == 120
+    assert nuh_children["updated_at"] == "25 Oct 2026, 03:02:09 AM"
 
 
 def test_unavailable_hospital_source_is_reported() -> None:
     result = healthcare_view(
         {
             "ttsh": (
-                "<p>No. of Patients Awaiting Consultation: 2</p>"
-                "<p>Average Consult Wait Time: 10 min</p>"
+                "<p>Number of patients in queue 2 Patients</p>"
+                "<p>Waiting time to see doctor 10 min</p>"
             )
         },
         {
@@ -73,6 +94,62 @@ def test_unavailable_hospital_source_is_reported() -> None:
     assert unavailable["state"] == "unavailable"
     assert unavailable["error"] == "provider unavailable"
     assert parse_wait_page("<p>unrelated page</p>", "ttsh") == []
+
+
+def test_nhg_pages_read_live_queue_labels() -> None:
+    ttsh = parse_wait_page(
+        (
+            '<div class="s-edq-primary-card__block">'
+            "<span>Number of Patients waiting to be seen</span>"
+            "<span>13</span><span>Patients</span>"
+            "<span>No. of Patients Awaiting Consultation</span>"
+            "</div>"
+            '<div class="s-edq-primary-card__block">'
+            "<span>Waiting time to see doctor</span>"
+            "<span>39</span><span>mins</span>"
+            "<span>Average Consult Wait Time</span>"
+            "</div>"
+            '<p>Last updated at <span class="last_Updated_Date">31 Oct 2026</span>'
+            '<span class="last_Updated_Time">07:40 PM</span>. Refresh.</p>'
+        ),
+        "ttsh",
+    )[0]
+    woodlands = parse_wait_page(
+        "<p>Number of patients in queue 2 Patients</p>"
+        "<p>Waiting time to see doctor 25 mins</p>"
+        "<p>Last updated at 09/06/2026 07:01:20. Refresh.</p>",
+        "woodlands",
+    )[0]
+    ktph = parse_wait_page(
+        (
+            '<div class="s-edq-primary-card__block">'
+            "<span>Number of Patients waiting</span>"
+            "<span>8</span><span>Patients</span>"
+            "<span>No. of Patients Awaiting Consultation</span>"
+            "</div>"
+            '<div class="s-edq-primary-card__block">'
+            "<span>Waiting time to see doctor</span>"
+            "<span>41</span><span>mis</span>"
+            "<span>Average Consult Wait Time</span>"
+            "</div>"
+            "<p>last updated at ##last_Updated_Date## ##last_Updated_Time##. Refresh.</p>"
+            '<span class="last_Updated_Date">31 Oct 2026</span>'
+            '<span class="last_Updated_Time">07:45 PM</span>'
+        ),
+        "ktph",
+    )[0]
+
+    assert ttsh["patients_waiting"] == 13
+    assert ttsh["wait_to_doctor"] == "39 mins"
+    assert ttsh["wait_to_doctor_minutes"] == 39
+    assert ttsh["updated_at"] == "31 Oct 2026 07:40 PM"
+    assert woodlands["patients_waiting"] == 2
+    assert woodlands["wait_to_doctor"] == "25 mins"
+    assert woodlands["updated_at"] == "09/06/2026 07:01:20"
+    assert ktph["patients_waiting"] == 8
+    assert ktph["wait_to_doctor"] == "41 mins"
+    assert ktph["wait_to_doctor_minutes"] == 41
+    assert ktph["updated_at"] == "31 Oct 2026 07:45 PM"
 
 
 def test_weather_fixture_becomes_typed_sensor_data() -> None:
@@ -258,6 +335,69 @@ def test_camera_view_preserves_provider_camera_ids() -> None:
     assert result["cameras"][0]["image_url"].endswith("causeway.jpg")
 
 
+def test_health_clusters_include_map_centres_from_geojson() -> None:
+    result = health_clusters_view(
+        {
+            "dengue": {
+                "features": [
+                    {
+                        "properties": {"OBJECTID": 7, "LOCALITY": "Tampines", "CASE_SIZE": 4},
+                        "geometry": {
+                            "type": "Polygon",
+                            "coordinates": [
+                                [
+                                    [103.94, 1.35],
+                                    [103.95, 1.35],
+                                    [103.95, 1.36],
+                                ]
+                            ],
+                        },
+                    }
+                ]
+            }
+        }
+    )
+
+    assert result[0]["disease"] == "dengue"
+    assert result[0]["latitude"] == 1.353333
+    assert result[0]["longitude"] == 103.946667
+
+
+def test_health_clusters_read_zika_attributes_from_description_html() -> None:
+    result = health_clusters_view(
+        {
+            "zika": {
+                "features": [
+                    {
+                        "properties": {
+                            "Name": "kml_1",
+                            "Description": (
+                                "<center><table>"
+                                "<tr><th>CASE_SIZE</th><td>4</td></tr>"
+                                "<tr><th>NAME</th><td></td></tr>"
+                                "<tr><th>CLUSTER_ID</th><td>AA20190001</td></tr>"
+                                "<tr><th>LOCALITY</th><td>Hemsley Ave</td></tr>"
+                                "</table></center>"
+                            ),
+                        },
+                        "geometry": {
+                            "type": "Polygon",
+                            "coordinates": [[[103.86, 1.36, 0], [103.87, 1.37, 0]]],
+                        },
+                    }
+                ]
+            }
+        }
+    )
+
+    assert result[0]["disease"] == "zika"
+    assert result[0]["location"] == "Hemsley Ave"
+    assert result[0]["cases"] == 4
+    assert result[0]["id"] == "zika-AA20190001"
+    assert result[0]["latitude"] == 1.365
+    assert result[0]["longitude"] == 103.865
+
+
 def test_environment_view_reads_uv_and_wbgt_record_payloads() -> None:
     result = environment_view(
         {
@@ -394,6 +534,47 @@ def test_weather_alerts_and_rail_status_are_normalized() -> None:
     assert rail_status["state"] == "normal"
     assert "detail" not in rail_status
     assert rail_status_view({"value": {"Status": 0}})["state"] == "disrupted"
+
+
+def test_station_names_map_interchange_and_circle_extension_codes() -> None:
+    names = station_names()
+    assert names["CC31"] == "CANTONMENT MRT STATION"
+    assert names["CC34"] == names["CE1"] == "BAYFRONT MRT STATION"
+    assert names["CC33"] == names["CE2"] == "MARINA BAY MRT STATION"
+    assert station_name_for("ce1") == "BAYFRONT MRT STATION"
+
+
+def test_crowding_view_adds_station_names_from_csv() -> None:
+    result = crowding_view(
+        {
+            "value": [
+                {"Station": "CC31", "CrowdLevel": "l", "StartTime": "09:00"},
+                {
+                    "Station": "CE1",
+                    "CrowdLevel": "m",
+                    "StartTime": "09:00",
+                },
+                {
+                    "Station": "CE2 MARINA BAY MRT STATION",
+                    "CrowdLevel": "h",
+                    "StartTime": "09:00",
+                },
+                {
+                    "Station": "CC34 BAYFRONT MRT STATION",
+                    "CrowdLevel": "low",
+                    "StartTime": "09:00",
+                },
+            ]
+        }
+    )
+    by_station = {row["station"]: row for row in result["readings"]}
+    assert by_station["CC31"]["station_name"] == "CANTONMENT MRT STATION"
+    assert by_station["CE1"]["station_name"] == "BAYFRONT MRT STATION"
+    assert by_station["CE2"]["station_name"] == "MARINA BAY MRT STATION"
+    assert by_station["CC34"]["station_name"] == "BAYFRONT MRT STATION"
+    assert by_station["CC31"]["level"] == "low"
+    assert by_station["CE1"]["level"] == "moderate"
+    assert by_station["CE2"]["level"] == "high"
 
 
 def test_transport_view_includes_toggleable_road_map_layers() -> None:

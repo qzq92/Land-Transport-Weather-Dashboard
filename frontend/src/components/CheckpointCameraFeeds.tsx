@@ -1,5 +1,6 @@
 import type { TrafficCamera } from "../api/schema";
 
+/** Camera metadata for a checkpoint feed slot. */
 interface CheckpointCamera {
   id: string;
   label: string;
@@ -10,6 +11,7 @@ const CHECKPOINT_CAMERAS: CheckpointCamera[] = [
   { id: "4713", label: "Second Link" },
 ];
 
+/** Props for the fixed checkpoint camera gallery. */
 interface CheckpointCameraFeedsProps {
   cameras: TrafficCamera[];
 }
@@ -22,6 +24,7 @@ function formatCapturedAt(capturedAt?: string): string | undefined {
     : capturedDate.toLocaleString();
 }
 
+/** Renders checkpoint camera feeds, including unavailable slots. */
 export function CheckpointCameraFeeds({
   cameras,
 }: CheckpointCameraFeedsProps) {

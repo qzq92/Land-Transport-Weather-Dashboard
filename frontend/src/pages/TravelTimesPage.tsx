@@ -11,7 +11,6 @@ export default function TravelTimesPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Expressway performance"
         title="Estimated travel times"
         description="Current point-to-point journey estimates grouped by expressway and direction."
       />

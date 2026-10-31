@@ -355,7 +355,7 @@ export default function BusesPage() {
         <section className="bus-map-panel" aria-label="Bus map">
           <button
             type="button"
-            className={showStops ? "is-active" : undefined}
+            className={`layer-bus-stops${showStops ? " is-active" : ""}`}
             onClick={() => setShowStops((current) => !current)}
           >
             {locationsQuery.isFetching && showStops

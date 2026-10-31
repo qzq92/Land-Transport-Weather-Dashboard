@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useEnvironment } from "../api/queries";
 import { DataPanel } from "../components/DataPanel";
 import { MapView } from "../components/MapView";
@@ -9,9 +9,68 @@ import { TimeSeriesChart } from "../components/TimeSeriesChart";
 export default function EnvironmentPage() {
   const query = useEnvironment();
   const data = query.data?.data;
-  const [showPsiTable, setShowPsiTable] = useState(false);
+  const [showPsiLocations, setShowPsiLocations] = useState(true);
   const [showZikaClusters, setShowZikaClusters] = useState(false);
   const [showDengueClusters, setShowDengueClusters] = useState(false);
+  const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
+  const mapPoints = useMemo(
+    () => [
+      ...(showPsiLocations
+        ? (data?.regions ?? []).map((region) => ({
+            ...region,
+            category: "psi",
+            value: region.psi,
+            detail: region.pollutant,
+          }))
+        : []),
+      ...(!showZikaClusters
+        ? []
+        : (data?.clusters ?? [])
+            .filter(
+              (cluster) =>
+                cluster.disease === "zika"
+                && cluster.latitude !== undefined
+                && cluster.longitude !== undefined,
+            )
+            .map((cluster) => ({
+              id: cluster.id,
+              name: cluster.location,
+              latitude: cluster.latitude as number,
+              longitude: cluster.longitude as number,
+              category: "zika",
+              value: cluster.cases,
+              detail: "Zika cluster",
+            }))),
+      ...(!showDengueClusters
+        ? []
+        : (data?.clusters ?? [])
+            .filter(
+              (cluster) =>
+                cluster.disease === "dengue"
+                && cluster.latitude !== undefined
+                && cluster.longitude !== undefined,
+            )
+            .map((cluster) => ({
+              id: cluster.id,
+              name: cluster.location,
+              latitude: cluster.latitude as number,
+              longitude: cluster.longitude as number,
+              category: "dengue",
+              value: cluster.cases,
+              detail: "Dengue cluster",
+            }))),
+    ],
+    [
+      data?.clusters,
+      data?.regions,
+      showDengueClusters,
+      showPsiLocations,
+      showZikaClusters,
+    ],
+  );
+  const selectedCluster = mapPoints.find(
+    (point) => point.id === selectedClusterId,
+  );
 
   return (
     <>
@@ -24,7 +83,7 @@ export default function EnvironmentPage() {
       >
         {data && (
           <div
-            className={`environment-operations-layout${showPsiTable ? " with-psi-table" : ""}`}
+            className="environment-operations-layout"
           >
             <aside className="environment-left-rail">
               <DataPanel title="UV index through the day" eyebrow="Exposure">
@@ -42,8 +101,7 @@ export default function EnvironmentPage() {
                 )
                 .map((disease) => {
                 const clusters = (data.clusters ?? [])
-                  .filter((cluster) => cluster.disease === disease)
-                  .slice(0, 5);
+                  .filter((cluster) => cluster.disease === disease);
                 return (
                   <DataPanel
                     key={disease}
@@ -54,10 +112,20 @@ export default function EnvironmentPage() {
                       <ul className="cluster-list">
                         {clusters.map((cluster) => (
                           <li key={cluster.id}>
-                            <span>{cluster.location}</span>
-                            {cluster.cases !== undefined && (
-                              <b>{cluster.cases} cases</b>
-                            )}
+                            <button
+                              className="cluster-list-item"
+                              disabled={
+                                cluster.latitude === undefined
+                                || cluster.longitude === undefined
+                              }
+                              onClick={() => setSelectedClusterId(cluster.id)}
+                              type="button"
+                            >
+                              <span>{cluster.location}</span>
+                              {cluster.cases !== undefined && (
+                                <b>{cluster.cases} cases</b>
+                              )}
+                            </button>
                           </li>
                         ))}
                       </ul>
@@ -71,16 +139,16 @@ export default function EnvironmentPage() {
             <DataPanel title="Regional PSI" eyebrow="Air quality">
                 <div className="dashboard-map-controls" aria-label="Environment layers">
                   <button
-                    aria-pressed={showPsiTable}
-                    className={showPsiTable ? "is-active" : ""}
-                    onClick={() => setShowPsiTable((visible) => !visible)}
+                    aria-pressed={showPsiLocations}
+                    className={`layer-psi${showPsiLocations ? " is-active" : ""}`}
+                    onClick={() => setShowPsiLocations((visible) => !visible)}
                     type="button"
                   >
-                    PSI table view
+                    {showPsiLocations ? "Hide PSI locations" : "Show PSI locations"}
                   </button>
                   <button
                     aria-pressed={showZikaClusters}
-                    className={showZikaClusters ? "is-active" : ""}
+                    className={`layer-zika${showZikaClusters ? " is-active" : ""}`}
                     onClick={() => setShowZikaClusters((visible) => !visible)}
                     type="button"
                   >
@@ -88,7 +156,7 @@ export default function EnvironmentPage() {
                   </button>
                   <button
                     aria-pressed={showDengueClusters}
-                    className={showDengueClusters ? "is-active" : ""}
+                    className={`layer-dengue${showDengueClusters ? " is-active" : ""}`}
                     onClick={() => setShowDengueClusters((visible) => !visible)}
                     type="button"
                   >
@@ -96,16 +164,21 @@ export default function EnvironmentPage() {
                   </button>
                 </div>
                 <MapView
-                  points={(data.regions ?? []).map((region) => ({
-                    ...region,
-                    category: "environment",
-                    value: region.psi,
-                    detail: region.pollutant,
-                  }))}
+                  centre={
+                    selectedCluster
+                      ? [selectedCluster.latitude, selectedCluster.longitude]
+                      : undefined
+                  }
+                  onSelect={(point) => {
+                    if (point.category === "zika" || point.category === "dengue") {
+                      setSelectedClusterId(point.id);
+                    }
+                  }}
+                  points={mapPoints}
                   height={586}
+                  zoom={selectedCluster ? 15 : 13}
                 />
             </DataPanel>
-            {showPsiTable && (
             <aside className="environment-right-rail">
               <DataPanel title="Air quality (PSI)" eyebrow="Current status">
                 <div className="environment-metric-grid">
@@ -124,6 +197,14 @@ export default function EnvironmentPage() {
                     Each pollutant uses its own health band. The highest
                     sub-index determines the regional PSI colour.
                   </p>
+                  <a
+                    className="air-quality-source"
+                    href="https://www.nea.gov.sg/our-services/pollution-control/air-pollution/psi"
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    Source: National Environment Agency (NEA) PSI guidance
+                  </a>
                   <div className="table-scroll">
                     <table>
                       <caption className="sr-only">
@@ -132,28 +213,37 @@ export default function EnvironmentPage() {
                       <thead>
                         <tr>
                           <th scope="col">Pollutant</th>
-                          <th scope="col">Good</th>
-                          <th scope="col">Moderate</th>
-                          <th scope="col">Unhealthy</th>
-                          <th scope="col">Very unhealthy</th>
-                          <th scope="col">Hazardous</th>
+                          <th className="psi-band-good" scope="col">Good</th>
+                          <th className="psi-band-moderate" scope="col">Moderate</th>
+                          <th className="psi-band-unhealthy" scope="col">Unhealthy</th>
+                          <th className="psi-band-very-unhealthy" scope="col">Very unhealthy</th>
+                          <th className="psi-band-hazardous" scope="col">Hazardous</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
                           <th scope="row">PM2.5 (µg/m³)</th>
-                          <td>0–12</td><td>13–55</td><td>56–150</td>
-                          <td>151–250</td><td>251+</td>
+                          <td className="psi-band-good">0–12</td>
+                          <td className="psi-band-moderate">13–55</td>
+                          <td className="psi-band-unhealthy">56–150</td>
+                          <td className="psi-band-very-unhealthy">151–250</td>
+                          <td className="psi-band-hazardous">251+</td>
                         </tr>
                         <tr>
                           <th scope="row">PM10 (µg/m³)</th>
-                          <td>0–54</td><td>55–154</td><td>155–254</td>
-                          <td>255–354</td><td>355+</td>
+                          <td className="psi-band-good">0–54</td>
+                          <td className="psi-band-moderate">55–154</td>
+                          <td className="psi-band-unhealthy">155–254</td>
+                          <td className="psi-band-very-unhealthy">255–354</td>
+                          <td className="psi-band-hazardous">355+</td>
                         </tr>
                         <tr>
                           <th scope="row">O₃ (ppb)</th>
-                          <td>0–54</td><td>55–70</td><td>71–85</td>
-                          <td>86–105</td><td>106+</td>
+                          <td className="psi-band-good">0–54</td>
+                          <td className="psi-band-moderate">55–70</td>
+                          <td className="psi-band-unhealthy">71–85</td>
+                          <td className="psi-band-very-unhealthy">86–105</td>
+                          <td className="psi-band-hazardous">106+</td>
                         </tr>
                       </tbody>
                     </table>
@@ -161,7 +251,6 @@ export default function EnvironmentPage() {
                 </section>
               </DataPanel>
             </aside>
-            )}
           </div>
         )}
       </QueryState>

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from html.parser import HTMLParser
-from typing import Any
+from typing import Any, ClassVar
 
 
 class _PageParser(HTMLParser):
@@ -59,6 +59,51 @@ class _PageParser(HTMLParser):
             self._cell.append(value)
 
 
+class _QueueCardParser(HTMLParser):
+    """Extract text from NHG emergency queue metric cards."""
+
+    _CARD_CLASSES: ClassVar[set[str]] = {
+        "s-edq-primary-card__block",
+        "s-edq-primary-card",
+    }
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.blocks: list[str] = []
+        self._block: list[str] | None = None
+        self._depth = 0
+        self._tag = ""
+
+    def handle_starttag(
+        self,
+        tag: str,
+        attrs: list[tuple[str, str | None]],
+    ) -> None:
+        class_name = dict(attrs).get("class") or ""
+        classes = set(class_name.split())
+        if self._block is None and classes & self._CARD_CLASSES:
+            self._block = []
+            self._depth = 1
+            self._tag = tag
+        elif self._block is not None and tag == self._tag:
+            self._depth += 1
+
+    def handle_endtag(self, tag: str) -> None:
+        if self._block is None or tag != self._tag:
+            return
+        self._depth -= 1
+        if self._depth == 0:
+            self.blocks.append(_clean(" ".join(self._block)))
+            self._block = None
+            self._tag = ""
+
+    def handle_data(self, data: str) -> None:
+        if self._block is not None:
+            value = _clean(data)
+            if value:
+                self._block.append(value)
+
+
 def _clean(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip()
 
@@ -67,23 +112,27 @@ def _minutes(value: str) -> int | None:
     if re.search(r"<\s*1\s*(?:hour|hr)", value, re.IGNORECASE):
         return 60
     match = re.search(
-        r"(\d+)\s*(hour|hr|minute|min)",
+        r"(\d+)\s*(hours?|hrs?|minutes?|mins?|mis)",
         value,
         re.IGNORECASE,
     )
     if not match:
         return None
     number = int(match.group(1))
-    return number * 60 if match.group(2).lower().startswith(("hour", "hr")) else number
+    unit = match.group(2).lower()
+    return number * 60 if unit.startswith(("hour", "hr")) else number
 
 
 def _duration(value: str) -> str | None:
     match = re.search(
-        r"<\s*1\s*(?:hour|hr)s?|\d+\s*(?:hours?|hrs?|minutes?|mins?)",
+        r"<\s*1\s*(?:hour|hr)s?|\d+\s*(?:hours?|hrs?|minutes?|mins?|mis)",
         value,
         re.IGNORECASE,
     )
-    return _clean(match.group()) if match else None
+    if not match:
+        return None
+    display = _clean(match.group())
+    return re.sub(r"\bmis\b", "mins", display, flags=re.IGNORECASE)
 
 
 def _patients(value: str) -> int | None:
@@ -101,6 +150,7 @@ def _facility(
     wait_minutes: int | None,
     bed_wait_display: str | None = None,
     bed_wait_minutes: int | None = None,
+    updated_at: str | None = None,
 ) -> dict[str, Any]:
     return {
         "id": re.sub(r"[^a-z0-9]+", "-", f"{cluster}-{hospital}-{category}".lower()).strip("-"),
@@ -112,65 +162,191 @@ def _facility(
         "wait_to_doctor_minutes": wait_minutes,
         "bed_wait": bed_wait_display,
         "bed_wait_minutes": bed_wait_minutes,
+        "updated_at": updated_at,
     }
 
 
-def _parse_ttsh(text: str) -> list[dict[str, Any]]:
+_NHG_PATIENT_LABEL = re.compile(
+    r"no\.?\s*of\s+patients awaiting consultation|"
+    r"number of patients waiting(?: to be seen)?|"
+    r"number of patients in queue",
+    re.IGNORECASE,
+)
+_NHG_WAIT_LABEL = re.compile(
+    r"average consult wait time|"
+    r"estimated waiting time to see doctor|"
+    r"waiting time to see doctor",
+    re.IGNORECASE,
+)
+_NHG_ANY_LABEL = re.compile(
+    rf"(?:{_NHG_PATIENT_LABEL.pattern}|{_NHG_WAIT_LABEL.pattern})",
+    re.IGNORECASE,
+)
+_NHG_PATIENT_VALUE = re.compile(r"([\d,]+)\s*(?:patients?)?", re.IGNORECASE)
+_NHG_WAIT_VALUE = re.compile(
+    r"([\d,]+)\s*(?:minutes?|mins?|mis)|<\s*1\s*(?:hour|hr)s?",
+    re.IGNORECASE,
+)
+_NHG_UPDATED = re.compile(
+    r"last updated at\s+(.+?)(?:\.\s*refresh|$)",
+    re.IGNORECASE,
+)
+_TOKEN_DATE = re.compile(
+    r"last[_-]?updated[_-]?date[^>]*>\s*([^<#][^<]*)",
+    re.IGNORECASE,
+)
+_TOKEN_TIME = re.compile(
+    r"last[_-]?updated[_-]?time[^>]*>\s*([^<#][^<]*)",
+    re.IGNORECASE,
+)
+_TOKEN_JSON_DATE = re.compile(
+    r"['\"]last[_-]?updated[_-]?date['\"]\s*[:=]\s*['\"]([^'\"#]+)['\"]",
+    re.IGNORECASE,
+)
+_TOKEN_JSON_TIME = re.compile(
+    r"['\"]last[_-]?updated[_-]?time['\"]\s*[:=]\s*['\"]([^'\"#]+)['\"]",
+    re.IGNORECASE,
+)
+_DATETIME_VALUE = re.compile(
+    r"\d{1,2}[-/\s]\w{3,}[-/\s]\d{2,4}(?:,)?\s+\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?",
+    re.IGNORECASE,
+)
+
+
+def _value_after_label(
+    text: str,
+    label: re.Pattern[str],
+    value: re.Pattern[str],
+) -> str | None:
+    match = label.search(text)
+    if not match:
+        return None
+    rest = text[match.end() :]
+    next_label = _NHG_ANY_LABEL.search(rest)
+    window = rest[: next_label.start()] if next_label else rest
+    found = value.search(window)
+    return found.group(0) if found else None
+
+
+def _is_patient_card(text: str) -> bool:
+    return bool(
+        re.search(
+            r"patients awaiting consultation|"
+            r"number of patients waiting|"
+            r"number of patients in queue|"
+            r"\bpatients?\b",
+            text,
+            re.IGNORECASE,
+        )
+    ) and not bool(_NHG_WAIT_VALUE.search(text))
+
+
+def _is_wait_card(text: str) -> bool:
+    return bool(
+        re.search(
+            r"average consult wait time|"
+            r"waiting time to see doctor|"
+            r"\bmi(?:n|ns|s)\b",
+            text,
+            re.IGNORECASE,
+        )
+    )
+
+
+def _usable_timestamp(value: str | None) -> str | None:
+    if not value:
+        return None
+    cleaned = _clean(re.sub(r"<[^>]+>", " ", value)).rstrip(" .")
+    if not cleaned or "##" in cleaned:
+        return None
+    return cleaned
+
+
+def _token_value(html: str, pattern: re.Pattern[str]) -> str | None:
+    match = pattern.search(html)
+    return _usable_timestamp(match.group(1)) if match else None
+
+
+def _updated_at(html: str) -> str | None:
+    """Read the official last-updated stamp from page text or CMS tokens."""
+    text = _clean(re.sub(r"<[^>]+>", " ", html))
+    labelled = _NHG_UPDATED.search(text)
+    if labelled:
+        value = _usable_timestamp(labelled.group(1))
+        if value:
+            return value
+    date = _token_value(html, _TOKEN_DATE) or _token_value(html, _TOKEN_JSON_DATE)
+    time = _token_value(html, _TOKEN_TIME) or _token_value(html, _TOKEN_JSON_TIME)
+    if date and time:
+        return f"{date} {time}"
+    if date:
+        return date
+    found = _DATETIME_VALUE.search(text)
+    return _usable_timestamp(found.group(0)) if found else None
+
+
+def _parse_nhg_queue_cards(html: str, *, hospital: str) -> list[dict[str, Any]]:
+    """Parse NHG queue cards first, then labelled page text."""
+    queue_parser = _QueueCardParser()
+    queue_parser.feed(html)
+    patient_source = next(
+        (block for block in queue_parser.blocks if _is_patient_card(block)),
+        None,
+    )
+    wait_source = next(
+        (block for block in queue_parser.blocks if _is_wait_card(block)),
+        None,
+    )
+    text = _clean(re.sub(r"<[^>]+>", " ", html))
+    if patient_source is None:
+        patient_source = _value_after_label(text, _NHG_PATIENT_LABEL, _NHG_PATIENT_VALUE)
+    elif _patients(patient_source) is None:
+        patient_source = (
+            _value_after_label(patient_source, _NHG_PATIENT_LABEL, _NHG_PATIENT_VALUE)
+            or patient_source
+        )
+    if wait_source is None:
+        wait_source = _value_after_label(text, _NHG_WAIT_LABEL, _NHG_WAIT_VALUE)
+    elif _duration(wait_source) is None:
+        wait_source = (
+            _value_after_label(wait_source, _NHG_WAIT_LABEL, _NHG_WAIT_VALUE)
+            or wait_source
+        )
+    wait_display = _duration(wait_source or "")
+    patients = _patients(patient_source or "")
+    if patients is None and wait_display is None:
+        return []
+    return [
+        _facility(
+            hospital=hospital,
+            cluster="NHG",
+            category="adult",
+            patients_waiting=patients,
+            wait_display=wait_display,
+            wait_minutes=_minutes(wait_source or ""),
+            updated_at=_updated_at(html),
+        )
+    ]
+
+
+def _parse_ttsh(html: str) -> list[dict[str, Any]]:
     """Parse the TTSH emergency queue labels."""
-    patients = re.search(
-        r"No\.?\s+of\s+Patients\s+Awaiting\s+Consultation\s*:?\s*([\d,]+)",
-        text,
-        re.IGNORECASE,
-    )
-    wait = re.search(
-        r"Average\s+Consult\s+Wait\s+Time\s*:?\s*([^.;]+)",
-        text,
-        re.IGNORECASE,
-    )
-    if not patients and not wait:
-        return []
-    wait_display = _duration(wait.group(1)) if wait else None
-    return [
-        _facility(
-            hospital="Tan Tock Seng Hospital",
-            cluster="NHG",
-            category="adult",
-            patients_waiting=_patients(patients.group(1)) if patients else None,
-            wait_display=wait_display,
-            wait_minutes=_minutes(wait_display or ""),
-        )
-    ]
+    return _parse_nhg_queue_cards(html, hospital="Tan Tock Seng Hospital")
 
 
-def _parse_woodlands(text: str) -> list[dict[str, Any]]:
+def _parse_woodlands(html: str) -> list[dict[str, Any]]:
     """Parse the Woodlands Health emergency queue labels."""
-    patients = re.search(
-        r"Number\s+of\s+patients\s+in\s+queue\s*:?\s*([\d,]+)",
-        text,
-        re.IGNORECASE,
-    )
-    wait = re.search(
-        r"Waiting\s+time\s+to\s+see\s+doctor\s*:?\s*([^.;]+)",
-        text,
-        re.IGNORECASE,
-    )
-    if not patients and not wait:
-        return []
-    wait_display = _duration(wait.group(1)) if wait else None
-    return [
-        _facility(
-            hospital="Woodlands Health",
-            cluster="NHG",
-            category="adult",
-            patients_waiting=_patients(patients.group(1)) if patients else None,
-            wait_display=wait_display,
-            wait_minutes=_minutes(wait_display or ""),
-        )
-    ]
+    return _parse_nhg_queue_cards(html, hospital="Woodlands Health")
 
 
-def _parse_nuhs(page: _PageParser) -> list[dict[str, Any]]:
+def _parse_ktph(html: str) -> list[dict[str, Any]]:
+    """Parse the Khoo Teck Puat Hospital A&E queue labels."""
+    return _parse_nhg_queue_cards(html, hospital="Khoo Teck Puat Hospital")
+
+
+def _parse_nuhs(page: _PageParser, html: str) -> list[dict[str, Any]]:
     """Parse NUHS tables, which contain hospitals as columns."""
+    updated_at = _updated_at(html)
     hospitals = {
         "Alexandra Hospital",
         "National University Hospital",
@@ -225,6 +401,7 @@ def _parse_nuhs(page: _PageParser) -> list[dict[str, Any]]:
                     wait_minutes=_minutes(doctor or ""),
                     bed_wait_display=bed,
                     bed_wait_minutes=_minutes(bed or ""),
+                    updated_at=updated_at,
                 )
             )
     return facilities
@@ -234,13 +411,14 @@ def parse_wait_page(html: str, source: str) -> list[dict[str, Any]]:
     """Parse one official hospital page by its configured source name."""
     page = _PageParser()
     page.feed(html)
-    text = _clean(" ".join(page.text_parts))
     if source == "ttsh":
-        return _parse_ttsh(text)
+        return _parse_ttsh(html)
     if source == "woodlands":
-        return _parse_woodlands(text)
+        return _parse_woodlands(html)
+    if source == "ktph":
+        return _parse_ktph(html)
     if source == "nuhs":
-        return _parse_nuhs(page)
+        return _parse_nuhs(page, html)
     return []
 
 
@@ -253,12 +431,16 @@ def healthcare_view(
     facilities: list[dict[str, Any]] = []
     source_status: list[dict[str, Any]] = []
     for source, html in pages.items():
-        facilities.extend(parse_wait_page(html, source))
+        parsed = parse_wait_page(html, source)
+        source_url = sources[source]["url"]
+        for facility in parsed:
+            facility["source_url"] = source_url
+        facilities.extend(parsed)
         source_status.append(
             {
                 "id": source,
                 "name": sources[source]["name"],
-                "url": sources[source]["url"],
+                "url": source_url,
                 "state": "available",
             }
         )

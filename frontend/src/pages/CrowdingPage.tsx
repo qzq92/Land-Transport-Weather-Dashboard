@@ -4,14 +4,28 @@ import type { CrowdReading } from "../api/schema";
 import { DataPanel } from "../components/DataPanel";
 import { EmptyState, QueryState } from "../components/QueryState";
 import { TransitSubnav } from "../components/TransitSubnav";
+import { crowdStationLabel } from "../utils/crowding";
 
 const EMPTY_READINGS: CrowdReading[] = [];
 
+const TRAIN_LINES = [
+  ["BPL", "Bukit Panjang LRT (BPL)", "#7f8c8d"],
+  ["CCL", "Circle Line (CCL)", "#f59e0b"],
+  ["CEL", "Circle Line Extension (CEL)", "#f59e0b"],
+  ["CGL", "Changi Airport Branch (CGL)", "#009645"],
+  ["DTL", "Downtown Line (DTL)", "#005ec4"],
+  ["EWL", "East West Line (EWL)", "#009645"],
+  ["NEL", "North East Line (NEL)", "#9900aa"],
+  ["NSL", "North South Line (NSL)", "#d42e12"],
+  ["PLRT", "Punggol LRT (PLRT)", "#748fc4"],
+  ["SLRT", "Sengkang LRT (SLRT)", "#748fc4"],
+  ["TEL", "Thomson-East Coast Line (TEL)", "#9d5b25"],
+] as const;
+
 export default function CrowdingPage() {
-  const query = useCrowding();
+  const [selectedLine, setSelectedLine] = useState("CCL");
+  const query = useCrowding(selectedLine);
   const readings = query.data?.data.readings ?? EMPTY_READINGS;
-  const lines = [...new Set(readings.map((reading) => reading.line))];
-  const [selectedLine, setSelectedLine] = useState("");
   const displayedReadings = useMemo(
     () =>
       readings.filter(
@@ -26,9 +40,15 @@ export default function CrowdingPage() {
         .sort(),
     [displayedReadings],
   );
-  const stations = [
-    ...new Set(displayedReadings.map((reading) => reading.station)),
-  ];
+  const stations = useMemo(() => {
+    const labels = new Map<string, string>();
+    for (const reading of displayedReadings) {
+      if (!labels.has(reading.station)) {
+        labels.set(reading.station, crowdStationLabel(reading));
+      }
+    }
+    return [...labels.entries()];
+  }, [displayedReadings]);
 
   return (
     <>
@@ -50,12 +70,18 @@ export default function CrowdingPage() {
               <label className="crowd-line-select">
                 Select train line
                 <select
+                  className={`crowd-line-select-input line-${selectedLine.toLowerCase()}`}
                   value={selectedLine}
                   onChange={(event) => setSelectedLine(event.target.value)}
                 >
-                  <option value="">All lines</option>
-                  {lines.map((line) => (
-                    <option key={line} value={line}>{line}</option>
+                  {TRAIN_LINES.map(([value, label, color]) => (
+                    <option
+                      key={value}
+                      value={value}
+                      style={{ color }}
+                    >
+                      {label}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -68,7 +94,7 @@ export default function CrowdingPage() {
                 <div
                   className="crowd-timeline"
                   style={{
-                    gridTemplateColumns: `minmax(180px, 1fr) repeat(${timeSlots.length}, minmax(28px, 1fr))`,
+                    gridTemplateColumns: `minmax(240px, 1.6fr) repeat(${timeSlots.length}, minmax(28px, 1fr))`,
                   }}
                 >
                   <span className="crowd-timeline-station">Station</span>
@@ -80,9 +106,9 @@ export default function CrowdingPage() {
                       })}
                     </time>
                   ))}
-                  {stations.map((station) => (
+                  {stations.map(([station, label]) => (
                     <div className="crowd-timeline-row" key={station}>
-                      <strong>{station}</strong>
+                      <strong>{label}</strong>
                       {timeSlots.map((timeSlot) => {
                         const reading = displayedReadings.find(
                           (item) =>
@@ -91,7 +117,7 @@ export default function CrowdingPage() {
                         );
                         return (
                           <span
-                            aria-label={`${station} at ${timeSlot}: ${reading?.level ?? "unknown"}`}
+                            aria-label={`${label} at ${timeSlot}: ${reading?.level ?? "unknown"}`}
                             className={`crowd-cell crowd-${reading?.level ?? "unknown"}`}
                             key={`${station}-${timeSlot}`}
                             title={reading?.level ?? "unknown"}

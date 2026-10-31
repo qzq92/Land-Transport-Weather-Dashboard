@@ -23,6 +23,7 @@ from conf.api_urls import (
     FAULTY_TRAFFIC_LIGHTS_URL,
     FLOOD_ALERTS_URL,
     HAWKER_CENTRES_POLL_DOWNLOAD_URL,
+    KTPH_EMERGENCY_WAIT_URL,
     LIGHTNING_URL,
     NUHS_EMERGENCY_WAIT_URL,
     ONEMAP_NEAREST_BUS_STOPS_URL,
@@ -73,12 +74,14 @@ class ProviderService:
         self.settings = settings
 
     def data_gov_headers(self) -> dict[str, str]:
+        """Build headers for Data.gov.sg requests, including an optional API key."""
         headers = {"Accept": "application/json"}
         if self.settings.data_gov_api_key:
             headers["X-Api-Key"] = self.settings.data_gov_api_key
         return headers
 
     def lta_headers(self) -> dict[str, str]:
+        """Build authenticated headers for LTA DataMall requests."""
         if not self.settings.lta_api_key:
             raise UpstreamError("LTA_API_KEY is not configured", 503)
         return {
@@ -96,6 +99,7 @@ class ProviderService:
         ttl: int | None = None,
         stale_ttl: int | None = None,
     ) -> ApiResponse:
+        """Fetch JSON through the shared cache with request parameters in its key."""
         key_parameters = {"url": url, **(params or {})}
         return await self.cache.get_or_fetch(
             namespace,
@@ -116,14 +120,16 @@ class ProviderService:
         *,
         ttl: int,
         stale_ttl: int = 86_400,
+        headers: dict[str, str] | None = None,
     ) -> ApiResponse:
         """Fetch and cache an official HTML page as text."""
+        request_headers = {"Accept": "text/html", **(headers or {})}
         return await self.cache.get_or_fetch(
             namespace,
             {"url": url},
             lambda: self.upstream.get_text(
                 url,
-                headers={"Accept": "text/html"},
+                headers=request_headers,
             ),
             ttl_seconds=ttl,
             stale_seconds=stale_ttl,
@@ -150,6 +156,7 @@ class LocationService(ProviderService):
         page: int,
         include_geometry: bool,
     ) -> ApiResponse:
+        """Search OneMap for Singapore addresses and optional geometry."""
         params = {
             "searchVal": query,
             "returnGeom": "Y" if include_geometry else "N",
@@ -170,6 +177,7 @@ class LocationService(ProviderService):
         longitude: float,
         radius_m: int,
     ) -> ApiResponse:
+        """Return nearby bus stops or MRT/LRT stations from OneMap."""
         urls = {
             "bus-stops": ONEMAP_NEAREST_BUS_STOPS_URL,
             "mrt-stations": ONEMAP_NEAREST_MRT_STOPS_URL,
@@ -253,6 +261,7 @@ class WeatherService(ProviderService):
     """Realtime weather measurements and forecasts."""
 
     async def realtime(self, metric: RealtimeMetric) -> ApiResponse:
+        """Return a cached realtime weather metric."""
         return await self.cached_get(
             f"weather:realtime:{metric}",
             f"{DATA_GOV_REALTIME_API_BASE}/{metric}",
@@ -264,6 +273,7 @@ class WeatherService(ProviderService):
         self,
         period: Literal["2-hour", "24-hour"],
     ) -> ApiResponse:
+        """Return a cached two-hour or twenty-four-hour weather forecast."""
         url = {
             "2-hour": WEATHER_2H_FORECAST_URL,
             "24-hour": WEATHER_24H_FORECAST_URL,
@@ -296,6 +306,7 @@ class EnvironmentService(ProviderService):
         self,
         metric: Literal["psi", "uv", "wbgt"],
     ) -> ApiResponse:
+        """Return a cached PSI, UV, or WBGT environmental index."""
         url = {"psi": PSI_URL, "uv": UV_URL, "wbgt": WBGT_URL}[metric]
         return await self.cached_get(
             f"environment:{metric}",
@@ -308,6 +319,7 @@ class EnvironmentService(ProviderService):
         self,
         disease: Literal["dengue", "zika"],
     ) -> ApiResponse:
+        """Download and cache dengue or Zika cluster data."""
         poll_url = {
             "dengue": DENGUE_POLL_DOWNLOAD_URL,
             "zika": ZIKA_POLL_DOWNLOAD_URL,
@@ -344,6 +356,15 @@ class EnvironmentService(ProviderService):
 class HealthcareService(ProviderService):
     """Official hospital emergency queue pages."""
 
+    PAGE_HEADERS: ClassVar[dict[str, str]] = {
+        "Accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-SG,en;q=0.9",
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/122.0.0.0 Safari/537.36"
+        ),
+    }
     SOURCES: ClassVar[dict[str, dict[str, str]]] = {
         "ttsh": {
             "name": "Tan Tock Seng Hospital",
@@ -352,6 +373,10 @@ class HealthcareService(ProviderService):
         "woodlands": {
             "name": "Woodlands Health",
             "url": WOODLANDS_EMERGENCY_WAIT_URL,
+        },
+        "ktph": {
+            "name": "Khoo Teck Puat Hospital",
+            "url": KTPH_EMERGENCY_WAIT_URL,
         },
         "nuhs": {
             "name": "NUHS hospitals",
@@ -370,6 +395,7 @@ class HealthcareService(ProviderService):
                         details["url"],
                         ttl=1_800,
                         stale_ttl=86_400,
+                        headers=self.PAGE_HEADERS,
                     )
                     for source, details in self.SOURCES.items()
                 ),
@@ -394,7 +420,7 @@ class HealthcareService(ProviderService):
 
         return await self.cache.get_or_fetch(
             "healthcare:wait-times",
-            {"sources": self.SOURCES},
+            {"sources": self.SOURCES, "parser": "nhg-cards-v3"},
             fetch,
             ttl_seconds=1_800,
             stale_seconds=86_400,
@@ -416,6 +442,7 @@ class TransportService(ProviderService):
             "faulty-lights",
         ],
     ) -> ApiResponse:
+        """Return a cached road-transport resource from its configured provider."""
         specs = {
             "cameras": (TRAFFIC_IMAGES_API_URL, False, 120),
             "incidents": (TRAFFIC_INCIDENTS_URL, True, 120),
@@ -435,6 +462,7 @@ class TransportService(ProviderService):
         )
 
     async def ev_chargers(self, postal_code: str) -> ApiResponse:
+        """Return EV charging points matching a six-digit postal code."""
         return await self.cached_get(
             "transport:ev",
             EV_CHARGING_URL,
@@ -477,6 +505,7 @@ class TransitService(ProviderService):
         return records
 
     async def bus_stops(self, skip: int) -> ApiResponse:
+        """Fetch one paginated page of LTA bus stops."""
         return await self.cached_get(
             "transit:bus-stops",
             BUS_STOPS_URL,
@@ -499,6 +528,7 @@ class TransitService(ProviderService):
         bus_stop_code: str,
         service_no: str | None,
     ) -> ApiResponse:
+        """Fetch bus arrivals for a stop, optionally filtered by service number."""
         params = {"BusStopCode": bus_stop_code}
         if service_no:
             params["ServiceNo"] = service_no
@@ -511,6 +541,7 @@ class TransitService(ProviderService):
         )
 
     async def bus_services(self, skip: int) -> ApiResponse:
+        """Fetch one paginated page of LTA bus service metadata."""
         return await self.cached_get(
             "transit:bus-services",
             BUS_SERVICES_URL,
@@ -520,6 +551,7 @@ class TransitService(ProviderService):
         )
 
     async def bus_routes(self, skip: int) -> ApiResponse:
+        """Fetch one paginated page of LTA bus route metadata."""
         return await self.cached_get(
             "transit:bus-routes",
             BUS_ROUTES_URL,
@@ -543,6 +575,7 @@ class TransitService(ProviderService):
         resource: Literal["status", "crowding", "forecast"],
         train_line: str | None,
     ) -> ApiResponse:
+        """Fetch cached rail status, crowding, or forecast data."""
         specs = {
             "status": (TRAIN_SERVICE_ALERTS_URL, 120),
             "crowding": (PCD_REALTIME_URL, 120),

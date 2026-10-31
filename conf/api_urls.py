@@ -37,11 +37,13 @@ TRAIN_SERVICE_ALERTS_URL = f"{LTA_DATAMALL_BASE}/TrainServiceAlerts"
 
 # Official hospital emergency queue pages
 TTSH_EMERGENCY_WAIT_URL = (
-    "https://www.ttsh.com.sg/Patients-and-Visitors/Medical-Services/"
-    "Emergency/Pages/Emergency%20Medicine.aspx"
+    "https://www.nhghealth.com.sg/ttsh/ed-queue-status"
 )
 WOODLANDS_EMERGENCY_WAIT_URL = (
     "https://www.nhghealth.com.sg/wh/for-patients-visitors/emergency-care"
+)
+KTPH_EMERGENCY_WAIT_URL = (
+    "https://www.nhghealth.com.sg/ktph/i-want-to/visit-a-e"
 )
 NUHS_EMERGENCY_WAIT_URL = (
     "https://www.nuhs.edu.sg/patient-care/emergency-department-wait-times"

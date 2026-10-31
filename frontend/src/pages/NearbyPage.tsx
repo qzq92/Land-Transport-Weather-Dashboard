@@ -2,7 +2,7 @@ import { type FormEvent, useState } from "react";
 import { useNearby, usePlaceSearch } from "../api/queries";
 import type { NearbyPlace } from "../api/schema";
 import { MapView } from "../components/MapView";
-import { QueryState } from "../components/QueryState";
+import { EmptyState, QueryState } from "../components/QueryState";
 
 const SINGAPORE_CENTRE = { latitude: 1.3521, longitude: 103.8198 };
 const NEARBY_RADIUS_M = 2000;
@@ -125,7 +125,11 @@ export default function NearbyPage() {
   const [facilityTab, setFacilityTab] = useState("food-amenities");
   const [activeLayers, setActiveLayers] = useState<Set<string>>(() => new Set());
   const search = usePlaceSearch(searchText);
-  const nearby = useNearby(location.latitude, location.longitude);
+  const nearby = useNearby(
+    location.latitude,
+    location.longitude,
+    Boolean(selectedLabel),
+  );
   const places = nearby.data?.data.places ?? [];
   const selectedTab = FACILITY_TABS.find((tab) => tab.value === facilityTab)
     ?? FACILITY_TABS[0];
@@ -154,7 +158,10 @@ export default function NearbyPage() {
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (draft.trim().length >= 3) setSearchText(draft.trim());
+    if (draft.trim().length >= 3) {
+      setSelectedLabel("");
+      setSearchText(draft.trim());
+    }
   }
 
   function toggleLayer(category: string) {
@@ -187,13 +194,14 @@ export default function NearbyPage() {
 
   return (
     <QueryState
-      loading={nearby.isPending}
-      error={nearby.error}
-      fetching={nearby.isFetching}
-      meta={nearby.data?.meta}
+      loading={Boolean(selectedLabel) && nearby.isPending}
+      error={selectedLabel ? nearby.error : null}
+      fetching={Boolean(selectedLabel) && nearby.isFetching}
+      meta={selectedLabel ? nearby.data?.meta : undefined}
       onRetry={() => void nearby.refetch()}
     >
-      <div className="nearby-operations-layout">
+      {selectedLabel ? (
+        <div className="nearby-operations-layout">
         <aside className="nearby-operations-rail">
           <h1>Nearby Facilities</h1>
           <div className="nearby-controls">
@@ -326,7 +334,12 @@ export default function NearbyPage() {
             ))}
           </ul>
         </section>
-      </div>
+        </div>
+      ) : (
+        <EmptyState>
+          Search for a postal address or landmark to show nearby facilities.
+        </EmptyState>
+      )}
     </QueryState>
   );
 }

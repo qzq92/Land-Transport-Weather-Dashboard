@@ -4,6 +4,7 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, ""
 const DEFAULT_TIMEOUT_MS = 12_000;
 
 export class ApiError extends Error {
+  /** Creates a normalized error for an API or network failure. */
   constructor(
     message: string,
     public readonly status: number,
@@ -15,11 +16,13 @@ export class ApiError extends Error {
 }
 
 export interface RequestOptions {
+  /** Optional query parameters, cancellation signal, and request timeout. */
   params?: Record<string, string | number | boolean | undefined>;
   signal?: AbortSignal;
   timeoutMs?: number;
 }
 
+/** Builds an origin-relative or configured absolute API URL. */
 function buildUrl(path: ApiPath, params?: RequestOptions["params"]): string {
   const url = new URL(`${API_BASE_URL}${path}`, window.location.origin);
   Object.entries(params ?? {}).forEach(([key, value]) => {
@@ -30,10 +33,12 @@ function buildUrl(path: ApiPath, params?: RequestOptions["params"]): string {
   return API_BASE_URL ? url.toString() : `${url.pathname}${url.search}`;
 }
 
+/** Detects whether a provider response already uses the API envelope shape. */
 function isEnvelope<T>(value: unknown): value is ApiEnvelope<T> {
   return Boolean(value && typeof value === "object" && "data" in value);
 }
 
+/** Fetches one typed API path with timeout and error normalization. */
 export async function apiGet<P extends ApiPath>(
   path: P,
   options: RequestOptions = {},
@@ -75,6 +80,7 @@ export async function apiGet<P extends ApiPath>(
   }
 }
 
+/** Typed endpoint methods used by the frontend query hooks. */
 export const api = {
   dashboard: (signal?: AbortSignal) =>
     apiGet("/api/v1/dashboard", { signal }),
@@ -88,8 +94,11 @@ export const api = {
     apiGet("/api/v1/transport/travel-times", { signal }),
   cameras: (signal?: AbortSignal) =>
     apiGet("/api/v1/transport/cameras", { signal }),
-  crowding: (signal?: AbortSignal) =>
-    apiGet("/api/v1/transit/crowding", { signal }),
+  crowding: (trainLine?: string, signal?: AbortSignal) =>
+    apiGet("/api/v1/transit/crowding", {
+      params: { train_line: trainLine },
+      signal,
+    }),
   railStatus: (signal?: AbortSignal) =>
     apiGet("/api/v1/transit/rail/banner", { signal }),
   buses: (

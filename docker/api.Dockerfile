@@ -28,6 +28,7 @@ COPY --from=builder /opt/venv /opt/venv
 COPY --chown=app:app backend ./backend
 COPY --chown=app:app conf ./conf
 COPY --chown=app:app data/lta_camera_id_mapping.csv ./data/lta_camera_id_mapping.csv
+COPY --chown=app:app data/MRTLRTStations.csv ./data/MRTLRTStations.csv
 
 USER app
 

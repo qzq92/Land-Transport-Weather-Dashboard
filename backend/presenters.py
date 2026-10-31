@@ -1,10 +1,12 @@
 """Pure transformations from provider payloads to frontend view models."""
 
+import re
 from datetime import UTC, datetime
 from math import asin, cos, radians, sin, sqrt
 from typing import Any
 
 from backend.camera_locations import camera_locations
+from backend.station_locations import station_name_for
 
 
 def _records(payload: Any) -> list[dict[str, Any]]:
@@ -488,6 +490,26 @@ def environment_view(payloads: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _cluster_attribute(properties: dict[str, Any], key: str) -> str | None:
+    """Read a cluster field from GeoJSON properties or KML Description HTML."""
+    value = properties.get(key)
+    if value not in (None, ""):
+        return str(value).strip() or None
+    description = properties.get("Description")
+    if not isinstance(description, str):
+        return None
+    match = re.search(
+        rf"<th>\s*{re.escape(key)}\s*</th>\s*<td>(.*?)</td>",
+        description,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    if not match:
+        return None
+    text = re.sub(r"<[^>]+>", "", match.group(1))
+    text = re.sub(r"\s+", " ", text).strip()
+    return text or None
+
+
 def health_clusters_view(payloads: dict[str, Any]) -> list[dict[str, Any]]:
     """Return concise dengue and Zika cluster summaries for the dashboard."""
     clusters: list[dict[str, Any]] = []
@@ -497,22 +519,58 @@ def health_clusters_view(payloads: dict[str, Any]) -> list[dict[str, Any]]:
             properties = feature.get("properties", {}) if isinstance(feature, dict) else {}
             if not isinstance(properties, dict):
                 continue
-            cases = _number(properties.get("CASE_SIZE"))
-            clusters.append(
-                {
-                    "id": f"{disease}-{properties.get('OBJECTID', index)}",
-                    "disease": disease,
-                    "location": str(
-                        properties.get("LOCALITY") or "Location unavailable"
-                    ),
-                    "cases": round(cases) if cases is not None else None,
-                }
+            cases = _number(_cluster_attribute(properties, "CASE_SIZE"))
+            object_id = (
+                _cluster_attribute(properties, "OBJECTID")
+                or _cluster_attribute(properties, "CLUSTER_ID")
+                or index
             )
+            location = (
+                _cluster_attribute(properties, "LOCALITY")
+                or _cluster_attribute(properties, "NAME")
+                or properties.get("Name")
+            )
+            if isinstance(location, str) and location.lower().startswith("kml_"):
+                location = None
+            cluster = {
+                "id": f"{disease}-{object_id}",
+                "disease": disease,
+                "location": location or "Location unavailable",
+                "cases": round(cases) if cases is not None else None,
+            }
+            geometry = feature.get("geometry", {}) if isinstance(feature, dict) else {}
+            coordinates = geometry.get("coordinates") if isinstance(geometry, dict) else None
+            points = list(_coordinate_pairs(coordinates))
+            if points:
+                cluster["longitude"] = round(
+                    sum(point[0] for point in points) / len(points),
+                    6,
+                )
+                cluster["latitude"] = round(
+                    sum(point[1] for point in points) / len(points),
+                    6,
+                )
+            clusters.append(cluster)
     return sorted(
         clusters,
         key=lambda cluster: cluster["cases"] or 0,
         reverse=True,
     )
+
+
+def _coordinate_pairs(value: Any) -> Any:
+    """Yield longitude/latitude pairs from GeoJSON geometry coordinates."""
+    if not isinstance(value, list):
+        return
+    if (
+        len(value) >= 2
+        and _number(value[0]) is not None
+        and _number(value[1]) is not None
+    ):
+        yield float(value[0]), float(value[1])
+        return
+    for child in value:
+        yield from _coordinate_pairs(child)
 
 
 def travel_times_view(payload: Any) -> dict[str, Any]:
@@ -581,30 +639,61 @@ def cameras_view(payload: Any) -> dict[str, Any]:
     return {"cameras": cameras}
 
 
+def _crowd_station(record: dict[str, Any]) -> tuple[str, str]:
+    """Return a station code and official name for a crowd record."""
+    raw = str(
+        record.get("Station")
+        or record.get("StationCode")
+        or record.get("StationName")
+        or "Station"
+    ).strip()
+    token = raw.split()[0] if raw else "Station"
+    code = token.split("/")[0].upper() or "Station"
+    name = station_name_for(code)
+    if not name and " " in raw:
+        name = raw[len(token) :].strip()
+    return code, name
+
+
+_CROWD_LEVEL_ALIASES = {
+    "l": "low",
+    "low": "low",
+    "m": "moderate",
+    "mod": "moderate",
+    "moderate": "moderate",
+    "h": "high",
+    "high": "high",
+}
+
+
+def _crowd_level(raw: str) -> str:
+    """Map LTA crowd codes such as l/m/h onto low/moderate/high."""
+    normalized = raw.strip().lower()
+    if normalized in _CROWD_LEVEL_ALIASES:
+        return _CROWD_LEVEL_ALIASES[normalized]
+    return next(
+        (
+            candidate
+            for candidate in ("low", "moderate", "high")
+            if candidate in normalized
+        ),
+        "unknown",
+    )
+
+
 def crowding_view(payload: Any) -> dict[str, Any]:
     """Normalize LTA platform crowd records."""
     readings = []
     for index, record in enumerate(_records(payload)):
-        raw_level = str(
-            record.get("CrowdLevel") or record.get("Level") or "unknown"
-        ).lower()
-        level = next(
-            (
-                candidate
-                for candidate in ("low", "moderate", "high")
-                if candidate in raw_level
-            ),
-            "unknown",
+        level = _crowd_level(
+            str(record.get("CrowdLevel") or record.get("Level") or "unknown")
         )
+        station, station_name = _crowd_station(record)
         readings.append(
             {
                 "id": _identifier(record, f"crowd-{index}"),
-                "station": str(
-                    record.get("Station")
-                    or record.get("StationName")
-                    or record.get("StationCode")
-                    or "Station"
-                ),
+                "station": station,
+                "station_name": station_name,
                 "line": str(record.get("TrainLine") or record.get("Line") or ""),
                 "level": level,
                 "start_time": record.get("StartTime"),

@@ -42,7 +42,7 @@ services:
     expose:
       - "8000"
     environment:
-      BACKEND_APP_NAME: "${BACKEND_APP_NAME:-LTA Transport Dashboard API}"
+      BACKEND_APP_NAME: "${BACKEND_APP_NAME:-Land Transport, Weather and Healthcare Dashboard API}"
       BACKEND_API_PREFIX: "${BACKEND_API_PREFIX:-/api/v1}"
       BACKEND_CORS_ORIGINS: '${BACKEND_CORS_ORIGINS:-["http://localhost:5173"]}'
       BACKEND_HTTP_TIMEOUT_SECONDS: "${BACKEND_HTTP_TIMEOUT_SECONDS:-15}"

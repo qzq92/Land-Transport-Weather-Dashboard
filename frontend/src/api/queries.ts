@@ -16,6 +16,7 @@ const LIVE_QUERY_OPTIONS = {
   retry: 2,
 } as const;
 
+/** Loads the aggregated dashboard data. */
 export const useDashboard = () =>
   useQuery({
     queryKey: ["dashboard"],
@@ -23,6 +24,7 @@ export const useDashboard = () =>
     ...LIVE_QUERY_OPTIONS,
   });
 
+/** Loads realtime weather observations and alerts. */
 export const useWeather = () =>
   useQuery({
     queryKey: ["weather", "realtime"],
@@ -30,6 +32,7 @@ export const useWeather = () =>
     ...LIVE_QUERY_OPTIONS,
   });
 
+/** Loads PSI, UV, WBGT, and disease-cluster data. */
 export const useEnvironment = () =>
   useQuery({
     queryKey: ["environment"],
@@ -38,6 +41,7 @@ export const useEnvironment = () =>
     retry: 2,
   });
 
+/** Loads road transport metrics and map layers. */
 export const useTransport = () =>
   useQuery({
     queryKey: ["transport"],
@@ -45,6 +49,7 @@ export const useTransport = () =>
     ...LIVE_QUERY_OPTIONS,
   });
 
+/** Loads expressway travel-time estimates. */
 export const useTravelTimes = () =>
   useQuery({
     queryKey: ["transport", "travel-times"],
@@ -52,6 +57,7 @@ export const useTravelTimes = () =>
     ...LIVE_QUERY_OPTIONS,
   });
 
+/** Loads traffic camera metadata and image URLs. */
 export const useCameras = () =>
   useQuery({
     queryKey: ["transport", "cameras"],
@@ -59,6 +65,7 @@ export const useCameras = () =>
     ...LIVE_QUERY_OPTIONS,
   });
 
+/** Loads the aggregate rail status banner. */
 export const useRailStatus = () =>
   useQuery({
     queryKey: ["transit", "rail", "banner"],
@@ -66,13 +73,15 @@ export const useRailStatus = () =>
     ...LIVE_QUERY_OPTIONS,
   });
 
-export const useCrowding = () =>
+/** Loads crowd observations for one LTA train-line code. */
+export const useCrowding = (trainLine: string) =>
   useQuery({
-    queryKey: ["transit", "crowding"],
-    queryFn: ({ signal }) => api.crowding(signal),
+    queryKey: ["transit", "crowding", trainLine],
+    queryFn: ({ signal }) => api.crowding(trainLine, signal),
     ...LIVE_QUERY_OPTIONS,
   });
 
+/** Loads arrival predictions for a bus stop code. */
 export function useBuses(stopCode: string) {
   return useQuery<ApiEnvelope<BusesData>>({
     queryKey: ["transit", "buses", stopCode],
@@ -83,6 +92,7 @@ export function useBuses(stopCode: string) {
   });
 }
 
+/** Loads the optional bus-stop map layer when enabled. */
 export function useBusLocations(enabled: boolean) {
   return useQuery<ApiEnvelope<BusStopLocations>>({
     queryKey: ["transit", "bus-locations"],
@@ -93,6 +103,7 @@ export function useBusLocations(enabled: boolean) {
   });
 }
 
+/** Loads the ordered route directions for a bus service. */
 export function useBusRoute(serviceNo: string) {
   return useQuery<ApiEnvelope<BusRouteData>>({
     queryKey: ["transit", "bus-route", serviceNo],
@@ -103,6 +114,7 @@ export function useBusRoute(serviceNo: string) {
   });
 }
 
+/** Loads official emergency-department queue estimates. */
 export const useHealthcareWaitTimes = () =>
   useQuery<ApiEnvelope<HealthcareData>>({
     queryKey: ["healthcare", "wait-times"],
@@ -112,15 +124,22 @@ export const useHealthcareWaitTimes = () =>
     retry: 1,
   });
 
-export function useNearby(latitude: number, longitude: number) {
+/** Loads facilities near the selected coordinates. */
+export function useNearby(
+  latitude: number,
+  longitude: number,
+  enabled = true,
+) {
   return useQuery<ApiEnvelope<NearbyData>>({
     queryKey: ["nearby", latitude, longitude],
     queryFn: ({ signal }) =>
       api.nearby({ latitude, longitude, radius: 2000 }, signal),
+    enabled,
     staleTime: 5 * 60_000,
   });
 }
 
+/** Searches OneMap for an address after the query reaches three characters. */
 export function usePlaceSearch(query: string) {
   return useQuery<ApiEnvelope<SearchPlace[]>>({
     queryKey: ["nearby", "search", query],

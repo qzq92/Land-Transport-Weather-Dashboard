@@ -33,6 +33,7 @@ function NotFoundPage() {
   );
 }
 
+/** Renders the lazy-loaded application routes inside the shared layout. */
 export function AppRoutes() {
   return (
     <Suspense fallback={<RouteLoading />}>

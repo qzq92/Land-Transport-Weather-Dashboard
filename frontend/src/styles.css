@@ -33,6 +33,7 @@ html {
 }
 
 body {
+  overflow-x: hidden;
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
@@ -352,13 +353,9 @@ h1 {
 
 .environment-operations-layout {
   display: grid;
-  grid-template-columns: minmax(230px, 0.8fr) minmax(0, 3.3fr);
+  grid-template-columns: minmax(230px, 0.8fr) minmax(0, 2.5fr) minmax(210px, 0.75fr);
   gap: 0.75rem;
   align-items: start;
-}
-
-.environment-operations-layout.with-psi-table {
-  grid-template-columns: minmax(230px, 0.8fr) minmax(0, 2.5fr) minmax(210px, 0.75fr);
 }
 
 .environment-left-rail,
@@ -368,11 +365,11 @@ h1 {
 }
 
 .environment-left-rail .plot {
-  height: 180px;
+  height: 320px;
 }
 
 .environment-left-rail .js-plotly-plot .plotly {
-  height: 180px !important;
+  height: 320px !important;
 }
 
 .environment-metric-grid .metric-grid {
@@ -399,6 +396,8 @@ h1 {
 .cluster-list {
   display: grid;
   gap: 0.35rem;
+  max-height: 15rem;
+  overflow-y: auto;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -413,6 +412,30 @@ h1 {
   color: var(--muted);
   font-size: 0.66rem;
   line-height: 1.3;
+}
+
+.cluster-list-item {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 0 0 0.35rem;
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  line-height: inherit;
+  text-align: left;
+}
+
+.cluster-list-item:not(:disabled) {
+  cursor: pointer;
+}
+
+.cluster-list-item:not(:disabled):hover,
+.cluster-list-item:not(:disabled):focus-visible {
+  color: var(--text);
 }
 
 .cluster-list b {
@@ -470,6 +493,13 @@ h1 {
   line-height: 1.35;
 }
 
+.air-quality-source {
+  display: inline-block;
+  margin-bottom: 0.6rem;
+  color: var(--cyan);
+  font-size: 0.62rem;
+}
+
 .air-quality-explainer table {
   min-width: 530px;
   font-size: 0.58rem;
@@ -483,6 +513,31 @@ h1 {
 
 .air-quality-explainer th {
   font-size: 0.55rem;
+}
+
+.air-quality-explainer .psi-band-good {
+  color: #b8f5c8;
+  background: rgb(50 215 75 / 18%);
+}
+
+.air-quality-explainer .psi-band-moderate {
+  color: #ffe99a;
+  background: rgb(255 214 10 / 18%);
+}
+
+.air-quality-explainer .psi-band-unhealthy {
+  color: #ffd0a8;
+  background: rgb(255 159 67 / 20%);
+}
+
+.air-quality-explainer .psi-band-very-unhealthy {
+  color: #ffb5b5;
+  background: rgb(255 107 107 / 20%);
+}
+
+.air-quality-explainer .psi-band-hazardous {
+  color: #ffaaaa;
+  background: rgb(139 0 0 / 32%);
 }
 
 .transport-operations-rail {
@@ -557,9 +612,9 @@ h1 {
 }
 
 .transport-layer-chips button.is-active {
-  border-color: var(--cyan);
+  border-color: var(--layer, var(--cyan));
   color: var(--text);
-  background: #1e3a5f;
+  background: color-mix(in srgb, var(--layer, #35c9ff) 24%, #182633);
 }
 
 .data-panel {
@@ -684,6 +739,21 @@ h1 {
   font-size: 0.7rem;
 }
 
+.rail-status-actions li > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.rail-line-colour {
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  flex: 0 0 auto;
+  border: 1px solid rgb(255 255 255 / 45%);
+  border-radius: 50%;
+}
+
 .rail-status-actions b {
   color: var(--amber);
   font-size: 0.68rem;
@@ -776,6 +846,23 @@ h1 {
   background: #1e3a5f;
 }
 
+.dashboard-map-controls button[class^="layer-"],
+.transport-layer-chips button[class^="layer-"],
+.nearby-layer-toggles button[class^="layer-"],
+.bus-map-panel > button[class^="layer-"] {
+  border-color: var(--layer, var(--line));
+  color: var(--layer, var(--muted));
+}
+
+.dashboard-map-controls button[class^="layer-"].is-active,
+.transport-layer-chips button[class^="layer-"].is-active,
+.nearby-layer-toggles button[class^="layer-"].is-active,
+.bus-map-panel > button[class^="layer-"].is-active {
+  border-color: var(--layer, var(--cyan));
+  color: var(--text);
+  background: color-mix(in srgb, var(--layer, #35c9ff) 24%, #182633);
+}
+
 .weather-operations-layout {
   display: grid;
   grid-template-columns: minmax(250px, 320px) minmax(0, 1fr);
@@ -818,6 +905,14 @@ h1 {
 .layer-lightning { --layer: #f5d76e; }
 .layer-flood { --layer: #ff6b6b; }
 .layer-wbgt { --layer: #ff9f43; }
+.layer-psi { --layer: #f5d76e; }
+.layer-zika { --layer: #c69cff; }
+.layer-dengue { --layer: #ff6b6b; }
+.layer-camera { --layer: #c69cff; }
+.layer-taxi { --layer: #ffd166; }
+.layer-incident { --layer: #ff6b6b; }
+.layer-vms { --layer: #d1d5db; }
+.layer-bus-stops { --layer: #35c9ff; }
 
 .weather-metric-list p {
   margin: 0;
@@ -1053,10 +1148,90 @@ h1 {
   box-shadow: 0 3px 12px rgb(0 0 0 / 24%);
 }
 
-.healthcare-wait-grid {
+.healthcare-status-banner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--amber);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.85rem;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.healthcare-status-banner > div {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 0.65rem;
+  gap: 0.25rem;
+}
+
+.healthcare-status-banner strong {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.healthcare-status-banner span,
+.healthcare-status-banner small {
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.healthcare-status-banner small {
+  color: var(--amber);
+  font-size: 0.72rem;
+}
+
+.healthcare-wait-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.healthcare-wait-table th,
+.healthcare-wait-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 0.7rem 0.65rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.healthcare-wait-table thead th {
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.healthcare-wait-table tbody th {
+  min-width: 220px;
+}
+
+.healthcare-wait-table tbody th a {
+  color: var(--cyan);
+  font-size: 0.95rem;
+}
+
+.healthcare-wait-table tbody th small {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.healthcare-wait-table td {
+  color: var(--amber);
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.healthcare-wait-table td.is-unavailable {
+  color: var(--muted);
+  font-weight: 600;
 }
 
 .healthcare-updated {
@@ -1088,19 +1263,35 @@ h1 {
   font-size: 0.65rem;
 }
 
-.healthcare-wait-card dl {
+.healthcare-wait-card dl,
+.healthcare-metric-tiles {
   display: grid;
   gap: 0.5rem;
   margin: 1rem 0 0;
 }
 
-.healthcare-wait-card dl > div {
+.healthcare-metric-tiles {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.healthcare-wait-card dl > div,
+.healthcare-metric-tiles > div {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 0.75rem;
   border-top: 1px solid var(--line);
   padding-top: 0.5rem;
+}
+
+.healthcare-metric-tiles > div {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.55rem 0.65rem;
+  background: #12202d;
 }
 
 .healthcare-wait-card dt {
@@ -1113,6 +1304,18 @@ h1 {
   color: var(--amber);
   font-size: 1.1rem;
   font-weight: 800;
+}
+
+.healthcare-metric-tiles dd {
+  display: grid;
+  gap: 0.1rem;
+  font-size: 1.35rem;
+}
+
+.healthcare-metric-tiles small {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 600;
 }
 
 .healthcare-disclaimer {
@@ -1192,7 +1395,7 @@ tbody tr:hover {
 
 .camera-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.65rem;
   padding: 0.65rem;
   border: 1px solid var(--line);
@@ -1231,6 +1434,18 @@ tbody tr:hover {
 .camera-card time {
   color: var(--muted);
   font-size: 0.62rem;
+}
+
+@media (max-width: 900px) {
+  .camera-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .camera-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .checkpoint-camera-grid {
@@ -1350,6 +1565,18 @@ tbody tr:hover {
   color: var(--text);
   background: #1e2d3b;
 }
+
+.crowd-line-select-input.line-bpl { border-color: #7f8c8d; }
+.crowd-line-select-input.line-ccl,
+.crowd-line-select-input.line-cel { border-color: #f59e0b; }
+.crowd-line-select-input.line-cgl,
+.crowd-line-select-input.line-ewl { border-color: #009645; }
+.crowd-line-select-input.line-dtl { border-color: #005ec4; }
+.crowd-line-select-input.line-nel { border-color: #9900aa; }
+.crowd-line-select-input.line-nsl { border-color: #d42e12; }
+.crowd-line-select-input.line-plrt,
+.crowd-line-select-input.line-slrt { border-color: #748fc4; }
+.crowd-line-select-input.line-tel { border-color: #9d5b25; }
 
 .crowd-forecast-legend {
   display: flex;
@@ -1622,9 +1849,9 @@ input::placeholder {
 }
 
 .nearby-layer-toggles button.is-active {
-  border-color: #ff6b6b;
+  border-color: var(--layer, #ff6b6b);
   color: #fff;
-  background: #7f1d1d;
+  background: color-mix(in srgb, var(--layer, #ff6b6b) 24%, #182633);
 }
 
 .nearby-facility-groups {
@@ -2077,12 +2304,27 @@ footer {
   .checkpoint-camera-card {
     aspect-ratio: 16 / 10;
   }
+
+  .map-frame {
+    height: clamp(300px, 58vh, 560px) !important;
+  }
 }
 
 @media (max-width: 680px) {
   .topbar {
+    align-items: flex-start;
     min-height: 68px;
     padding: 0 1rem;
+  }
+
+  .brand {
+    min-width: 0;
+  }
+
+  .brand strong {
+    max-width: calc(100vw - 5rem);
+    font-size: clamp(0.75rem, 3.5vw, 1rem);
+    line-height: 1.25;
   }
 
   .brand small,
@@ -2108,7 +2350,8 @@ footer {
     grid-template-columns: 1fr;
   }
 
-  .rail-status-banner {
+  .rail-status-banner,
+  .healthcare-status-banner {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -2124,6 +2367,12 @@ footer {
   .panel-body,
   .panel-header {
     padding: 1rem;
+  }
+
+  .panel-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .search-form {
@@ -2146,6 +2395,25 @@ footer {
 
   .map-frame {
     height: 400px !important;
+  }
+
+  .bus-arrival-row {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .bus-arrival-row > div:nth-child(2) {
+    flex-basis: calc(100% - 4.25rem);
+  }
+
+  .bus-time-chips {
+    width: 100%;
+    justify-content: flex-start;
+    padding-left: 4rem;
+  }
+
+  .healthcare-updated {
+    white-space: normal;
   }
 }
 

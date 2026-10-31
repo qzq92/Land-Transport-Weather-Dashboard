@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { ApiMeta } from "../api/schema";
 
+/** Props for loading, error, stale-data, and successful query states. */
 interface QueryStateProps {
   loading: boolean;
   error: Error | null;
@@ -10,6 +11,7 @@ interface QueryStateProps {
   children: ReactNode;
 }
 
+/** Renders query status feedback around loaded child content. */
 export function QueryState({
   loading,
   error,
@@ -56,6 +58,7 @@ export function QueryState({
   );
 }
 
+/** Renders a compact message when a panel has no records. */
 export function EmptyState({ children }: { children: ReactNode }) {
   return <p className="empty-state">{children}</p>;
 }

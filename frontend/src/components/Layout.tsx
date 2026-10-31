@@ -18,6 +18,7 @@ const UNAVAILABLE_RAIL_STATUS: RailStatus = {
   summary: "Rail service status is unavailable",
 };
 
+/** Renders the application shell, navigation, and rail-status banner. */
 export function Layout() {
   const location = useLocation();
   const rail = useRailStatus();
@@ -34,8 +35,8 @@ export function Layout() {
         <NavLink className="brand" to="/" aria-label="Dashboard home">
           <span className="brand-mark" aria-hidden="true">SG</span>
           <span>
-            <strong>Land Transport and Weather Dashboard</strong>
-            <small>Singapore near real-time operations</small>
+            <strong>Land Transport, Weather and Healthcare Dashboard</strong>
+            <small>Singapore near real-time public services</small>
           </span>
         </NavLink>
         <span className="live-indicator">

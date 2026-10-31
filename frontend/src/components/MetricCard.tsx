@@ -1,9 +1,11 @@
 import type { Metric } from "../api/schema";
 
+/** Props for a metric card, including its stable DOM identifier. */
 export interface MetricCardProps extends Metric {
   description?: string;
 }
 
+/** Renders one metric value with optional trend and status styling. */
 export function MetricCard({
   label,
   value,

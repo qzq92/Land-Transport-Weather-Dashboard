@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+/** Props for a bordered dashboard content panel. */
 interface DataPanelProps {
   title: string;
   eyebrow?: string;
@@ -8,6 +9,7 @@ interface DataPanelProps {
   className?: string;
 }
 
+/** Renders a consistently headed dashboard panel. */
 export function DataPanel({
   title,
   eyebrow,

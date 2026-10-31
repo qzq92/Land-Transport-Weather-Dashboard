@@ -43,6 +43,7 @@ logs/
 *.log
 data/*
 !data/lta_camera_id_mapping.csv
+!data/MRTLRTStations.csv
 model_weights/
 
 # Development-only content

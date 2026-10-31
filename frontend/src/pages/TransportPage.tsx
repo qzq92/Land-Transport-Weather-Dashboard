@@ -80,7 +80,7 @@ export default function TransportPage() {
                   return (
                     <button
                       aria-pressed={isActive}
-                      className={isActive ? "is-active" : ""}
+                      className={`layer-${layer.category}${isActive ? " is-active" : ""}`}
                       key={layer.category}
                       onClick={() => toggleLayer(layer.category)}
                       type="button"

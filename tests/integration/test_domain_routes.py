@@ -135,22 +135,83 @@ def test_dashboard_keeps_partial_results_when_one_provider_fails() -> None:
     } <= {metric["label"] for metric in body["data"]["metrics"]}
 
 
+def test_crowding_route_labels_records_with_requested_train_line() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/PCDRealTime"):
+            assert request.url.params["TrainLine"] == "CCL"
+            return httpx.Response(
+                200,
+                json={
+                    "value": [
+                        {
+                            "Station": "CC31 CANTONMENT MRT STATION",
+                            "CrowdLevel": "low",
+                            "StartTime": "2026-09-12T00:00:00",
+                        }
+                    ]
+                },
+            )
+        return httpx.Response(200, json={"value": []})
+
+    app = make_app(handler)
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/v1/transit/crowding",
+            params={"train_line": "CCL"},
+        )
+
+    assert response.status_code == 200
+    reading = response.json()["data"]["readings"][0]
+    assert reading["line"] == "CCL"
+    assert reading["station"] == "CC31"
+    assert reading["station_name"] == "CANTONMENT MRT STATION"
+
+
 def test_healthcare_wait_times_route_normalizes_official_pages() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.host == "www.ttsh.com.sg":
+        if request.url.path.endswith("/ttsh/ed-queue-status"):
             return httpx.Response(
                 200,
                 text=(
-                    "<p>No. of Patients Awaiting Consultation: 2</p>"
-                    "<p>Average Consult Wait Time: 10 min</p>"
+                    '<div class="s-edq-primary-card__block">'
+                    "<span>Number of Patients waiting to be seen</span>"
+                    "<span>2</span><span>Patients</span>"
+                    "<span>No. of Patients Awaiting Consultation</span>"
+                    "</div>"
+                    '<div class="s-edq-primary-card__block">'
+                    "<span>Waiting time to see doctor</span>"
+                    "<span>10</span><span>mins</span>"
+                    "<span>Average Consult Wait Time</span>"
+                    "</div>"
+                    '<p>Last updated at <span class="last_Updated_Date">31 Oct 2026</span>'
+                    '<span class="last_Updated_Time">08:20 PM</span>. Refresh.</p>'
                 ),
             )
-        if request.url.host == "www.nhghealth.com.sg":
+        if request.url.path.endswith("/wh/for-patients-visitors/emergency-care"):
             return httpx.Response(
                 200,
                 text=(
                     "<p>Number of patients in queue 3 Patients</p>"
                     "<p>Waiting time to see doctor 8 mins</p>"
+                    "<p>Last updated at 31 Oct 2026 08:15 PM. Refresh.</p>"
+                ),
+            )
+        if request.url.path.endswith("/ktph/i-want-to/visit-a-e"):
+            return httpx.Response(
+                200,
+                text=(
+                    '<div class="s-edq-primary-card__block">'
+                    "<span>Number of Patients waiting</span>"
+                    "<span>8</span><span>Patients</span>"
+                    "<span>No. of Patients Awaiting Consultation</span>"
+                    "</div>"
+                    '<div class="s-edq-primary-card__block">'
+                    "<span>Waiting time to see doctor</span>"
+                    "<span>41</span><span>mis</span>"
+                    "<span>Average Consult Wait Time</span>"
+                    "</div>"
+                    '<p>last updated at <span id="last_Updated_Date">31 Oct 2026</span>'
+                    '<span id="last_Updated_Time">08:18 PM</span>. Refresh.</p>'
                 ),
             )
         return httpx.Response(
@@ -161,6 +222,7 @@ def test_healthcare_wait_times_route_normalizes_official_pages() -> None:
                 "<td>1 patient(s)</td></tr>"
                 "<tr><td>Estimated Wait Time to See Doctor</td>"
                 "<td>1 hour(s)</td></tr></table>"
+                "<p>Last updated at 25 Oct 2026, 03:02:09 AM.</p>"
             ),
         )
 
@@ -173,5 +235,34 @@ def test_healthcare_wait_times_route_normalizes_official_pages() -> None:
     assert {facility["hospital"] for facility in facilities} == {
         "Tan Tock Seng Hospital",
         "Woodlands Health",
+        "Khoo Teck Puat Hospital",
         "Alexandra Hospital",
     }
+    ttsh = next(
+        facility
+        for facility in facilities
+        if facility["hospital"] == "Tan Tock Seng Hospital"
+    )
+    assert ttsh["patients_waiting"] == 2
+    assert ttsh["wait_to_doctor"] == "10 mins"
+    assert ttsh["wait_to_doctor_minutes"] == 10
+    assert ttsh["source_url"].endswith("/ttsh/ed-queue-status")
+    assert ttsh["updated_at"] == "31 Oct 2026 08:20 PM"
+    woodlands = next(
+        facility
+        for facility in facilities
+        if facility["hospital"] == "Woodlands Health"
+    )
+    assert woodlands["patients_waiting"] == 3
+    assert woodlands["wait_to_doctor"] == "8 mins"
+    assert woodlands["wait_to_doctor_minutes"] == 8
+    assert woodlands["updated_at"] == "31 Oct 2026 08:15 PM"
+    ktph = next(
+        facility
+        for facility in facilities
+        if facility["hospital"] == "Khoo Teck Puat Hospital"
+    )
+    assert ktph["patients_waiting"] == 8
+    assert ktph["wait_to_doctor"] == "41 mins"
+    assert ktph["wait_to_doctor_minutes"] == 41
+    assert ktph["updated_at"] == "31 Oct 2026 08:18 PM"

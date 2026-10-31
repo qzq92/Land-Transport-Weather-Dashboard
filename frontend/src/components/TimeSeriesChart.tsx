@@ -4,12 +4,14 @@ import type { TimeSeriesPoint } from "../api/schema";
 
 const Plot = createPlotlyComponent(Plotly);
 
+/** Props for the shared Plotly time-series chart. */
 interface TimeSeriesChartProps {
   points: TimeSeriesPoint[];
   title: string;
   unit?: string;
 }
 
+/** Renders numeric observations against their timestamps. */
 export function TimeSeriesChart({
   points,
   title,

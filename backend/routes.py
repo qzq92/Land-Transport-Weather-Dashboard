@@ -602,7 +602,13 @@ async def crowding_summary(
     """Return normalized rail crowding records."""
     service: TransitService = _service(request, "transit")
     response = await service.rail("crowding", train_line)
-    return response.model_copy(update={"data": crowding_view(response.data)})
+    crowding = crowding_view(response.data)
+    if train_line:
+        crowding["readings"] = [
+            {**reading, "line": reading["line"] or train_line}
+            for reading in crowding["readings"]
+        ]
+    return response.model_copy(update={"data": crowding})
 
 
 @router.get(
