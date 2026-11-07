@@ -16,6 +16,7 @@ interface CheckpointCameraFeedsProps {
   cameras: TrafficCamera[];
 }
 
+/** Formats a camera capture timestamp for display in the checkpoint gallery. */
 function formatCapturedAt(capturedAt?: string): string | undefined {
   if (!capturedAt) return undefined;
   const capturedDate = new Date(capturedAt);

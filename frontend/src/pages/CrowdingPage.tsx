@@ -32,6 +32,7 @@ const TRAIN_LINES = [
   ["TEL", "Thomson-East Coast Line (TEL)", "#9d5b25"],
 ] as const;
 
+/** Realtime and forecast MRT/LRT station crowding grids by train line. */
 export default function CrowdingPage() {
   const isForecast = Boolean(useMatch("/transit/crowding/forecast"));
   const [selectedLine, setSelectedLine] = useState("CCL");

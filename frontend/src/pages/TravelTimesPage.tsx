@@ -4,6 +4,7 @@ import { DataPanel } from "../components/DataPanel";
 import { PageHeader } from "../components/PageElements";
 import { EmptyState, QueryState } from "../components/QueryState";
 
+/** Expressway journey-time estimates from LTA travel-time feeds. */
 export default function TravelTimesPage() {
   const query = useTravelTimes();
   const journeys = query.data?.data.journeys ?? [];

@@ -12,6 +12,7 @@ const MAP_LAYERS = [
   { category: "vms", label: "Message signs" },
 ] as const;
 
+/** Formats a low–high forecast range from the dashboard aggregate payload. */
 function forecastRange(value: unknown, suffix = ""): string {
   if (!value || typeof value !== "object") return "—";
   const record = value as Record<string, unknown>;
@@ -22,6 +23,7 @@ function forecastRange(value: unknown, suffix = ""): string {
     : "—";
 }
 
+/** Overview dashboard with headline metrics, maps, cameras, and rail status. */
 export default function HomePage() {
   const query = useDashboard();
   const data = query.data?.data;
@@ -32,6 +34,7 @@ export default function HomePage() {
     activeLayers.has(point.category ?? ""),
   );
 
+  /** Toggles one overview map layer without refetching dashboard data. */
   const toggleLayer = (category: string) => {
     setActiveLayers((current) => {
       const next = new Set(current);

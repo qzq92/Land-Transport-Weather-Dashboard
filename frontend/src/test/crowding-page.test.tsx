@@ -54,6 +54,7 @@ vi.mock("../api/queries", () => ({
   }),
 }));
 
+/** Renders the crowding page under a fixed router path for tests. */
 function renderCrowding(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>

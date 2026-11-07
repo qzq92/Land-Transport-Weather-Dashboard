@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import { useCameras } from "../api/queries";
 import { EmptyState, QueryState } from "../components/QueryState";
 
+/** Traffic camera thumbnails and capture timestamps. */
 export default function CamerasPage() {
   const query = useCameras();
   const cameras = query.data?.data.cameras ?? [];

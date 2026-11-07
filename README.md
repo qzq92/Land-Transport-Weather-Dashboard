@@ -88,30 +88,44 @@ React Router lazy-loads each view:
   lightning, flood, and WBGT readings beside a map. Each sensor type has its
   own location toggle, and markers stay hidden until that toggle is selected.
 - `/environment` — PSI, UV, and WBGT summaries, an air-quality legend, and
-  toggles for the PSI table and dengue/Zika cluster lists.
+  dengue and Zika cluster lists. Map toggles control PSI and cluster markers;
+  the cluster lists stay visible.
 - `/healthcare` — official emergency-department queue estimates in a
   hospital-by-row table. Each hospital name links to its official source
-  page, and data limitations are shown in a status banner.
+  page, the Updated column is the date and time after "Last updated at"
+  on that page, and data limitations are shown in a status banner.
 - `/transport` — an operations map with the same opt-in taxi, camera,
-  road-incident, and variable-message-sign layers, plus compact network metrics
-  and advisories.
+  road-incident, and variable-message-sign layers. Network metrics and road
+  advisories sit to the left of the map; rail advisories sit to the right.
 - `/transport/travel-times` — expressway travel times.
 - `/transport/cameras` — a dense gallery of traffic-camera images. Names come
   from `data/lta_camera_id_mapping.csv`.
-- `/transit/crowding` — MRT/LRT station crowd forecast as a station-by-time grid,
-  with a train-line dropdown that queries the selected LTA `TrainLine`. Station
-  names come from `data/MRTLRTStations.csv`. CE1 is Bayfront (CC34) and CE2 is
-  Marina Bay (CC33).
+- `/transit/crowding` — MRT/LRT realtime station crowding as a station list
+  with one colour indicator per station. The shared reporting period is
+  centred above the grid. Station names come from `data/MRTLRTStations.csv`.
+  CE1 is Bayfront (CC34) and CE2 is Marina Bay (CC33).
+- `/transit/crowding/forecast` — the same station colour-indicator grid as
+  realtime crowding, extended across LTA's 30-minute forecast intervals
+  from 00:00 to 23:30.
 - `/transit/buses` — bus arrival timings for a five-digit stop code, with
   soonest or service-number sorting, a service filter, and a service-route
   search. Bus stop locations stay off the map until "Show Bus Stop Locations"
   is turned on.
-- `/nearby` — address search with Getting around, Park and charge, and
-  Food & Amenities tabs. Each facility type has a show/hide toggle, and its
-  points appear on the map only while that toggle is on.
+- `/nearby` — address search and Use my location stay visible. The map pans
+  to a suggested address after it is selected. Getting around, Park and
+  charge, and Food & Amenities lists, plus map markers, appear only after a
+  postal address or location is selected. Bus stops, taxi stands, carparks,
+  bicycle parking, and EV chargers come from LTA DataMall. MRT/LRT points
+  come from `data/MRTLRTStations.csv`. Nearby bus stops also show every
+  reported bus service with its next arrival times and load/accessibility
+  status. Each facility type has a show/hide toggle, and its points appear
+  on the map only while that toggle is on.
+  The map legend lists the same layers as the visible toggles for the
+  selected tab.
 
 Every route has typed loading, error, refreshing, stale-data, and empty states.
-Maps use OneMap tiles through React Leaflet. Charts use a lazy route-level
+Maps use OneMap tiles through React Leaflet and can be zoomed with the mouse
+wheel. Charts use a lazy route-level
 Plotly basic bundle rather than loading the full chart library on every page.
 
 ## Project layout
@@ -142,11 +156,11 @@ Provider URLs and dataset IDs remain centralized in `conf/api_urls.py`.
   traffic cameras, dengue/Zika clusters, and public amenities (parks, sports
   fields, recycling bins, and hawker centres).
 - **LTA DataMall**: traffic incidents, faulty traffic lights, variable message
-  signs, travel times, carpark availability, EV chargers, bus
-  stops/services/arrivals, train status, crowding, and crowd forecasts.
-- **OneMap**: address search, nearby bus stops/MRT stations, authentication,
-  and night map tiles. Every map opens at zoom 13.
-  Marker layers stay off until a page toggle is selected.
+  signs, travel times, carpark availability, taxi stands, bicycle parking,
+  EV chargers (EVCBatch), bus stops/services/arrivals, train status,
+  crowding, and crowd forecasts.
+- **OneMap**: address search, authentication, and night map tiles. Every map
+  opens at zoom 13. Marker layers stay off until a page toggle is selected.
 
 Provider payloads are converted to stable frontend view models in
 `backend/presenters.py`; React does not depend on provider-specific field names.
@@ -202,7 +216,7 @@ BACKEND_REDIS_REQUIRED=false
 | Variable | Where to get it | Used for |
 | --- | --- | --- |
 | `BACKEND_DATA_GOV_API_KEY` | [Request a key](https://guide.data.gov.sg/developer-guide/api-overview/how-to-request-an-api-key) | Weather, environment, taxis, cameras, and datasets |
-| `BACKEND_ONEMAP_EMAIL` / `BACKEND_ONEMAP_EMAIL_PASSWORD` | [OneMap register](https://www.onemap.gov.sg/apidocs/register) | Address and nearby searches |
+| `BACKEND_ONEMAP_EMAIL` / `BACKEND_ONEMAP_EMAIL_PASSWORD` | [OneMap register](https://www.onemap.gov.sg/apidocs/register) | Address search |
 | `BACKEND_ONEMAP_API_KEY` | OneMap | Optional pre-issued token instead of email/password |
 | `BACKEND_LTA_API_KEY` | [DataMall request form](https://datamall.lta.gov.sg/content/datamall/en/request-for-api.html) | Road, bus, and rail feeds |
 | `BACKEND_REDIS_URL` | Local or managed Redis | Shared expiring query cache |
@@ -256,19 +270,20 @@ production container builds on `main`.
   route, and the filter on the arrival board only narrows services already
   calling at that stop.
 - Healthcare wait times are scraped from official hospital pages on the
-  server, cached for 30 minutes, and marked with source links. Hospital
-  coverage and fields vary by page; estimates are informational and should
-  not be used to delay emergency care.
+  server, cached for 30 minutes, and marked with source links. The Updated
+  field is the date and time after "Last updated at" on each source page,
+  without surrounding copy. Hospital coverage and fields vary by page;
+  estimates are informational and should not be used to delay emergency
+  care.
 - Some LTA traffic-camera images may be unavailable as feeds are retired.
   Unmapped camera IDs fall back to the provider ID when
   `data/lta_camera_id_mapping.csv` has no name.
 - The rail banner uses LTA's aggregate train-status value. "View all lines"
   lists each line, but a disruption is not attributed to a specific line.
-- Crowd forecast stays empty when LTA DataMall returns HTTP 403 for the
-  configured key. The station-by-time grid renders once that feed is
-  authorized.
-- Road and nearby pages do not yet include ERP gantries, speed cameras, taxi
-  stands, bicycle parking, or EV-charger map layers.
+- Crowd realtime and forecast grids stay empty when LTA DataMall returns
+  HTTP 403 for the configured key. The station-by-time grid renders once
+  that feed is authorized.
+- Road and nearby pages do not yet include ERP gantries or speed cameras.
 - Cache refresh is request-driven. A dedicated refresh worker should be added
   only if production measurements show unacceptable cold-cache latency.
 

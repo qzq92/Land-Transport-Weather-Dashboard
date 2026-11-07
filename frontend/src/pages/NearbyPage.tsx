@@ -94,18 +94,21 @@ function layerLegendLabel(layer: { show: string }): string {
   return layer.show.replace(/^Show\s+/i, "");
 }
 
+/** Formats a distance in metres or kilometres for list and map labels. */
 function formatDistance(distanceM: number): string {
   return distanceM < 1000
     ? `${Math.round(distanceM)} m`
     : `${(distanceM / 1000).toFixed(1)} km`;
 }
 
+/** Formats one bus arrival countdown as `Arr`, minutes, or an em dash. */
 function arrivalTimeLabel(minutes: number | null): string {
   if (minutes === null) return "—";
   if (minutes <= 0) return "Arr";
   return `${minutes} min`;
 }
 
+/** Returns the soonest arrival label for a bus service row. */
 function busServiceLabel(arrival: BusArrival): string {
   const first = arrival.visits[0];
   if (!first) return "No live arrival";
@@ -114,6 +117,7 @@ function busServiceLabel(arrival: BusArrival): string {
     : arrivalTimeLabel(first.minutes);
 }
 
+/** Returns the five nearest places for one facility category. */
 function closestPlaces(places: NearbyPlace[], category: string): NearbyPlace[] {
   return places
     .filter((place) => place.category === category)
@@ -122,6 +126,7 @@ function closestPlaces(places: NearbyPlace[], category: string): NearbyPlace[] {
     .slice(0, 5);
 }
 
+/** Map and sidebar for nearby LTA facilities, amenities, and bus arrivals. */
 export default function NearbyPage() {
   const [draft, setDraft] = useState("");
   const [searchText, setSearchText] = useState("");
@@ -166,6 +171,7 @@ export default function NearbyPage() {
       })),
   ];
 
+  /** Starts a OneMap address search when the draft query is long enough. */
   function submit(event: FormEvent) {
     event.preventDefault();
     if (draft.trim().length >= 3) {
@@ -174,6 +180,7 @@ export default function NearbyPage() {
     }
   }
 
+  /** Shows or hides one nearby facility layer on the map and lists. */
   function toggleLayer(category: string) {
     setActiveLayers((current) => {
       const next = new Set(current);
@@ -183,6 +190,7 @@ export default function NearbyPage() {
     });
   }
 
+  /** Centres nearby search on the browser's current GPS coordinates. */
   function useDeviceLocation() {
     if (!navigator.geolocation) {
       setLocationError("Location is not supported by this browser.");

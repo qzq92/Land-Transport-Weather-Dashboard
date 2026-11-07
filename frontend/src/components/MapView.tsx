@@ -59,6 +59,7 @@ const categoryColours: Record<string, string> = {
   "hawker-centres": "#d946ef",
 };
 
+/** Normalizes a Leaflet centre to a `[latitude, longitude]` tuple. */
 function latLngTuple(centre: LatLngExpression): [number, number] {
   if (Array.isArray(centre)) {
     return [centre[0], centre[1]];
@@ -66,6 +67,7 @@ function latLngTuple(centre: LatLngExpression): [number, number] {
   return [centre.lat, centre.lng];
 }
 
+/** Pans the map when the parent `centre` prop changes without resetting wheel zoom. */
 function MapViewport({
   centre,
   zoom,

@@ -73,7 +73,11 @@ export const useRailStatus = () =>
     ...LIVE_QUERY_OPTIONS,
   });
 
-/** Loads realtime crowd observations for one LTA train-line code. */
+/**
+ * Loads realtime crowd observations for one LTA train-line code.
+ * @param trainLine - LTA line code such as `CCL` or `NSL`.
+ * @param enabled - When false, the query does not run.
+ */
 export const useCrowding = (trainLine: string, enabled = true) =>
   useQuery({
     queryKey: ["transit", "crowding", trainLine],
@@ -82,7 +86,11 @@ export const useCrowding = (trainLine: string, enabled = true) =>
     ...LIVE_QUERY_OPTIONS,
   });
 
-/** Loads 24-hour crowd forecasts for one LTA train-line code. */
+/**
+ * Loads 24-hour crowd forecasts for one LTA train-line code.
+ * @param trainLine - LTA line code such as `CCL` or `NSL`.
+ * @param enabled - When false, the query does not run.
+ */
 export const useCrowdForecast = (trainLine: string, enabled = true) =>
   useQuery({
     queryKey: ["transit", "crowding", "forecast", trainLine],
@@ -91,7 +99,10 @@ export const useCrowdForecast = (trainLine: string, enabled = true) =>
     ...LIVE_QUERY_OPTIONS,
   });
 
-/** Loads arrival predictions for a bus stop code. */
+/**
+ * Loads arrival predictions for a bus stop code.
+ * @param stopCode - Five-digit LTA bus stop code.
+ */
 export function useBuses(stopCode: string) {
   return useQuery<ApiEnvelope<BusesData>>({
     queryKey: ["transit", "buses", stopCode],
@@ -102,7 +113,10 @@ export function useBuses(stopCode: string) {
   });
 }
 
-/** Loads the optional bus-stop map layer when enabled. */
+/**
+ * Loads the optional bus-stop map layer when enabled.
+ * @param enabled - When false, the large stop directory is not fetched.
+ */
 export function useBusLocations(enabled: boolean) {
   return useQuery<ApiEnvelope<BusStopLocations>>({
     queryKey: ["transit", "bus-locations"],
@@ -113,7 +127,10 @@ export function useBusLocations(enabled: boolean) {
   });
 }
 
-/** Loads the ordered route directions for a bus service. */
+/**
+ * Loads the ordered route directions for a bus service.
+ * @param serviceNo - One- to four-character LTA service number.
+ */
 export function useBusRoute(serviceNo: string) {
   return useQuery<ApiEnvelope<BusRouteData>>({
     queryKey: ["transit", "bus-route", serviceNo],
@@ -134,7 +151,12 @@ export const useHealthcareWaitTimes = () =>
     retry: 1,
   });
 
-/** Loads nearby facilities and live bus-stop arrivals. */
+/**
+ * Loads nearby facilities and live bus-stop arrivals.
+ * @param latitude - WGS84 latitude of the search centre.
+ * @param longitude - WGS84 longitude of the search centre.
+ * @param enabled - When false, the query does not run.
+ */
 export function useNearby(
   latitude: number,
   longitude: number,
@@ -149,7 +171,10 @@ export function useNearby(
   });
 }
 
-/** Searches OneMap for an address after the query reaches three characters. */
+/**
+ * Searches OneMap for an address after the query reaches three characters.
+ * @param query - Address or postal search text.
+ */
 export function usePlaceSearch(query: string) {
   return useQuery<ApiEnvelope<SearchPlace[]>>({
     queryKey: ["nearby", "search", query],

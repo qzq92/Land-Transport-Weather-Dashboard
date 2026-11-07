@@ -13,6 +13,7 @@ const CrowdingPage = lazy(() => import("./pages/CrowdingPage"));
 const BusesPage = lazy(() => import("./pages/BusesPage"));
 const NearbyPage = lazy(() => import("./pages/NearbyPage"));
 
+/** Fallback shown while a lazy route chunk is loading. */
 function RouteLoading() {
   return (
     <div className="state-card route-loading" role="status">
@@ -22,6 +23,7 @@ function RouteLoading() {
   );
 }
 
+/** Fallback when no dashboard route matches the current URL. */
 function NotFoundPage() {
   return (
     <section className="not-found">
@@ -57,6 +59,7 @@ export function AppRoutes() {
   );
 }
 
+/** Root router that mounts all dashboard pages inside React Router. */
 export default function App() {
   return (
     <BrowserRouter>

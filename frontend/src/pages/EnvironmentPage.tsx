@@ -6,6 +6,7 @@ import { MetricGrid } from "../components/PageElements";
 import { QueryState } from "../components/QueryState";
 import { TimeSeriesChart } from "../components/TimeSeriesChart";
 
+/** PSI regions, UV trends, and optional disease-cluster map layers. */
 export default function EnvironmentPage() {
   const query = useEnvironment();
   const data = query.data?.data;

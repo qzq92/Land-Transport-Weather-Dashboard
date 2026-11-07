@@ -22,7 +22,11 @@ export interface RequestOptions {
   timeoutMs?: number;
 }
 
-/** Builds an origin-relative or configured absolute API URL. */
+/**
+ * Builds an origin-relative or configured absolute API URL.
+ * @param path - Typed API path to request.
+ * @param params - Optional query parameters appended to the URL.
+ */
 function buildUrl(path: ApiPath, params?: RequestOptions["params"]): string {
   const url = new URL(`${API_BASE_URL}${path}`, window.location.origin);
   Object.entries(params ?? {}).forEach(([key, value]) => {
@@ -33,12 +37,19 @@ function buildUrl(path: ApiPath, params?: RequestOptions["params"]): string {
   return API_BASE_URL ? url.toString() : `${url.pathname}${url.search}`;
 }
 
-/** Detects whether a provider response already uses the API envelope shape. */
+/**
+ * Detects whether a provider response already uses the API envelope shape.
+ * @param value - Parsed JSON body from `fetch`.
+ */
 function isEnvelope<T>(value: unknown): value is ApiEnvelope<T> {
   return Boolean(value && typeof value === "object" && "data" in value);
 }
 
-/** Fetches one typed API path with timeout and error normalization. */
+/**
+ * Fetches one typed API path with timeout and error normalization.
+ * @param path - Versioned API path from the frontend schema map.
+ * @param options - Optional query params, abort signal, and timeout.
+ */
 export async function apiGet<P extends ApiPath>(
   path: P,
   options: RequestOptions = {},
@@ -82,30 +93,40 @@ export async function apiGet<P extends ApiPath>(
 
 /** Typed endpoint methods used by the frontend query hooks. */
 export const api = {
+  /** Fetches the combined home-dashboard aggregate. */
   dashboard: (signal?: AbortSignal) =>
     apiGet("/api/v1/dashboard", { signal }),
+  /** Fetches realtime weather metrics, readings, and alerts. */
   weather: (signal?: AbortSignal) =>
     apiGet("/api/v1/weather/realtime", { signal }),
+  /** Fetches PSI, UV, WBGT, and disease-cluster environment data. */
   environment: (signal?: AbortSignal) =>
     apiGet("/api/v1/environment", { signal }),
+  /** Fetches road transport metrics and map incidents. */
   transport: (signal?: AbortSignal) =>
     apiGet("/api/v1/transport", { signal }),
+  /** Fetches expressway travel-time estimates. */
   travelTimes: (signal?: AbortSignal) =>
     apiGet("/api/v1/transport/travel-times", { signal }),
+  /** Fetches traffic camera metadata and image URLs. */
   cameras: (signal?: AbortSignal) =>
     apiGet("/api/v1/transport/cameras", { signal }),
+  /** Fetches realtime MRT/LRT crowding for one train-line code. */
   crowding: (trainLine?: string, signal?: AbortSignal) =>
     apiGet("/api/v1/transit/crowding", {
       params: { train_line: trainLine },
       signal,
     }),
+  /** Fetches 24-hour MRT/LRT crowding forecasts for one train-line code. */
   crowdForecast: (trainLine?: string, signal?: AbortSignal) =>
     apiGet("/api/v1/transit/crowding/forecast", {
       params: { train_line: trainLine },
       signal,
     }),
+  /** Fetches the global operational rail-status banner. */
   railStatus: (signal?: AbortSignal) =>
     apiGet("/api/v1/transit/rail/banner", { signal }),
+  /** Fetches bus arrivals for one stop, optionally filtered by service. */
   buses: (
     params: { stop_code: string; service_no?: string },
     signal?: AbortSignal,
@@ -115,23 +136,28 @@ export const api = {
       signal,
       timeoutMs: 45_000,
     }),
+  /** Fetches plottable coordinates for the bus-stop map layer. */
   busLocations: (signal?: AbortSignal) =>
     apiGet("/api/v1/transit/bus/locations", { signal, timeoutMs: 45_000 }),
+  /** Fetches ordered route stops for one bus service number. */
   busRoute: (serviceNo: string, signal?: AbortSignal) =>
     apiGet("/api/v1/transit/bus/routes", {
       params: { service_no: serviceNo },
       signal,
       timeoutMs: 45_000,
     }),
+  /** Fetches parsed emergency-department queue pages from hospitals. */
   healthcareWaitTimes: (signal?: AbortSignal) =>
     apiGet("/api/v1/healthcare/wait-times", {
       signal,
       timeoutMs: 20_000,
     }),
+  /** Fetches LTA and amenity facilities within a search radius. */
   nearby: (
     params: { latitude: number; longitude: number; radius?: number },
     signal?: AbortSignal,
   ) => apiGet("/api/v1/nearby", { params, signal }),
+  /** Searches OneMap for address suggestions. */
   searchPlaces: (query: string, signal?: AbortSignal) =>
     apiGet("/api/v1/nearby/search", { params: { q: query }, signal }),
 };

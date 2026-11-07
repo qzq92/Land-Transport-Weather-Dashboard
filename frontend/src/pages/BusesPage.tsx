@@ -14,11 +14,13 @@ const LOAD_LABELS: Record<NonNullable<BusVisit["load"]>, string> = {
 
 const ROUTE_COLOURS = ["#35c9ff", "#f5d76e", "#52e0a1", "#ff9f43"];
 
+/** Builds a sort key from a service number's leading digits. */
 function serviceRank(serviceNo: string): [number, string] {
   const match = /^(\d+)/.exec(serviceNo);
   return [match ? Number(match[1]) : Number.MAX_SAFE_INTEGER, serviceNo];
 }
 
+/** Returns the earliest predicted arrival across the next three buses. */
 function soonestMinutes(arrival: BusArrival): number {
   const minutes = arrival.visits
     .map((visit) => visit.minutes)
@@ -26,12 +28,14 @@ function soonestMinutes(arrival: BusArrival): number {
   return minutes.length ? Math.min(...minutes) : Number.POSITIVE_INFINITY;
 }
 
+/** Formats one arrival countdown for the bus arrival board. */
 function timeLabel(minutes: number | null): string {
   if (minutes === null) return "—";
   if (minutes <= 0) return "Arr";
   return `${minutes} min`;
 }
 
+/** Describes load, wheelchair access, and bus type for one predicted visit. */
 function featureText(visit: BusVisit | undefined): string {
   if (!visit) return "Live arrival";
   const marks = [
@@ -42,6 +46,7 @@ function featureText(visit: BusVisit | undefined): string {
   return marks.join(" · ") || "Live arrival";
 }
 
+/** Formats the API fetch time shown above the arrival board. */
 function updatedLabel(fetchedAt: string | undefined): string {
   if (!fetchedAt) return "";
   const date = new Date(fetchedAt);
@@ -52,6 +57,7 @@ function updatedLabel(fetchedAt: string | undefined): string {
   })}`;
 }
 
+/** Bus stop arrivals, service routes, and an optional island-wide stop map. */
 export default function BusesPage() {
   const [draftStop, setDraftStop] = useState("");
   const [draftService, setDraftService] = useState("");
@@ -140,6 +146,7 @@ export default function BusesPage() {
     );
   }, [route, showStops]);
 
+  /** Validates and loads arrivals for the entered five-digit stop code. */
   function searchStop(event: FormEvent) {
     event.preventDefault();
     const nextStop = draftStop.trim();
@@ -149,6 +156,7 @@ export default function BusesPage() {
     setDraftService("");
   }
 
+  /** Validates and loads the ordered route for one service number. */
   function searchRoute(event: FormEvent) {
     event.preventDefault();
     const nextService = draftService.trim();
@@ -158,6 +166,7 @@ export default function BusesPage() {
     setDraftStop("");
   }
 
+  /** Loads arrivals when a bus-stop marker is selected on the map. */
   function selectStop(point: GeoPoint) {
     const code = typeof point.detail === "string" ? point.detail : point.id;
     if (point.category !== "bus-stops" || !/^\d{5}$/.test(code)) return;

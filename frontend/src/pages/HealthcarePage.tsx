@@ -3,6 +3,7 @@ import type { HealthcareFacility, HealthcareSource } from "../api/schema";
 import { DataPanel } from "../components/DataPanel";
 import { EmptyState, QueryState } from "../components/QueryState";
 
+/** Normalises nullable wait-time values for table display. */
 function formatValue(value: string | number | null | undefined): string {
   if (value === null || value === undefined || value === "") {
     return "unavailable";
@@ -10,6 +11,7 @@ function formatValue(value: string | number | null | undefined): string {
   return String(value);
 }
 
+/** Renders one healthcare table cell with unavailable styling when empty. */
 function metricCell(value: string | number | null | undefined) {
   const display = formatValue(value);
   return (
@@ -19,6 +21,7 @@ function metricCell(value: string | number | null | undefined) {
   );
 }
 
+/** Formats the provider page timestamp shown in the healthcare table. */
 function updatedLabel(value: string | undefined): string {
   if (!value) return "Update time unavailable";
   const date = new Date(value);
@@ -26,6 +29,7 @@ function updatedLabel(value: string | undefined): string {
   return `Fetched ${date.toLocaleString()}`;
 }
 
+/** Resolves the official source URL for one hospital wait-time row. */
 function hospitalHref(facility: HealthcareFacility, sources: HealthcareSource[]): string | undefined {
   if (facility.source_url) return facility.source_url;
   const cluster = facility.cluster.toLowerCase();
@@ -33,6 +37,7 @@ function hospitalHref(facility: HealthcareFacility, sources: HealthcareSource[])
     ?.url;
 }
 
+/** Official emergency-department queue estimates from hospital web pages. */
 export default function HealthcarePage() {
   const query = useHealthcareWaitTimes();
   const data = query.data?.data;

@@ -11,6 +11,7 @@ export function crowdStationLabel(reading: CrowdReading): string {
   return reading.station;
 }
 
+/** Formats an ISO crowd timestamp as a 24-hour Singapore time string. */
 function formatCrowdTime(value?: string): string {
   if (!value) {
     return "";
@@ -41,6 +42,7 @@ export function crowdPeriodLabel(
   return start || end;
 }
 
+/** Compares crowd readings by `start_time` for stable chronological sorting. */
 function byStartTime(left: CrowdReading, right: CrowdReading): number {
   return (left.start_time ?? "").localeCompare(right.start_time ?? "");
 }
@@ -110,6 +112,7 @@ export function crowdForecastDayLabel(readings: CrowdReading[]): string {
  * Sorts station codes by number descending, matching the line-order grid.
  */
 export function crowdStationCodeSort(left: string, right: string): number {
+  /** Splits a station code into its line prefix and numeric suffix. */
   const parse = (value: string) => {
     const match = /^([A-Za-z]+)(\d+)/.exec(value);
     return match

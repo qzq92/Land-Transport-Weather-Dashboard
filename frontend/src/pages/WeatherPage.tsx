@@ -42,6 +42,7 @@ const WEATHER_LAYERS = [
   },
 ] as const;
 
+/** Looks up one weather metric summary for the current layer card. */
 function metricText(metrics: Metric[], id: string): string {
   const metric = metrics.find((item) => item.id === id);
   if (!metric || metric.value === "" || metric.value === undefined) return "—";
@@ -51,6 +52,7 @@ function metricText(metrics: Metric[], id: string): string {
   return metric.unit ? `${metric.value} ${metric.unit}` : String(metric.value);
 }
 
+/** Realtime weather metrics, sensor map layers, and alert summaries. */
 export default function WeatherPage() {
   const query = useWeather();
   const data = query.data?.data;

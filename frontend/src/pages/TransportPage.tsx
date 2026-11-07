@@ -13,6 +13,7 @@ const MAP_LAYERS = [
   { category: "vms", label: "VMS" },
 ] as const;
 
+/** Road transport metrics, incidents, taxis, cameras, and VMS map layers. */
 export default function TransportPage() {
   const query = useTransport();
   const data = query.data?.data;
@@ -20,6 +21,7 @@ export default function TransportPage() {
     () => new Set(["camera", "incident"]),
   );
 
+  /** Toggles one transport map layer on or off. */
   const toggleLayer = (category: string) => {
     setActiveLayers((current) => {
       const next = new Set(current);
