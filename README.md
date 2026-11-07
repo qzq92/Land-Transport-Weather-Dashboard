@@ -70,6 +70,7 @@ The production stack has three services:
 | Shared cache | Redis 7 |
 | Package managers | [uv](https://docs.astral.sh/uv/) and npm |
 | Tests | pytest, Vitest, Testing Library |
+| Quality / security | Ruff, mypy, Bandit, pip-audit, ESLint, TypeScript, npm audit, GitHub CodeQL |
 | Deploy | Docker Compose and Nginx (see [DEPLOYMENT.md](DEPLOYMENT.md)) |
 
 ## Routes
@@ -240,17 +241,35 @@ degrade to uncached provider reads when Redis is optional.
 ### Tests and lint
 
 ```bash
+uv sync --all-groups
 uv run pytest
-uv run ruff check backend
-uv run mypy backend
+uv run ruff check backend conf tests
+uv run mypy backend conf
+uv run bandit -r backend -c pyproject.toml -ll
+uv run pip-audit --skip-editable
 cd frontend
+npm ci
+npm audit --audit-level=high
 npm run lint
+npx tsc -b --pretty false
 npm test
 npm run build
 ```
 
-CI runs Python and strict TypeScript checks, Redis integration tests, and
-production container builds on `main`.
+### Quality and security (CI)
+
+GitHub Actions with native tooling and
+GitHub’s built-in code scanning:
+
+| Workflow | Checks |
+| --- | --- |
+| [`.github/workflows/lint.yml`](.github/workflows/lint.yml) | Ruff, mypy, Bandit, pip-audit, pytest, OpenAPI contract, ESLint, `tsc`, Vitest, production build, `npm audit`, Docker Compose smoke test (Redis required) |
+| [`.github/workflows/codeql.yml`](.github/workflows/codeql.yml) | CodeQL static analysis for Python (`backend/`, `tests/`, `conf/`) and JavaScript/TypeScript (`frontend/`) on push, pull request, and weekly schedule |
+| [`.github/dependabot.yml`](.github/dependabot.yml) | Weekly dependency update PRs for uv, npm, and GitHub Actions |
+
+CI runs on every push and pull request to `main`. CodeQL findings appear under
+the repository **Security** tab when GitHub Advanced Security or the public
+repository CodeQL feature set is enabled for your org.
 
 ## How development is structured
 
