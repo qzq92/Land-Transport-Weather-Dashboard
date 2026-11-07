@@ -1,10 +1,9 @@
 """Public API contract tests."""
 
 import pytest
-from pydantic import ValidationError
-
 from backend.main import create_app
 from backend.settings import Settings
+from pydantic import ValidationError
 
 
 def test_openapi_exposes_required_versioned_operations() -> None:

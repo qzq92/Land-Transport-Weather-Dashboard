@@ -3,7 +3,6 @@
 from datetime import UTC, datetime
 
 import pytest
-
 from backend.lta_pages import paged_lta_values, secure_batch_link
 from backend.models import ApiResponse, CacheMetadata
 

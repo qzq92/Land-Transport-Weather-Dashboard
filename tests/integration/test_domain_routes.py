@@ -1,10 +1,9 @@
 """Integration tests across routers, services, cache, and mocked HTTP."""
 
 import httpx
-from fastapi.testclient import TestClient
-
 from backend.main import create_app
 from backend.settings import Settings
+from fastapi.testclient import TestClient
 
 
 def make_app(handler):

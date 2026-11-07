@@ -4,10 +4,9 @@ import json
 from typing import Any
 
 import pytest
-from redis.exceptions import ConnectionError as RedisConnectionError
-
 from backend.cache import JsonCache
 from backend.settings import Settings
+from redis.exceptions import ConnectionError as RedisConnectionError
 
 
 class MemoryRedis:

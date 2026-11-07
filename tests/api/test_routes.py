@@ -1,10 +1,9 @@
 """API behavior, health, CORS, and validation tests."""
 
 import httpx
-from fastapi.testclient import TestClient
-
 from backend.main import create_app
 from backend.settings import Settings
+from fastapi.testclient import TestClient
 
 
 def build_client(
