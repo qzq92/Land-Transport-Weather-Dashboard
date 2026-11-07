@@ -1,0 +1,225 @@
+# Advisory pull request feedback: inline review comments (Ruff, ESLint) and a
+# summary comment. Required checks still run in lint.yml and codeql.yml.
+name: Code quality suggestions
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: code-quality-${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22.20"
+  UV_HTTP_TIMEOUT: "120"
+
+jobs:
+  suggest:
+    name: Suggest improvements on pull request
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed areas
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'conf/**'
+              - 'tests/**'
+              - 'pyproject.toml'
+            frontend:
+              - 'frontend/**'
+
+      - name: Install uv
+        if: steps.changes.outputs.backend == 'true'
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.9.21"
+          enable-cache: true
+
+      - name: Install Python dependencies
+        if: steps.changes.outputs.backend == 'true'
+        run: |
+          uv python install "${PYTHON_VERSION}"
+          uv sync --all-groups
+
+      - name: Set up reviewdog
+        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.frontend == 'true'
+        uses: reviewdog/action-setup@v1
+        with:
+          reviewdog_version: v0.20.3
+
+      - name: Ruff lint suggestions (changed lines)
+        if: steps.changes.outputs.backend == 'true'
+        uses: reviewdog/action-ruff@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          level: info
+          filter_mode: diff_context
+          fail_on_error: false
+          workdir: .
+          ruff_flags: backend conf tests
+
+      - name: Ruff format suggestions
+        if: steps.changes.outputs.backend == 'true'
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          uv run ruff format --check --diff backend conf tests 2>&1 \
+            | reviewdog -f=diff -name="ruff-format" -reporter=github-pr-review \
+              -level=info -filter-mode=diff_context
+          exit 0
+
+      - name: Install Node.js
+        if: steps.changes.outputs.frontend == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "${{ env.NODE_VERSION }}"
+
+      - name: Install frontend dependencies
+        if: steps.changes.outputs.frontend == 'true'
+        working-directory: frontend
+        shell: bash
+        run: |
+          if [[ -f package-lock.json ]]; then
+            npm ci
+          else
+            npm install --no-audit --no-fund
+          fi
+
+      - name: ESLint suggestions (changed lines)
+        if: steps.changes.outputs.frontend == 'true'
+        uses: reviewdog/action-eslint@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          level: warning
+          filter_mode: diff_context
+          fail_on_error: false
+          workdir: frontend
+          eslint_flags: .
+
+      - name: Build advisory summary
+        if: always()
+        env:
+          BACKEND_CHANGED: ${{ steps.changes.outputs.backend }}
+          FRONTEND_CHANGED: ${{ steps.changes.outputs.frontend }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 <<'PY'
+          import os
+          import subprocess
+
+          backend = os.environ["BACKEND_CHANGED"] == "true"
+          frontend = os.environ["FRONTEND_CHANGED"] == "true"
+          base, head = os.environ["BASE_SHA"], os.environ["HEAD_SHA"]
+
+          def names(prefixes):
+              out = subprocess.check_output(
+                  ["git", "diff", "--name-only", base, head],
+                  text=True,
+              )
+              return [line for line in out.splitlines() if line]
+
+          lines = [
+              "## Code quality suggestions (advisory)",
+              "",
+              "This workflow adds **inline review comments** on changed lines and does "
+              "not replace required CI (`CI`, `CodeQL`). Address what makes sense before merge.",
+              "",
+          ]
+
+          if not backend and not frontend:
+              lines.extend(
+                  [
+                      "No Python or frontend source paths changed in this PR; "
+                      "automated style suggestions were skipped.",
+                      "",
+                      "Required checks still apply when workflows run on the default branch targets.",
+                  ]
+              )
+          else:
+              ran = []
+              if backend:
+                  ran.append("- **Ruff** (`check` + `format`) on `backend/`, `conf/`, `tests/`")
+              if frontend:
+                  ran.append("- **ESLint** on `frontend/`")
+              lines.append("### Tools run on this PR")
+              lines.extend(ran)
+              lines.append("")
+              lines.append(
+                  "Open the **Files changed** tab to see line-level comments, or fix locally:"
+              )
+              if backend:
+                  lines.append("```bash")
+                  lines.append("uv run ruff check backend conf tests")
+                  lines.append("uv run ruff format backend conf tests")
+                  lines.append("```")
+              if frontend:
+                  lines.append("```bash")
+                  lines.append("cd frontend && npm run lint")
+                  lines.append("```")
+
+          changed = names(())
+          app_py = [p for p in changed if p.startswith(("backend/", "conf/"))]
+          test_py = [p for p in changed if p.startswith("tests/")]
+          app_fe = [
+              p
+              for p in changed
+              if p.startswith("frontend/src/")
+              and ".test." not in p
+              and not p.endswith((".test.ts", ".test.tsx"))
+          ]
+          test_fe = [p for p in changed if p.startswith("frontend/") and ".test." in p]
+
+          hints = []
+          if app_py and not test_py:
+              hints.append(
+                  "- Backend or `conf/` code changed without matching updates under `tests/`. "
+                  "Consider adding or extending unit tests."
+              )
+          if app_fe and not test_fe:
+              hints.append(
+                  "- Frontend source changed without an obvious test file change. "
+                  "Consider Vitest coverage for new behaviour."
+              )
+
+          if hints:
+              lines.append("")
+              lines.append("### Human review reminders")
+              lines.extend(hints)
+
+          lines.append("")
+          lines.append(
+              "---\n"
+              "_Posted by `.github/workflows/code-quality-suggestions.yml`. "
+              "Re-run checks by pushing new commits._"
+          )
+
+          with open("pr-quality-summary.md", "w", encoding="utf-8") as fh:
+              fh.write("\n".join(lines) + "\n")
+          PY
+
+      - name: Post or update summary comment
+        if: always()
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: code-quality-advisory
+          path: pr-quality-summary.md
+          ignore_empty: true
