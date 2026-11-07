@@ -699,7 +699,7 @@ def _first_text(record: dict[str, Any], *keys: str) -> str | None:
 def _advance_timestamp(value: str, minutes: int) -> str | None:
     """Add minutes to an ISO timestamp, preserving the original offset."""
     try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(value)
     except ValueError:
         return None
     return (parsed + timedelta(minutes=minutes)).isoformat()

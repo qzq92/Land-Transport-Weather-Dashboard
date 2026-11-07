@@ -6,13 +6,6 @@ from collections.abc import Awaitable, Callable
 from math import asin, cos, radians, sin, sqrt
 from typing import Any, ClassVar, Literal
 
-from backend.bus_views import buses_view
-from backend.cache import JsonCache
-from backend.healthcare import healthcare_view
-from backend.lta_pages import paged_lta_values, secure_batch_link
-from backend.models import ApiResponse
-from backend.settings import Settings
-from backend.upstream import UpstreamClient, UpstreamError
 from conf.api_urls import (
     BICYCLE_PARKING_URL,
     BUS_ARRIVAL_URL,
@@ -55,6 +48,14 @@ from conf.api_urls import (
     WOODLANDS_EMERGENCY_WAIT_URL,
     ZIKA_POLL_DOWNLOAD_URL,
 )
+
+from backend.bus_views import buses_view
+from backend.cache import JsonCache
+from backend.healthcare import healthcare_view
+from backend.lta_pages import paged_lta_values, secure_batch_link
+from backend.models import ApiResponse
+from backend.settings import Settings
+from backend.upstream import UpstreamClient, UpstreamError
 
 RealtimeMetric = Literal[
     "air-temperature",
