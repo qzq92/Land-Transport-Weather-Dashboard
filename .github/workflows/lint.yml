@@ -1,3 +1,5 @@
+# Native linters and tests (Ruff, mypy, Bandit, pip-audit, ESLint, TypeScript,
+# Vitest, Docker smoke). GitHub CodeQL runs in .github/workflows/codeql.yml.
 name: CI
 
 on:
@@ -54,13 +56,16 @@ jobs:
         run: uv sync --all-groups
 
       - name: Audit Python dependencies
-        run: uv run --with pip-audit pip-audit --progress-spinner off --skip-editable
+        run: uv run pip-audit --progress-spinner off --skip-editable
 
       - name: Lint Python
-        run: uv run ruff check backend tests
+        run: uv run ruff check backend conf tests
 
       - name: Type-check Python
-        run: uv run mypy backend
+        run: uv run mypy backend conf
+
+      - name: Scan Python for common security issues
+        run: uv run bandit -r backend -c pyproject.toml -ll
 
       - name: Run Python tests
         run: uv run pytest -q
@@ -108,6 +113,9 @@ jobs:
           else
             npm install --no-audit --no-fund
           fi
+
+      - name: Audit frontend dependencies
+        run: npm audit --audit-level=high
 
       - name: Lint frontend
         run: npm run lint
